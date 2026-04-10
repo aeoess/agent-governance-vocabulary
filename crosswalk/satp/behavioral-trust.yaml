@@ -1,0 +1,67 @@
+# SATP (Solana Agent Trust Protocol) crosswalk
+# System: AgentFolio / brainAI-bot/satp-solana-sdk
+# Vocabulary reference: behavioral_trust (vocabulary.yaml)
+
+system: "satp"
+system_url: "https://github.com/brainAI-bot/satp-solana-sdk"
+mcp_server: "agentfolio-mcp-server (npm)"
+vocabulary_ref: "behavioral_trust"
+
+# ─────────────────────────────────────────────────
+# FIELD MAPPING
+# ─────────────────────────────────────────────────
+field_mappings:
+  canonical_score_field: "trust_score.value"
+  type: "float_0_1"
+  evidence_count_field: "trust_score.sample_size"
+  confidence_field: "trust_score.confidence"
+  last_activity_field: "derivation.inputs.window_end"
+  withheld_field: "verification.anchor"  # null anchor = withheld
+
+# ─────────────────────────────────────────────────
+# DERIVATION METHOD
+# ─────────────────────────────────────────────────
+derivation:
+  formula: "success_rate × confidence(volume)"
+  success_rate: "successful_tasks / total_tasks"
+  confidence_function: "1 - (1 / (1 + log2(sample_size)))"
+  temporal_decay: "configurable half-life (default 168h)"
+  
+# ─────────────────────────────────────────────────
+# SCOPE
+# ─────────────────────────────────────────────────
+scope:
+  task_class_scoped: true
+  description: "Scores are per-task-class (e.g. web_research, payment_execution). Aggregate cross-class scores are for display only; gates MUST evaluate task-class-scoped evidence."
+  task_class_field: "trust_score.task_class"
+  cross_class_field: "trust_score.cross_class_score"
+  enforcement: "MUST NOT use cross_class_score for gate decisions (per OWASP PR #819)"
+
+# ─────────────────────────────────────────────────
+# ANCHOR / VERIFICATION
+# ─────────────────────────────────────────────────
+anchor:
+  type: "on-chain"
+  chain: "Solana"
+  anchor_field: "verification.anchor_ref"
+  freshness: "slot-level (~400ms)"
+  withheld_condition: "sample_size < 3 OR agent_id not registered in AgentFolio"
+
+# ─────────────────────────────────────────────────
+# ENFORCEABILITY TIER
+# ─────────────────────────────────────────────────
+enforceability:
+  strong: "on-chain anchor, slot-level freshness"
+  bounded: "signed + version-anchored, configurable TTL"
+  detectable_only: "self-declared or signed without anchor"
+  reference: "OWASP PR #819 (behavioral trust evidence type spec)"
+
+# ─────────────────────────────────────────────────
+# DRIFT STATUS
+# ─────────────────────────────────────────────────
+drift:
+  detected_field: "drift_status.detected"
+  divergence_field: "drift_status.divergence_score"
+  baseline_field: "drift_status.baseline_snapshot_hash"
+  note: "baseline_snapshot_hash MUST be SHA-256 of immutable baseline fingerprint, NOT a version label"
+  reference: "protect-mcp gateway PR #1 (iteration_id schema)"

@@ -48,15 +48,15 @@ signal_types:
 
   security_posture:
     definition: "Wallet-discoverable: signed subject is the artifact (repo, commit, output), wallet is lookup key."
-    issuers_in_production: ["SAR"]
+    issuers_in_production: ["AgentGraph"]
 
   job_performance:
     definition: "Wallet-bound assessment of completed task outcomes."
-    issuers_in_production: ["AgentGraph"]
+    issuers_in_production: ["Maiat"]
 
   settlement_witness:
-    definition: "Wallet-discoverable: outcome attestations bound to action artifacts."
-    issuers_in_production: ["Maiat"]
+    definition: "Wallet-discoverable: outcome attestations bound to action artifacts. Wallet-bound for post-upgrade receipts under kid `sar-prod-ed25519-03` (counterparty now inside signed bytes)."
+    issuers_in_production: ["SAR"]
 
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS (per @QueBallSharken)

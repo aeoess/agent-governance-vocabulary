@@ -72,73 +72,114 @@ match_types:
 mappings:
 
   # ───── 1 ─────────────────────────────────────────
-  # NEEDS REVIEW: @douglasborthwick-crypto for InsumerAPI field set
-  # NEEDS REVIEW: @AlexanderLawson17 for Revettr-future split scope
-  #
-  # CROSS-REFERENCE: @douglasborthwick-crypto's authoritative draft
-  # `rfc-contributions/wallet-state-section-3x.md` (in
-  # insumer-examples) is the Section 3.x formalization for this
-  # category. The draft scopes wallet_state to caller-supplied
-  # condition evaluation against on-chain state (token balance
-  # thresholds, NFT ownership, governance holdings, staking,
-  # protocol-specific state). The signed_payload_fields list below
-  # is NOT updated to match silently — the draft is not yet ratified.
-  # Divergence flagged for douglas's review:
-  #   - 3x.md scope DOES include: per-condition outcome shape
-  #     (`pass`, `met`, `evaluatedCondition`, `conditionHash`),
-  #     refresh_hint shape (`bound_block_number`, `bound_chain_id`,
-  #     `max_age_seconds`, `stale_action`), `conditionSetVersion`.
-  #     None of these are currently listed below.
-  #   - This row's signed_payload_fields DOES include: `tx_count`,
-  #     `age`, `counterparty_diversity`. None of these are in the
-  #     3x.md scope; they look closer to wallet_intelligence summary
-  #     statistics than to wallet_state condition outcomes.
-  # @douglasborthwick-crypto: please reconcile or confirm the
-  # divergence is intentional before this row's field set is
-  # treated as authoritative.
+  # REVIEWED by @douglasborthwick-crypto 2026-04-10 — field list
+  # corrected against crosswalk/insumerapi.yaml > signal_types.wallet_state
+  # > signed_shapes and MULTI-ATTESTATION-SPEC.md §3.1 / §5.6.
+  # Revettr retraction: @AlexanderLawson17 re-homed Revettr to row 3
+  # (wallet_intelligence) on 2026-04-11 after reading the 3.x.md
+  # scope — Revettr does not run a predicate evaluation engine, so
+  # wallet_intelligence is the correct category home. Row 1 stays
+  # InsumerAPI-only.
   - signal_type: wallet_state
     target_category: wallet_state            # proposed, name expected to mirror signal_type
     target_category_status: proposed
     match: exact
     issuers_in_production:
       - InsumerAPI
-      - "Revettr (post-v0.2 split, see notes)"
     signed_payload_fields:
-      - balance
-      - chains_covered
-      - block_numbers
-      - block_timestamps
-      - tx_count                              # NOTE: not in 3x.md scope — see cross-reference comment above
-      - age                                   # NOTE: not in 3x.md scope — see cross-reference comment above
-      - counterparty_diversity                # NOTE: not in 3x.md scope — see cross-reference comment above
+      # Fields from the compact-JWS path (attest_jwt) — wallet inside signature scope via sub claim.
+      # Per crosswalk/insumerapi.yaml > signal_types.wallet_state > signed_shapes.attest_jwt.
+      - "iss"                        # https://api.insumermodel.com
+      - "sub"                        # wallet address (EVM, Solana, XRPL, or Bitcoin — all land here)
+      - "jti"                        # attestation ID (ATST-...)
+      - "iat"
+      - "exp"                        # iat + 1800s (30 minute TTL)
+      - "pass"                       # aggregate boolean across all conditions
+      - "conditionHash"              # array, SHA-256 per canonical evaluated condition
+      - "blockNumber"                # hex, per-condition evaluation block
+      - "blockTimestamp"             # ISO 8601, per-condition block freshness
+      - "results[]"                  # per-condition array; each carries its own met, chainId, evaluatedCondition, conditionHash, blockNumber, blockTimestamp
+      # Per-result fields inside results[]:
+      - "results[].met"              # per-condition boolean — this is the primitive
+      - "results[].chainId"
+      - "results[].evaluatedCondition"   # exact condition parameters (type, chainId, contractAddress, operator, threshold, decimals)
+      - "results[].conditionHash"
+      - "results[].blockNumber"
+      - "results[].blockTimestamp"
     payload_fields_source: |
-      Abstracted to category-level fields. InsumerAPI's per-endpoint
-      payload shapes (attest_raw, attest_jwt, trust) are documented
-      in detail in crosswalk/insumerapi.yaml > signal_types.wallet_state
-      > signed_shapes. The fields above are the union the RFC
-      category should accommodate, not InsumerAPI's exact JWS claims.
-      Cross-reference: rfc-contributions/wallet-state-section-3x.md
-      in insumer-examples is the authoritative Section 3.x draft for
-      this category. Three fields (tx_count, age, counterparty_diversity)
-      are not in the 3x.md scope and several 3x.md fields
-      (refresh_hint, conditionHash, conditionSetVersion, pass/met
-      outcome shape) are not listed here. Reconciliation flagged for
-      @douglasborthwick-crypto.
+      Lifted directly from crosswalk/insumerapi.yaml > signal_types.wallet_state
+      > signed_shapes.attest_jwt in this repository, verified against a live
+      POST /v1/attest call on 2026-04-10 (JWT header {alg: ES256, typ: JWT,
+      kid: insumer-attest-v1}, canonical ES256 P-256 signature validating
+      against https://insumermodel.com/.well-known/jwks.json).
+
+      The raw-signature path (signed_shapes.attest_raw) and the curated
+      trust-profile path (signed_shapes.trust) have slightly different
+      top-level shapes — see insumerapi.yaml for the full per-endpoint
+      breakdown. The JWT claim set above is the most portable of the three
+      and is recommended as the reference shape for the RFC category.
     notes: |
-      Foundation layer of the multi-attestation envelope. InsumerAPI
-      covers 33 chains today (30 EVM + Solana + XRPL + Bitcoin) and
-      stamps `type: "wallet_state"` directly. Revettr will emit a
-      dedicated wallet_state envelope post-v0.2 split, scoped to
-      on-chain state (balance, tx count, age, counterparty diversity)
-      without compliance-adjacent fields. Until that split ships, the
-      Revettr listing here is forward-looking — see compliance_risk
-      row 5 for Revettr's current production envelope.
-      [REVIEW: @douglasborthwick-crypto on the field set; this is the
-      InsumerAPI maintainer's call once the RFC formalizes a category.]
-      [REVIEW: @AlexanderLawson17 on whether the Revettr-future scope
-      is bounded the way this row asserts.]
-    needs_issuer_confirmation: true
-    revettr_split_status: "PROPOSED — pending v0.2 RFC formalization, not yet split in production"
+      Foundation layer of the multi-attestation envelope. InsumerAPI covers
+      33 chains today (30 EVM + Solana + XRPL + Bitcoin) and stamps
+      `type: "wallet_state"` directly into the envelope.
+
+      **Critical category-design note: `wallet_state` attestations expose
+      BOOLEAN threshold satisfaction, NOT BALANCES.** This is architecturally
+      load-bearing for any privacy-preserving wallet_state implementation
+      and is enforced in the reference envelope as a hard rule
+      (MULTI-ATTESTATION-SPEC.md §5.6):
+
+        > wallet_state attestations expose boolean results (met: true/false),
+        > not balances. This is by design — the relying party learns whether
+        > a threshold was satisfied, not how much the wallet holds.
+
+      The earlier draft of this row listed `balance`, `tx_count`, `age`, and
+      `counterparty_diversity` as category-level fields. `balance` is
+      explicitly NOT exposed by InsumerAPI by design — the privacy model
+      hinges on threshold satisfaction, not balance disclosure. If the RFC
+      formalizes `wallet_state` around balance disclosure, InsumerAPI cannot
+      comply with its own proposed category — that is category drift away
+      from the reference implementation that inspired the signal_type.
+
+      The threshold-satisfaction model is also architecturally richer than
+      balance read: consumers specify the condition (type, contractAddress,
+      operator, threshold), the issuer evaluates against it at a named block,
+      and the signed result proves satisfaction without revealing the
+      underlying position. A single envelope can carry per-condition results
+      across multiple chains with per-condition block references, which a
+      balance-field-list cannot express.
+
+      **On Revettr**: Alexander Lawson (Revettr) originally committed to
+      splitting Revettr's current single-envelope signal into two envelopes
+      — one `compliance_risk`, one `wallet_state` — in A2A #1734 comment
+      16523189 on 2026-04-10. On 2026-04-11 Alexander RETRACTED the
+      wallet_state half of that split after reading the Section 3.x draft
+      (rfc-contributions/wallet-state-section-3x.md in insumer-examples).
+      The 3.x draft scopes `wallet_state` to caller-supplied condition
+      evaluation with a per-condition outcome shape (`pass`, `met`,
+      `evaluatedCondition`, `conditionHash`, `refresh_hint` with
+      `bound_block_number`/`bound_chain_id`/`max_age_seconds`/`stale_action`,
+      and `conditionSetVersion`). Revettr does not run a predicate
+      evaluation engine today and will not ship a shape it does not sign.
+      Re-homing to `wallet_intelligence` (row 3) as observational summary
+      statistics, which is the correct category home for what Revettr
+      actually produces. See A2A #1734 comment 4228 (TBD link once
+      Alexander's thread reply settles). Row 1 remains InsumerAPI-only,
+      which is exactly what the 3.x scope implies.
+    needs_issuer_confirmation: false
+    reviewed_by: "@douglasborthwick-crypto"
+    reviewed_at: "2026-04-10"
+    revettr_split_status: |
+      RETRACTED on 2026-04-11 by @AlexanderLawson17 after reading the
+      Section 3.x draft. Revettr is re-homing the proposed
+      "wallet_state" half of its planned split to row 3
+      (wallet_intelligence) as observational summary statistics,
+      because Revettr does not run a predicate evaluation engine and
+      will not ship a shape it does not sign. The `compliance_risk`
+      half of the originally proposed split is unaffected — row 5
+      remains Revettr's production envelope today. See A2A #1734
+      comment 16523189 (original commitment) and the follow-up
+      retraction comment in the same thread.
 
   # ───── 2 ─────────────────────────────────────────
   - signal_type: behavioral_trust

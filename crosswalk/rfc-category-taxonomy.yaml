@@ -23,6 +23,30 @@ target_taxonomy_version: "draft (not yet formalized)"
 target_discussion: https://github.com/a2aproject/A2A/discussions/1734
 status: draft_v0.1_awaiting_rfc_v0.2_formalization
 
+# Authoritative source markdowns this YAML tracks. When the markdowns
+# update, this YAML updates in the same PR. Both files live in
+# douglas's insumer-examples repo and are versioned alongside
+# MULTI-ATTESTATION-SPEC.md.
+reference_drafts:
+  - path: douglasborthwick-crypto/insumer-examples/rfc-contributions/crosswalk-to-rfc-1734.md
+    role: "Long-form markdown source for this YAML, drafted by @douglasborthwick-crypto"
+  - path: douglasborthwick-crypto/insumer-examples/rfc-contributions/wallet-state-section-3x.md
+    role: "Authoritative wallet_state Section 3.x formalization — cross-reference for row 1 wallet_state"
+
+# Dual-home mechanic: how a signal_type formally declares membership
+# in multiple RFC categories. Three rows below (wallet_intelligence,
+# passport_grade, trust_verification) carry dual_home_candidate: true
+# but the actual mechanic (category array? primary+secondary?
+# composite envelope?) is an open question for v0.2.
+dual_home_mechanic: unresolved_v0.2
+dual_home_mechanic_note: |
+  v0.1 marks dual-home candidates with alternate_category. The
+  mechanic by which a signal_type formally declares membership in
+  multiple categories (category array? primary+secondary? composite
+  envelope?) is an open question for v0.2. See open_questions
+  passport_grade_dual_home_mechanic and
+  wallet_intelligence_homing_shape.
+
 # ─────────────────────────────────────────────────
 # MATCH TYPES (REVERSE CROSSWALK)
 # These four are scoped to the reverse-crosswalk direction. They are
@@ -50,6 +74,28 @@ mappings:
   # ───── 1 ─────────────────────────────────────────
   # NEEDS REVIEW: @douglasborthwick-crypto for InsumerAPI field set
   # NEEDS REVIEW: @AlexanderLawson17 for Revettr-future split scope
+  #
+  # CROSS-REFERENCE: @douglasborthwick-crypto's authoritative draft
+  # `rfc-contributions/wallet-state-section-3x.md` (in
+  # insumer-examples) is the Section 3.x formalization for this
+  # category. The draft scopes wallet_state to caller-supplied
+  # condition evaluation against on-chain state (token balance
+  # thresholds, NFT ownership, governance holdings, staking,
+  # protocol-specific state). The signed_payload_fields list below
+  # is NOT updated to match silently — the draft is not yet ratified.
+  # Divergence flagged for douglas's review:
+  #   - 3x.md scope DOES include: per-condition outcome shape
+  #     (`pass`, `met`, `evaluatedCondition`, `conditionHash`),
+  #     refresh_hint shape (`bound_block_number`, `bound_chain_id`,
+  #     `max_age_seconds`, `stale_action`), `conditionSetVersion`.
+  #     None of these are currently listed below.
+  #   - This row's signed_payload_fields DOES include: `tx_count`,
+  #     `age`, `counterparty_diversity`. None of these are in the
+  #     3x.md scope; they look closer to wallet_intelligence summary
+  #     statistics than to wallet_state condition outcomes.
+  # @douglasborthwick-crypto: please reconcile or confirm the
+  # divergence is intentional before this row's field set is
+  # treated as authoritative.
   - signal_type: wallet_state
     target_category: wallet_state            # proposed, name expected to mirror signal_type
     target_category_status: proposed
@@ -62,15 +108,22 @@ mappings:
       - chains_covered
       - block_numbers
       - block_timestamps
-      - tx_count
-      - age
-      - counterparty_diversity
+      - tx_count                              # NOTE: not in 3x.md scope — see cross-reference comment above
+      - age                                   # NOTE: not in 3x.md scope — see cross-reference comment above
+      - counterparty_diversity                # NOTE: not in 3x.md scope — see cross-reference comment above
     payload_fields_source: |
       Abstracted to category-level fields. InsumerAPI's per-endpoint
       payload shapes (attest_raw, attest_jwt, trust) are documented
       in detail in crosswalk/insumerapi.yaml > signal_types.wallet_state
       > signed_shapes. The fields above are the union the RFC
       category should accommodate, not InsumerAPI's exact JWS claims.
+      Cross-reference: rfc-contributions/wallet-state-section-3x.md
+      in insumer-examples is the authoritative Section 3.x draft for
+      this category. Three fields (tx_count, age, counterparty_diversity)
+      are not in the 3x.md scope and several 3x.md fields
+      (refresh_hint, conditionHash, conditionSetVersion, pass/met
+      outcome shape) are not listed here. Reconciliation flagged for
+      @douglasborthwick-crypto.
     notes: |
       Foundation layer of the multi-attestation envelope. InsumerAPI
       covers 33 chains today (30 EVM + Solana + XRPL + Bitcoin) and
@@ -120,10 +173,29 @@ mappings:
     needs_issuer_confirmation: true
 
   # ───── 3 ─────────────────────────────────────────
+  # NOTE: target_category currently mirrors signal_type name per the
+  # YAML's v0.1 1:1-naming assumption (open_question q1). Per
+  # @douglasborthwick-crypto's crosswalk-to-rfc-1734.md, this signal
+  # is NOT a top-level RFC category — the markdown homes it as
+  # `wallet_state` (subtype: wallet_intelligence) PRIMARY, with
+  # `behavioral` as the alternate. The dual_home fields below capture
+  # douglas's two-home recommendation; the existing target_category
+  # is preserved for now and flagged here for reconciliation in v0.2.
   - signal_type: wallet_intelligence
-    target_category: wallet_intelligence     # proposed
+    target_category: wallet_intelligence     # proposed (NOTE: misaligned with douglas's markdown — see comment above)
     target_category_status: proposed
     match: exact
+    dual_home_candidate: true
+    alternate_category: behavioral
+    dual_home_rationale: |
+      Per @douglasborthwick-crypto on A2A#1734: mechanically a
+      wallet_state signal (derived from on-chain state), but
+      semantically closer to behavioral (it scores the wallet's
+      historical behavior pattern, not its current position).
+      Markdown proposes dual-home: discoverable under both
+      categories with a primary category of wallet_state and a
+      behavioral_overlap: true flag. The two signals compose
+      differently and consumers may want to weight them separately.
     issuers_in_production:
       - "RNWY Wallet (kid rnwy-wallet-v1)"
     signed_payload_fields:
@@ -143,9 +215,21 @@ mappings:
 
   # ───── 4 ─────────────────────────────────────────
   - signal_type: reasoning_integrity
-    target_category: reasoning_integrity     # proposed
+    target_category: behavioral              # per douglas's markdown: behavioral subtype, not top-level
     target_category_status: proposed
-    match: exact
+    match: extends
+    subtype: reasoning_integrity
+    subtype_rationale: |
+      Per @douglasborthwick-crypto on A2A#1734: ThoughtProof is the
+      only current reference implementation, so promoting
+      reasoning_integrity to a top-level category is premature.
+      Better-fit is a subtype under behavioral, with promotion to
+      top-level reserved for v0.3 if a second implementation
+      surfaces. The markdown's exact framing: "behavioral already
+      covers 'does the agent act within bounds,' and reasoning
+      soundness is the per-invocation version of that question.
+      One reference implementation is not enough to justify a new
+      top-level category yet, so subtype is the v0.2 recommendation."
     issuers_in_production:
       - ThoughtProof
     signed_payload_fields:
@@ -153,14 +237,20 @@ mappings:
     payload_fields_source: |
       ThoughtProof's signed envelope is wallet-agnostic by design (per
       vocabulary.yaml: "Attestation surface = the action, not the
-      actor"). The exact claim set is not documented in this repo.
-      Marking TBD.
+      actor"). Per douglas's markdown row: EdDSA compact JWS, signed
+      `claimHash` + `verdict` + `mdi` + `confidence`. The exact claim
+      set is documented in MULTI-ATTESTATION-SPEC.md §3.2 but not
+      mirrored into a crosswalk file in this repo yet. Marking TBD
+      until a ThoughtProof crosswalk lands.
     notes: |
       Wallet-agnostic primitive. The RFC category should NOT require
       a wallet field on this signal type — that would push every
       reasoning attestation into needing an unrelated identity
       anchor. The signed subject is the action artifact (e.g.,
-      reasoning trace, output hash), not the actor.
+      reasoning trace, output hash), not the actor. As a behavioral
+      subtype, reasoning_integrity inherits behavioral's category
+      shape but adds the per-invocation reasoning-soundness commit
+      (`claimHash`, `verdict`, `mdi`, `confidence`).
     needs_issuer_confirmation: true
 
   # ───── 5 ─────────────────────────────────────────
@@ -193,10 +283,35 @@ mappings:
     revettr_split_status: "PROPOSED — pending v0.2 RFC formalization, not yet split in production. Current Revettr envelope still mixes compliance-risk + on-chain state fields."
 
   # ───── 6 ─────────────────────────────────────────
+  # NOTE: target_category currently mirrors signal_type name per the
+  # YAML's v0.1 1:1-naming assumption (open_question q1). Per
+  # @douglasborthwick-crypto's crosswalk-to-rfc-1734.md, this signal
+  # is NOT a top-level RFC category — the markdown explicitly
+  # dual-homes it under `identity` + `sovereignty`. The dual_home
+  # fields below capture douglas's two-home recommendation
+  # (alternate_category: sovereignty, with identity as the implied
+  # primary); the existing target_category is preserved for now and
+  # flagged here for reconciliation in v0.2.
   - signal_type: passport_grade
-    target_category: passport_grade          # proposed
+    target_category: passport_grade          # proposed (NOTE: misaligned with douglas's markdown — see comment above)
     target_category_status: proposed
     match: exact
+    dual_home_candidate: true
+    alternate_category: sovereignty
+    dual_home_rationale: |
+      Per @douglasborthwick-crypto on A2A#1734: APS emits both an
+      identity-evidence grade and a governance-attestation envelope
+      from the same issuer. Passport grade (0-3) measures identity
+      evidence tier depth — directly identity. The
+      governance-attestation variant covers active constraints and
+      delegation chain — maps to sovereignty ("how much control the
+      agent has over itself"). Dual-homing under identity +
+      sovereignty is the cleanest mapping today; recommendation in
+      douglas's markdown is dual-home via array:
+      "category": ["identity", "sovereignty"]. An alternative is to
+      split the issuer into two reference implementations — one
+      under each category — but that loses the fact that APS
+      deliberately couples the two dimensions.
     issuers_in_production:
       - "APS / AEOESS (gateway.aeoess.com)"
     signed_payload_fields:
@@ -221,10 +336,36 @@ mappings:
     needs_issuer_confirmation: false
 
   # ───── 7 ─────────────────────────────────────────
+  # NOTE: target_category currently mirrors signal_type name per the
+  # YAML's v0.1 1:1-naming assumption (open_question q1). Per
+  # @douglasborthwick-crypto's crosswalk-to-rfc-1734.md, this signal
+  # is NOT a top-level RFC category — the markdown homes it under
+  # `identity` (primary) with `behavioral` as a possible secondary
+  # ("the behavioral risk/context continuity fields overlap
+  # behavioral and could be dual-homed if the WG prefers"). The
+  # dual_home fields below capture this hedge; the existing
+  # target_category is preserved for now and flagged here for
+  # reconciliation in v0.2. Note: douglas's markdown table marks
+  # this row "Direct" not "Dual-home candidate"; the dual-home
+  # reading comes only from the row notes, not the headline.
   - signal_type: trust_verification
-    target_category: trust_verification      # proposed
+    target_category: trust_verification      # proposed (NOTE: misaligned with douglas's markdown — see comment above)
     target_category_status: proposed
     match: exact
+    dual_home_candidate: true
+    alternate_category: behavioral
+    dual_home_rationale: |
+      Per @douglasborthwick-crypto on A2A#1734: identity is the
+      primary home; the behavioral risk/context continuity score
+      and context_continuity_score fields overlap behavioral and
+      could be dual-homed if the WG prefers. AgentID emits a
+      single envelope that carries both identity-layer claims
+      (DID, wallet_address, bound_addresses, trust level) and
+      behavioral-layer claims (behavioral risk score, context
+      continuity score, scarring counts). The hedge in douglas's
+      markdown is intentional — primary recommendation is single
+      home (identity), with dual-home flagged as a WG decision
+      rather than a strong assertion.
     issuers_in_production:
       - "AgentID (haroldmalikfrimpong-ops)"
       - "APS (per vocabulary.yaml — secondary issuer of trust_verification)"
@@ -346,6 +487,76 @@ open_questions:
       Should job_performance (row 9) and settlement_witness (row 10)
       be hierarchically related in the RFC?
     rationale: "job_performance is an aggregate assessment across many actions; settlement_witness is bound to a single completed action. A hierarchical relationship would let consumers ask 'which settlement_witness records back this job_performance score?' without separate orchestration."
+
+  # ───── Open questions added per @douglasborthwick-crypto's
+  # follow-up on A2A#1734. Each one tracks an unresolved decision
+  # surfaced by the dual-home and subtype framing edits above.
+  # Source: rfc-contributions/crosswalk-to-rfc-1734.md "Open
+  # questions for v0.2 review" section.
+
+  - id: wallet_intelligence_homing_shape
+    status: unresolved_v0.2
+    framing: |
+      wallet_intelligence sits between wallet_state and behavioral.
+      Needs a dual_home_mechanic decision before v0.2 freezes.
+      Per douglas's markdown: should RNWY rnwy-wallet-v1 be
+      primarily wallet_state with a behavioral_overlap flag, or
+      should the RFC introduce a wallet_behavioral category to
+      cleanly separate "on-chain position at block N" from
+      "on-chain behavioral history of the wallet as an actor"?
+      The two signals compose differently and consumers may want
+      to weight them separately.
+
+  - id: reasoning_integrity_subtype_vs_top_level
+    status: subtype_in_v0.1
+    framing: |
+      v0.1 marks this as extends behavioral with subtype
+      reasoning_integrity. Promotion to top-level category
+      reserved for v0.3 pending second reference implementation.
+      Per douglas's markdown: ThoughtProof's signed claimHash +
+      verdict pattern does not fit behavioral perfectly —
+      behavioral implies runtime bound-checking, reasoning
+      soundness is pre-runtime. One reference implementation is
+      not enough to justify a new top-level category yet, so
+      subtype is the v0.2 recommendation.
+
+  - id: passport_grade_dual_home_mechanic
+    status: unresolved_v0.2
+    framing: |
+      passport_grade sits between identity and sovereignty.
+      "category": ["identity", "sovereignty"] as an array is the
+      cleanest mechanic but is not yet in the RFC schema. Per
+      douglas's markdown: APS deliberately couples both layers,
+      so splitting the issuer into two reference implementations
+      (one per category) would lose that coupling. The array
+      mechanic preserves it.
+
+  - id: peer_review_coverage_gap
+    status: no_production_issuer_currently_maps
+    framing: |
+      Per @douglasborthwick-crypto: none of the ten
+      MULTI-ATTESTATION-SPEC issuers lands cleanly in a
+      peer_review category. RFC should either drop the category
+      or add peer_review to the WG issuer solicitation list.
+      Closest fit: RNWY's reviewer-credibility and
+      reviewer-diversity fields inside the §3.3.1 evidence
+      extension could be surfaced as a peer_review subtype, or
+      an aeoess governance-attestation vouch chain could fill
+      the slot. Defer to @rnwy and @aeoess.
+
+  - id: continuous_monitoring_semantics
+    status: unresolved_v0.2
+    framing: |
+      Is continuous_monitoring reserved for standing-pipeline
+      issuers (polling, streaming) or does it also absorb
+      point-in-time derived signals computed on each request?
+      Semantic ambiguity affects how trust_velocity and
+      divergence_signal map. Per douglas's markdown
+      recommendation: continuous_monitoring is for the standing
+      pipeline model (nightly refresh, time-series); point-in-time
+      signals derived from monitoring data stay under their
+      primary category. AgentGraph's on-chain monitoring fits the
+      former; RNWY's sybil reactivity stays under behavioral.
 
 # ─────────────────────────────────────────────────
 # ROWS NEEDING ISSUER REVIEW BEFORE MERGE

@@ -1,0 +1,252 @@
+system:
+  name: VeritasActa
+  home: https://github.com/VeritasActa
+  spec: https://datatracker.ietf.org/doc/draft-farley-acta-signed-receipts/
+  jwks: null  # Ed25519 public keys embedded in receipt `kid` field, no centralized JWKS endpoint
+  role: |
+    Receipt signing and verification for machine decisions. Issues
+    Ed25519-signed receipts covering tool calls, policy decisions, and
+    multi-model deliberation outputs. Verification is issuer-blind —
+    the verifier never learns who generated the receipt.
+  license: "Apache-2.0 (patent grant via Section 3)"
+
+signal_types:
+
+  decision_receipt:
+    canonical: settlement_witness
+    match: structural
+    notes: |
+      VeritasActa receipts attest to a completed action (tool call,
+      policy evaluation, model response) with a cryptographic signature.
+      Structurally equivalent to settlement_witness: both are post-action
+      attestations bound to an artifact. Key differences:
+
+        1. Signed subject is `content_hash` (SHA-256 of the response/decision),
+           not a wallet address. Wallet-agnostic by design.
+        2. `kid` identifies the signing gateway, not an on-chain identity.
+        3. Canonicalization uses JCS (RFC 8785), not JSON.stringify.
+
+      The divergence is intentional: Acta receipts are designed for
+      agent-to-agent and agent-to-auditor flows where wallet binding
+      is not applicable.
+    issuer_uri: https://acta.today
+    algorithm: Ed25519
+    kid: "gateway-{instance_id}"
+    default_ttl_seconds: null  # receipts do not expire; validity is permanent
+
+    signed_fields:
+      - content_hash      # SHA-256 of the attested content
+      - model_id          # which model produced the response (optional, may be anonymized)
+      - policy_version    # which policy governed the decision
+      - timestamp         # ISO 8601
+      - kid               # key identifier
+      - signature         # Ed25519 signature over JCS-canonicalized receipt
+
+    verification:
+      cli: "npx @veritasacta/verify receipt.json"
+      self_test: "npx @veritasacta/verify --self-test"
+      exit_codes:
+        0: valid
+        1: tampered (signature mismatch)
+        2: malformed (structural error)
+      offline: true  # no network access required for verification
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: partial
+    notes: |
+      Acta Knowledge Units record multi-model deliberation: which models
+      participated, how many adversarial rounds occurred, whether models
+      dissented, and what the consensus was. Each model response gets its
+      own receipt. This overlaps with reasoning_integrity (attestation
+      surface = the action, not the actor) but extends it: the KU format
+      captures the *deliberation process*, not just the decision.
+
+      Partial match because:
+        - reasoning_integrity is a single-issuer attestation
+        - KU receipts are multi-issuer (one per model) with a bundle
+          verification pass (all receipts or none)
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "VeritasActa does not issue behavioral_trust. Receipts attest to individual actions, not behavioral patterns over time."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "VeritasActa is wallet-agnostic by design. No on-chain state is read or attested."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "Not applicable. VeritasActa does not classify wallet activity."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "VeritasActa does not issue compliance_risk. Compliance evaluation is the consumer's responsibility."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "VeritasActa does not issue passport grades. Receipts are per-action, not per-identity."
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "VeritasActa does not issue trust_verification. Identity verification is out of scope."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "VeritasActa does not issue security_posture. Receipt signing is orthogonal to security assessment."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "VeritasActa does not issue job_performance. Receipts attest to a single action, not cumulative performance."
+
+# ─────────────────────────────────────────────────
+decision_trajectory:
+
+  decision_lineage:
+    canonical: decision_lineage
+    match: structural
+    notes: |
+      Knowledge Unit receipt bundles are hash-chained: each receipt in a
+      multi-model deliberation references the previous receipt's SHA-256
+      hash via `previousReceiptHash`. This is a content-addressable
+      sequence of decisions for a single deliberation topic — structurally
+      equivalent to decision_lineage.
+
+      Divergence from canonical:
+        - Acta lineage is per-topic (a KU deliberation), not per-agent.
+          Multiple agents (models) contribute to the same lineage.
+        - Content-addressing scheme is SHA-256 hash chain, not merkle tree.
+          Compatible with `content_addressable_implementation_specific`
+          as specified in v0.1.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: partial
+    notes: |
+      Acta receipts carry `policy_version` which identifies the governance
+      policy active at receipt time. Partially equivalent to baseline_revision:
+      both version the evaluation context. However, baseline_revision is
+      scoped to behavioral baselines (drift detection), while policy_version
+      is scoped to declarative policy rules (Cedar, JSON policy).
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: partial
+    notes: |
+      Acta Knowledge Units record model dissent as a first-class field:
+      when models disagree during deliberation, the disagreement is
+      preserved rather than suppressed. This is the qualitative analog
+      of PDR's quantitative divergence measurement. Partial match because:
+        - PDR divergence_signal is a quantitative deviation from baseline
+        - KU dissent is a qualitative record (which model, what position,
+          which round)
+      Both capture "the system is not in consensus" but with different
+      measurement semantics.
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: |
+      VeritasActa does not compute trust velocity. Receipts are point-in-time
+      attestations. Rate-of-change analysis is the consumer's responsibility.
+
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+
+  decision_receipt:
+    enforcement_class: advisory
+    enforcement_notes: |
+      Receipts are evidence, not gates. The consumer decides whether to
+      accept, reject, or escalate based on receipt validity. VeritasActa
+      never refuses an action — it records that one occurred.
+
+    validity_temporal: at_issuance
+    validity_notes: |
+      Receipts are permanent snapshots. A valid receipt proves that a
+      specific model produced a specific output at a specific time under
+      a specific policy. The receipt does not expire — the content it
+      attests to may become stale, but the attestation itself remains
+      cryptographically valid indefinitely.
+
+    refusal_authority: consumer_policy
+    refusal_notes: |
+      VeritasActa never refuses. The verifier reports valid/tampered/malformed.
+      Policy enforcement (e.g., Cedar policies via protect-mcp) is a
+      separate layer that consumes receipts as evidence.
+
+    invariant_survival: post_action
+    invariant_notes: |
+      Receipts are issued after the action completes. The signed content_hash
+      is the output, not a promise. This is post-action attestation by design.
+
+    replay_class: decision_replay
+    replay_notes: |
+      Given the receipt JSON + the Ed25519 public key (embedded in `kid`),
+      any verifier can replay the signature verification offline and confirm
+      validity. JCS canonicalization (RFC 8785) ensures deterministic
+      serialization. Full content replay requires the original content
+      (the receipt contains content_hash, not content).
+
+    governed_action_class: ["read", "write", "compose"]
+    governed_action_notes: |
+      Receipts are most commonly produced for `write`-class actions (tool
+      calls that modify state) and `compose`-class flows (multi-step agent
+      pipelines). `read`-class receipts are used for audit trails (proving
+      that a model was consulted, even if no action was taken).
+
+# ─────────────────────────────────────────────────
+gaps:
+
+  - area: "Issuer-blind verification"
+    note: |
+      The vocabulary assumes issuers are known and discoverable (e.g.,
+      `issuer_uri`, JWKS endpoints). VeritasActa intentionally breaks
+      this assumption: the verifier does not learn the issuer's identity.
+      The `kid` field identifies a signing key, not an organization.
+      This design enables cross-jurisdictional verification (e.g., an
+      EU auditor verifying receipts from a US-hosted model) without
+      revealing organizational relationships.
+
+      If the vocabulary adds an `issuer_visibility` descriptor, this
+      crosswalk would populate it as `blind` (verifier cannot determine
+      issuer identity from the receipt alone).
+
+  - area: "Multi-receipt bundles"
+    note: |
+      Knowledge Units contain multiple receipts (one per model response
+      in a deliberation). Bundle verification is all-or-nothing: either
+      every receipt in the bundle is valid, or the entire KU is rejected.
+      The vocabulary currently models single-issuer attestations. A
+      `bundle_semantics` descriptor (values: `all_or_nothing`,
+      `threshold`, `any`) would enable expressing multi-receipt
+      verification policies.
+
+  - area: "Content-addressed vs wallet-addressed attestations"
+    note: |
+      Most vocabulary signal_types assume wallet-addressed attestations
+      (the signed subject is a wallet or identity). VeritasActa receipts
+      are content-addressed (the signed subject is a content hash).
+      Both are valid attestation models, but the vocabulary's
+      `wallet_binding` concept does not currently accommodate
+      content-addressed systems. Flagging for awareness, not requesting
+      a change.
+
+# ─────────────────────────────────────────────────
+crosswalk_metadata:
+  authored_by: "@tomjwxf"
+  vocabulary_version: "0.1.0"
+  last_reviewed: "2026-04-11"
+  next_revisions:
+    - "Update if `issuer_visibility` descriptor is added to vocabulary.yaml"
+    - "Add ScopeBlind protect-mcp as a separate crosswalk (gateway layer that produces VeritasActa receipts + Cedar policy decisions)"
+    - "Map JEP event fields once crosswalk/jep.yaml lands — Acta receipts and JEP events share JCS canonicalization (RFC 8785) and content-addressed signing, making composition straightforward"
+    - "Refine decision_trajectory mappings after v0.2 tightens content-addressing scheme"
+

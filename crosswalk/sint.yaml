@@ -1,0 +1,184 @@
+# crosswalk/sint.yaml
+# SINT Protocol crosswalk for agent-governance-vocabulary v0.1
+#
+# System: SINT Protocol (sint-ai/sint-protocol)
+# Version: 0.1.0
+# License: Apache-2.0
+# Author: @pshkv
+# Date: 2026-04-11
+#
+# Identity primitive: Ed25519 capability tokens with did:key derivation
+# Key distribution: Per-token (no centralized JWKS; public keys travel inside tokens)
+# Signature scheme: Ed25519 (via @noble/ed25519, audited, zero-dep)
+# Hash chain: SHA-256 append-only evidence ledger
+
+system:
+  name: sint-protocol
+  repo: https://github.com/sint-ai/sint-protocol
+  version: "0.1.0"
+  identity_method: "did:key (Ed25519)"
+  key_distribution: "per-token (public key embedded in SintCapabilityToken.subject)"
+  signature_algorithm: Ed25519
+  hash_algorithm: SHA-256
+
+signal_type_mappings:
+
+  wallet_state:
+    match: no_mapping
+    note: >
+      SINT has no wallet/blockchain layer. Authorization is based on
+      Ed25519 capability tokens scoped to (subject, resource, action) triples,
+      not wallet balances or on-chain holdings.
+
+  behavioral_trust:
+    match: no_mapping
+    note: >
+      SINT enforces physical constraints (velocity, force, geofence) and
+      approval tiers (T0-T3), not behavioral scoring. Behavioral trust
+      assessment is delegated to external systems via SafetyPermitPlugin
+      interface (async resolver, fail-open on error).
+
+  wallet_intelligence:
+    match: no_mapping
+    note: >
+      No wallet layer. See wallet_state.
+
+  reasoning_integrity:
+    match: no_mapping
+    note: >
+      SINT does not attest to reasoning quality. GoalHijackPlugin (ASI01)
+      detects prompt injection at the gateway level but does not produce
+      a portable attestation — it produces a deny decision.
+
+  compliance_risk:
+    match: no_mapping
+    note: >
+      SINT enforces constraints at runtime, does not score compliance risk.
+      The ConstraintEnvelope carries machine-readable safety limits
+      (CL-1.0 format) but these are enforcement primitives, not risk scores.
+
+  passport_grade:
+    match: no_mapping
+    note: >
+      APS-specific composite grade. SINT's approval tiers (T0-T3) serve
+      a related but distinct purpose: they map consequence severity to
+      authorization requirements, not agent trustworthiness.
+
+  trust_verification:
+    match: structural
+    sint_type: SintCapabilityToken.delegationChain
+    sint_fields:
+      - parentTokenId    # UUID of parent token (null for root)
+      - depth            # delegation depth (0 = root, max 3)
+      - attenuated       # boolean: were permissions narrowed?
+    divergence: >
+      SINT tokens are scoped to (subject, resource, action) triples with
+      physical constraints. trust_verification is identity-level verification.
+      SINT delegation chain proves authorization provenance, not identity grade.
+    descriptor_notes:
+      enforcement_class: binding  # token validation is mandatory, not advisory
+      validity_temporal: continuously  # token checked on every intercept() call
+      refusal_authority: verifier  # PolicyGateway is the sole enforcement point
+
+  security_posture:
+    match: partial
+    sint_type: ConstraintEnvelope.attestation
+    sint_fields:
+      - modelFingerprint   # hash of model weights (ASI04 supply chain)
+      - modelAllowlist     # approved model hashes
+      - requiredEndorsers  # list of required attestation signers
+    divergence: >
+      SINT attestation is per-token (content-addressed via tokenId),
+      not per-wallet. SINT's attestation section verifies model provenance
+      and supply chain integrity, not wallet-discoverable security posture.
+      Addressing model: tokenId (UUIDv7), not wallet address.
+    descriptor_notes:
+      enforcement_class: binding
+      validity_temporal: at_processing
+      replay_class: fingerprint_only
+
+  job_performance:
+    match: no_mapping
+    note: >
+      SINT does not assess task outcomes. The evidence ledger records
+      decisions (allow/deny/escalate) and their inputs, not performance
+      metrics of completed work.
+
+  settlement_witness:
+    match: structural
+    sint_type: LedgerEvent
+    sint_fields:
+      - eventId          # UUIDv7
+      - eventType        # "intercept" | "revocation" | "escalation" | ...
+      - agentId          # Ed25519 public key (hex)
+      - resource         # URI (e.g., "ros2:///cmd_vel", "mcp://filesystem/writeFile")
+      - action           # "publish" | "call" | "subscribe" | ...
+      - decision         # "allow" | "deny" | "escalate"
+      - tier             # T0_OBSERVE | T1_PREPARE | T2_ACT | T3_COMMIT
+      - timestamp        # ISO 8601 microsecond precision
+      - previousHash     # SHA-256 of previous event (hash chain)
+    divergence: >
+      SINT ledger events are SHA-256 hash-chained (append-only, tamper-evident
+      via chain integrity verification). Individual events are NOT Ed25519-signed.
+      Chain integrity provides collective tamper evidence; per-event signing
+      would provide individual non-repudiation. SINT currently has single-party
+      recording (gateway signs chain); dual-signature (agent co-sign) is planned.
+    descriptor_notes:
+      enforcement_class: binding  # ledger recording is mandatory on every decision
+      validity_temporal: permanently  # append-only, never expires
+      invariant_survival: permanent  # hash chain survives indefinitely
+      replay_class: full_replay  # complete decision inputs recorded
+      governed_action_class: read  # ledger is read-only after write
+
+# SINT-specific terms not in vocabulary v0.1
+# These represent stack layers (L3-L5) not covered by current signal types
+
+sint_specific_terms:
+
+  physical_constraint:
+    definition: >
+      Machine-readable safety envelope cryptographically bound to capability
+      token. Constraints travel with the credential and can only be tightened
+      (never relaxed) through delegation. No analog in current vocabulary.
+    fields:
+      - maxVelocityMps        # maximum velocity in meters/second
+      - maxForceNewtons       # maximum force in newtons
+      - maxRotationalVelocity # maximum angular velocity in rad/s
+      - geofence              # GeoJSON polygon boundary
+      - maxAltitudeM          # maximum altitude for aerial vehicles
+      - corridorWidthM        # operational corridor width
+    enforcement_class: binding
+    validity_temporal: continuously
+    invariant_survival: during_action
+    note: >
+      This is the L4 (Constraint) layer in the emerging stack. No other
+      system in the vocabulary currently carries physical constraints inside
+      cryptographic credentials.
+
+  approval_tier:
+    definition: >
+      Authorization requirement level matched to physical consequence severity.
+      T0_OBSERVE (auto-approve, logged), T1_PREPARE (auto-approve, audited),
+      T2_ACT (escalation required), T3_COMMIT (human sign-off required).
+    fields:
+      - assignedTier     # T0_OBSERVE | T1_PREPARE | T2_ACT | T3_COMMIT
+      - assignedRisk     # computed risk tier
+      - escalation       # { requiredTier, reason, timeoutMs, fallbackAction }
+    enforcement_class: binding
+    refusal_authority: verifier  # PolicyGateway assigns and enforces
+    governed_action_class: write  # tiers gate state-changing actions
+
+  circuit_breaker_state:
+    definition: >
+      Emergency stop mechanism compliant with EU AI Act Art. 14(4)(e).
+      Three states: CLOSED (normal), OPEN (all actions denied), HALF_OPEN
+      (probe mode, limited actions allowed for recovery testing).
+    fields:
+      - state            # CLOSED | OPEN | HALF_OPEN
+      - tripReason       # human-readable reason for circuit open
+      - manualTrip       # boolean: was this a human-initiated stop?
+      - openedAt         # ISO 8601 timestamp of trip
+      - probeCount       # number of probe attempts in HALF_OPEN
+    enforcement_class: refusal_authority
+    validity_temporal: continuously
+    invariant_survival: during_action

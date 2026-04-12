@@ -1,0 +1,164 @@
+system: AgentNexus
+version: "0.9.6"
+spec: https://github.com/kevinkaylie/AgentNexus
+did_method: "did:agentnexus"
+
+# Canonical vocabulary crosswalk
+# Format: canonical_term → { internal_name, source, notes }
+# no_mapping entries document genuine gaps with rationale
+
+endpoints:
+  validate_capabilities:
+    internal: "POST /governance/validate"
+    source: "agent_net/node/routers/governance.py#api_governance_validate"
+    notes: "Calls MolTrust + APS GovernanceRegistry, returns best_decision + per-issuer attestations"
+
+  resolve_identity:
+    internal: "GET /resolve/{did}"
+    source: "agent_net/node/routers/agents.py#api_resolve_did"
+    notes: "Supports did:agentnexus, did:key, did:web, did:meeet. Returns W3C DID Document"
+
+  verify_attestation:
+    internal: "POST /attestations/verify"
+    source: "agent_net/node/routers/governance.py#api_verify_attestation"
+    notes: "Verifies JWS signature against issuer JWKS. Checks expiry (replay protection)"
+
+  check_revocation:
+    no_mapping: true
+    rationale: "No standalone revocation endpoint. Enclave status (active/archived) and Playbook run status serve as implicit revocation signals, but there is no credential revocation registry."
+
+  issue_credential:
+    internal: "POST /agents/{did}/certify"
+    source: "agent_net/node/routers/agents.py#api_certify_agent"
+    notes: "Issues Ed25519-signed NexusCertification. Claim namespace: {issuer}:{claim} (e.g. giskard:payment_verified)"
+
+  get_trust_profile:
+    internal: "GET /reputation/{did}"
+    source: "agent_net/node/routers/governance.py#api_get_reputation"
+    notes: "Returns ReputationScore: base_score(L-tier) + behavior_delta + attestation_bonus. Also exports OATR extensions.agent-trust format"
+
+envelope_fields:
+  agent_did:
+    internal: "agent_did"
+    notes: "Direct mapping. Format: did:agentnexus:<multibase-ed25519-pub>"
+
+  issuer_did:
+    internal: "issuer (string, not DID)"
+    notes: "GovernanceAttestation.issuer is a hostname (api.moltrust.ch), not a DID. Partial mapping — DID-form issuer not yet implemented"
+
+  delegation_chain_hash:
+    internal: "Playbook run chain: owner_did → role → member_did → stage_assignment"
+    source: "agent_net/enclave/playbook.py"
+    notes: "Chain is stored implicitly across enclave_members + playbook_runs tables. Explicit hash not yet computed — planned for v1.0 capability token envelope (ADR roadmap 1.0-08)"
+
+  active_constraints:
+    internal: "{ permissions, input_keys, output_key }"
+    source: "agent_net/enclave/models.py#Stage"
+    notes: "Enclave member permissions (admin/rw/r) + Playbook stage input_keys/output_key form the constraint set. Maps to canonical active_constraints as opaque object"
+
+  scope:
+    internal: "permissions"
+    source: "agent_net/storage.py#add_enclave_member"
+    notes: "Three levels: admin (full control), rw (read-write Vault), r (read-only Vault). Coarser than canonical scope strings but structurally equivalent"
+
+  spend_limit:
+    internal: "spend_limit (in GovernanceAttestation, reference only)"
+    source: "agent_net/common/governance.py#GovernanceAttestation"
+    notes: "External governance services (MolTrust/APS) return spend_limit as reference information. Actual spend limits are L-tier based (L1=$0, L2=$10, L3=$100, L4=$1000) per ADR-004. Not enforced at Enclave level yet"
+
+  validity_window:
+    internal: "GovernanceAttestation.validity_window"
+    source: "agent_net/common/governance.py"
+    notes: "Direct mapping. Also: push registration TTL (expires_at) and Playbook run lifecycle"
+
+  wallet_binding:
+    no_mapping: true
+    rationale: "No wallet concept in current implementation. Agent identity is Ed25519 keypair only, no wallet binding."
+
+  attestation_timestamp:
+    internal: "GovernanceAttestation.raw_response timestamp fields"
+    notes: "Stored in governance_attestations table as expires_at. Creation timestamp not explicitly stored — gap"
+
+  expires_at:
+    internal: "expires_at"
+    source: "agent_net/common/governance.py#GovernanceAttestation"
+    notes: "Direct mapping. Used for replay attack prevention in verify_attestation"
+
+  signature_alg:
+    internal: "Ed25519 (implicit)"
+    notes: "All signatures use Ed25519 via PyNaCl/libsodium. Algorithm not explicitly declared in attestation envelope — implicit from DID key type"
+
+  canonicalization:
+    internal: "(not yet implemented)"
+    notes: "JCS canonicalization planned for v1.0 capability token envelope. Current signatures are over raw bytes, not JCS-canonicalized JSON"
+
+signal_types:
+  governance_attestation:
+    internal: "GovernanceAttestation.signal_type = 'governance_attestation'"
+    source: "agent_net/common/governance.py#GovernanceAttestation"
+    notes: "Direct mapping. Issued by MolTrust or APS, verified via JWKS"
+
+  identity_proof:
+    internal: "DID Document (verificationMethod array)"
+    source: "GET /resolve/{did} response"
+    notes: "W3C DID Core compliant. Ed25519 public key in verificationMethod[0].publicKeyMultibase (z-prefixed multicodec)"
+
+  behavioral_fingerprint:
+    no_mapping: true
+    rationale: "behavior_delta is computed internally from interaction history (success rate, response time, frequency) but is not signed or exported as a standalone artifact. Not independently verifiable."
+
+  wallet_state:
+    no_mapping: true
+    rationale: "No wallet concept. See wallet_binding above."
+
+  compliance_credential:
+    no_mapping: true
+    rationale: "Planned for v1.5 enterprise roadmap as pluggable audit layer (EU AI Act Article 12). Not yet implemented. Will be modeled as optional adapter, not core."
+
+  reputation_score:
+    internal: "ReputationScore (trust_score, base_score, behavior_delta, attestation_bonus)"
+    source: "agent_net/common/reputation.py#ReputationScore"
+    notes: "Exported in OATR extensions.agent-trust format. Not yet signed as standalone artifact — computed on-demand, not issued"
+
+decisions:
+  permit:
+    internal: "decision = 'permit'"
+    source: "agent_net/common/governance.py#GovernanceAttestation"
+    notes: "Direct mapping"
+
+  deny:
+    internal: "decision = 'deny'"
+    notes: "Direct mapping"
+
+  conditional:
+    internal: "decision = 'conditional'"
+    notes: "Direct mapping"
+
+  defer:
+    no_mapping: true
+    rationale: "No defer decision type. Gatekeeper ask-mode (pending approval queue) is functionally similar but not surfaced as a governance decision artifact"
+
+  step_up:
+    no_mapping: true
+    rationale: "No step-up authentication concept"
+
+constraints:
+  retention_permitted:
+    no_mapping: true
+    rationale: "No data retention policy enforcement at current stage"
+
+  derivation_classes:
+    no_mapping: true
+    rationale: "No derivation class concept. Planned consideration for v1.5 compliance layer"
+
+  max_delegation_depth:
+    internal: "Playbook single-layer delegation (owner → member)"
+    notes: "Currently maxDelegationDepth=1 implicitly. Multi-hop delegation planned for v1.0 (roadmap 1.0-10)"
+
+  reversibility_ceiling:
+    no_mapping: true
+    rationale: "No reversibility concept. Vault operations are append-only with version history, which provides de-facto reversibility, but no explicit ceiling enforcement"
+
+  trust_floor:
+    internal: "required_trust_score (in TrustBridge.verify_peer context)"
+    notes: "AgentNexus RuntimeVerifier uses L-tier thresholds rather than a continuous score floor. Mapping is approximate"

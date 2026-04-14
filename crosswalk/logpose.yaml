@@ -1,0 +1,52 @@
+# Logpose → Agent Governance Vocabulary crosswalk
+# Issuer: Logpose (@logpose-dev/logpose on npm)
+# Category: peer_review
+# Confirmed: rkaushik29, 2026-04-14
+
+system: logpose
+version: "0.2.0"
+package: "@logpose-dev/logpose"
+credential_format: "W3C Verifiable Credentials 2.0"
+
+mappings:
+  - canonical: peer_review
+    internal: LogposeAttestation
+    match: exact
+    notes: >
+      Logpose credentials are W3C VCs with type
+      ["VerifiableCredential", "LogposeAttestation"].
+      The credentialSubject carries task, outcome, and evidence fields.
+    signed_payload_fields:
+      - task              # string, e.g. "code-review", "deployment", "data-validation"
+      - outcome           # string, e.g. "approved", "changes-requested", "failed"
+      - evidence          # Record<string, unknown>, freeform (repo, PR number, files reviewed, metrics)
+    envelope:
+      issuer_did_method: "did:key"
+      alg: EdDSA
+      curve: Ed25519
+      canonicalization: "RFC 8785 (JCS)"
+      proof_type: "Ed25519Signature2024"
+      proof_purpose: "assertionMethod"
+    ttl:
+      default_ttl_seconds: 604800    # 7 days
+      max_age_seconds: 2592000       # 30 days
+      stale_action: soft_fail
+      refresh_trigger: task_completion
+    refresh_hint:
+      strategy: event_driven
+      events: ["task_completion", "revocation"]
+      max_age_seconds: 2592000
+    revocation:
+      strategy: store_based
+      mechanism: "Credential store query — attestor.revoke(id) marks credential as revoked, verifyCredential checks revocation status"
+    transport:
+      well_known_endpoint: "/.well-known/logpose.json"
+      a2a_agent_card_field: "reputation"
+
+descriptor_dimensions:
+  enforcement_class: advisory
+  validity_temporal: at_issuance
+  refusal_authority: consumer_policy
+  invariant_survival: post_action
+  replay_class: full_replay
+  governed_action_class: delegate

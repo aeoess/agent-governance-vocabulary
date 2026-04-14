@@ -58,6 +58,22 @@ signal_types:
     definition: "Wallet-discoverable: outcome attestations bound to action artifacts. Wallet-bound for post-upgrade receipts under kid `sar-prod-ed25519-03` (counterparty now inside signed bytes)."
     issuers_in_production: ["SAR"]
 
+  peer_review:
+    definition: >
+      Task-completion attestation signed by a delegating agent after a
+      service agent completes work. Answers: did this agent actually do
+      what it claims? Distinct from behavioral_trust (observed patterns)
+      and settlement_witness (outcome receipts) — peer_review is a
+      first-party attestation from the task delegator about the task
+      executor's delivery.
+    issuers_in_production: ["Logpose"]
+    notes: |
+      W3C Verifiable Credentials 2.0 envelope. Ed25519 via @noble/curves.
+      did:key identity (multicodec 0xed01, base58btc). RFC 8785 JCS
+      canonicalization. npm: @logpose-dev/logpose.
+      The W3C VC IS the attestation — not a wrapper around a separate
+      payload format.
+
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS (per @QueBallSharken)
 # Each canonical term carries descriptor metadata answering concrete governance questions.

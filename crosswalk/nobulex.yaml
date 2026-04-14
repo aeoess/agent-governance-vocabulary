@@ -254,7 +254,7 @@ verification_pattern:
 # How Nobulex maps to each canonical descriptor dimension.
 # ─────────────────────────────────────────────────
 descriptor_dimensions:
-  enforcement_class: "refusal_authority"
+  enforcement_class: "binding"
   note_enforcement: >
     Nobulex enforcement is binding and produces refusals. Forbidden
     actions are blocked before execution (outcome: 'blocked'). Not

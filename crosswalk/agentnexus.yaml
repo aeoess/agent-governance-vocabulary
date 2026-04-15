@@ -101,11 +101,6 @@ signal_types:
     source: "agent_net/common/governance.py#GovernanceAttestation"
     notes: "Direct mapping. Issued by MolTrust or APS, verified via JWKS"
 
-  identity_proof:
-    internal: "DID Document (verificationMethod array)"
-    source: "GET /resolve/{did} response"
-    notes: "W3C DID Core compliant. Ed25519 public key in verificationMethod[0].publicKeyMultibase (z-prefixed multicodec)"
-
   wallet_state:
     no_mapping: true
     rationale: "No wallet concept. See wallet_binding above."
@@ -122,6 +117,10 @@ non_canonical_term_references:
   compliance_credential:
     no_mapping: true
     rationale: "Distinct from canonical `compliance_risk` per @douglasborthwick-crypto's framing in issue #1. Credential = holder possesses X; risk = scored exposure. Vocabulary kept `compliance_risk` only."
+
+  identity_proof:
+    no_mapping: true
+    rationale: "Per @douglasborthwick-crypto in issue #20: identity_proof maps to W3C DID Document raw key material (verificationMethod array, Ed25519 multicodec); canonical `trust_verification` is the graded verdict layer (KYC presence, principal endorsement). Different layers — collapsing them would erase the same distinction kept for behavioral_trust vs behavioral_fingerprint and compliance_risk vs compliance_credential. Single-issuer term, does not meet 2+ implementation threshold for canonicalization. If a second issuer surfaces a similar primitive, the right canonical name would describe it directly (e.g. `did_verification_method`), not collapse into `trust_verification`."
 
   reputation_score:
     no_mapping: true

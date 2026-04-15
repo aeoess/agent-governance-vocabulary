@@ -2,7 +2,10 @@
 # System: AgentFolio / brainAI-bot/satp-solana-sdk
 # Vocabulary reference: behavioral_trust (vocabulary.yaml)
 
-system: "satp"
+system:
+  name: satp
+  repo: "https://github.com/brainAI-bot/satp-solana-sdk"
+license: Apache-2.0
 system_url: "https://github.com/brainAI-bot/satp-solana-sdk"
 mcp_server: "agentfolio-mcp-server (npm)"
 vocabulary_ref: "behavioral_trust"

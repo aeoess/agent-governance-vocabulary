@@ -3,7 +3,12 @@
 # Category: peer_review
 # Confirmed: rkaushik29, 2026-04-14
 
-system: logpose
+system:
+  name: logpose
+license: Apache-2.0
+maintainer:
+  github: rkaushik29
+  confirmed_at: "2026-04-14"
 version: "0.2.0"
 package: "@logpose-dev/logpose"
 credential_format: "W3C Verifiable Credentials 2.0"

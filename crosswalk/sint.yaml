@@ -31,6 +31,8 @@ system:
   identity_layer: "aeoess/agent-passport-system (APS)"
   license: "Apache-2.0"
 
+license: Apache-2.0
+
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS
 # How SINT represents each canonical signal_type from vocabulary.yaml.

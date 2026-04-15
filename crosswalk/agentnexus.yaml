@@ -1,4 +1,7 @@
-system: AgentNexus
+system:
+  name: AgentNexus
+  repo: https://github.com/kevinkaylie/AgentNexus
+license: Apache-2.0
 version: "0.9.6"
 spec: https://github.com/kevinkaylie/AgentNexus
 did_method: "did:agentnexus"
@@ -103,22 +106,26 @@ signal_types:
     source: "GET /resolve/{did} response"
     notes: "W3C DID Core compliant. Ed25519 public key in verificationMethod[0].publicKeyMultibase (z-prefixed multicodec)"
 
-  behavioral_fingerprint:
-    no_mapping: true
-    rationale: "behavior_delta is computed internally from interaction history (success rate, response time, frequency) but is not signed or exported as a standalone artifact. Not independently verifiable."
-
   wallet_state:
     no_mapping: true
     rationale: "No wallet concept. See wallet_binding above."
 
+# Non-canonical terms referenced by earlier drafts of this crosswalk.
+# Retained as documentation: each explains why a similarly-named term
+# is NOT canonical in vocabulary.yaml. Outside signal_types so the
+# validator does not flag them as unknown canonicals.
+non_canonical_term_references:
+  behavioral_fingerprint:
+    no_mapping: true
+    rationale: "Superseded by canonical `behavioral_trust`. Per @douglasborthwick-crypto in issue #1: fingerprint implies passive observation; trust implies scored assessment. Distinct primitives, vocabulary kept `behavioral_trust` only."
+
   compliance_credential:
     no_mapping: true
-    rationale: "Planned for v1.5 enterprise roadmap as pluggable audit layer (EU AI Act Article 12). Not yet implemented. Will be modeled as optional adapter, not core."
+    rationale: "Distinct from canonical `compliance_risk` per @douglasborthwick-crypto's framing in issue #1. Credential = holder possesses X; risk = scored exposure. Vocabulary kept `compliance_risk` only."
 
   reputation_score:
-    internal: "ReputationScore (trust_score, base_score, behavior_delta, attestation_bonus)"
-    source: "agent_net/common/reputation.py#ReputationScore"
-    notes: "Exported in OATR extensions.agent-trust format. Not yet signed as standalone artifact — computed on-demand, not issued"
+    no_mapping: true
+    rationale: "Deliberately scoped out. Aggregating reputation inside the vocabulary leaks consumer policy into the naming layer. Consumers compute reputation from the canonical signal types."
 
 decisions:
   permit:

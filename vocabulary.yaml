@@ -38,6 +38,18 @@ signal_types:
     issuers_in_production: ["Revettr"]
     notes: "Per @douglasborthwick-crypto: distinct from `compliance_credential`. Credential = holder possesses X. Risk = scored exposure. Keep both as distinct terms; do not collapse."
 
+  governance_attestation:
+    definition: "Signed attestation that an agent or action satisfied a declared governance requirement (policy, delegation scope, compliance check, etc.). Distinct from compliance_risk (scored exposure) and trust_verification (identity layer status)."
+    issuers_in_production: ["AgentNexus", "Nobulex", "SINT"]
+    notes: "Canonicalized Apr 15 after 3 independent implementations surfaced. Per CONTRIBUTING.md threshold (2+ implementations)."
+    descriptor_dimensions:
+      enforcement_class: binding
+      validity_temporal: at_issuance
+      refusal_authority: structurally_impossible_to_violate
+      invariant_survival: post_action
+      replay_class: full_replay
+      governed_action_class: publish
+
   passport_grade:
     definition: "Composite trust grade from agent passport issuance evidence."
     issuers_in_production: ["APS"]

@@ -29,6 +29,10 @@ system:
   identity_layer: "W3C Decentralized Identifiers (did:nobulex:<hash>), Ed25519 key material"
   license: "MIT (code), CC-BY-4.0 (specification)"
 
+license: MIT
+maintainer:
+  github: arian-gogani
+
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS
 # How Nobulex represents each canonical signal_type from vocabulary.yaml.

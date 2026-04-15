@@ -21,6 +21,10 @@ system:
   role: "Foundation layer of the multi-attestation envelope. Reads on-chain wallet state across 33 chains (30 EVM + Solana + XRPL + Bitcoin) and issues ECDSA-signed evidence. Wallet binding varies by endpoint — see signal_types.wallet_state.signed_shapes below."
   license: "Public API, key-gated. Free tier available at POST /v1/keys/create."
 
+license: Apache-2.0
+maintainer:
+  github: douglasborthwick-crypto
+
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS
 # How InsumerAPI represents each canonical signal_type from vocabulary.yaml.

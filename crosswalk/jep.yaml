@@ -11,7 +11,14 @@
 # Status: Proposed (v0.1)
 # =============================================================================
 
-system: jep
+system:
+  name: jep
+  home: "https://datatracker.ietf.org/doc/draft-wang-jep-judgment-event-protocol/"
+  repo: "https://github.com/hjs-spec/jep"
+license: Apache-2.0
+maintainer:
+  github: schchit
+  confirmed_at: "2026-04-15"
 version: "draft-04"
 spec_url: "https://datatracker.ietf.org/doc/draft-wang-jep-judgment-event-protocol/"
 repository: "https://github.com/hjs-spec/jep"

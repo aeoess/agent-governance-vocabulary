@@ -1,0 +1,139 @@
+# SAR (Settlement Attestation Receipt) → Agent Governance Vocabulary Crosswalk
+# =============================================================================
+# License: Apache-2.0
+# Repository: https://github.com/nutstrut/default-settlement-verifier
+# Spec / architecture: https://github.com/nutstrut/default-settlement-verifier/blob/main/ARCHITECTURE.md
+# Live implementation: https://defaultverifier.com/settlement-witness
+# =============================================================================
+# Maintainer / Provenance:
+# SAR was originated by this contributor. This crosswalk reflects the live
+# SettlementWitness / DefaultVerifier implementation maintained by the same
+# contributor. Related SAR ecosystem surfaces (including sarprotocol.org) may
+# be maintained by other contributors; this file is scoped to the publicly
+# inspectable DefaultVerifier / SettlementWitness implementation.
+# =============================================================================
+
+system: sar
+version: "0.2"
+license: "Apache-2.0"
+maintainer: "nutstrut"
+spec_url: "https://github.com/nutstrut/default-settlement-verifier/blob/main/ARCHITECTURE.md"
+repository: "https://github.com/nutstrut/default-settlement-verifier"
+
+mappings:
+  - canonical: settlement_witness
+    internal: receipt_v0_1
+    match: exact
+    notes: >
+      SettlementWitness issues SAR receipts as post-execution outcome
+      attestations. In the live DefaultVerifier implementation, the signed
+      payload is the `receipt_v0_1` object. Current production receipts include
+      `counterparty` in signature scope when present.
+    signed_shape:
+      root: receipt_v0_1
+      required_fields:
+        - receipt_v0_1.task_id_hash
+        - receipt_v0_1.verdict
+        - receipt_v0_1.confidence
+        - receipt_v0_1.reason_code
+        - receipt_v0_1.ts
+        - receipt_v0_1.verifier_kid
+        - receipt_v0_1.receipt_id
+        - receipt_v0_1.sig
+      optional_signed_fields:
+        - receipt_v0_1.counterparty
+      source_paths:
+        - "ARCHITECTURE.md: Signed Receipt Model"
+        - "ARCHITECTURE.md: Signed Scope (Critical)"
+        - "ARCHITECTURE.md: Canonical Signed Payload (receipt_v0_1)"
+        - "README.md: Example Response"
+      live_example:
+        witness: SettlementWitness
+        witness_version: v0
+        task_id: sar-crosswalk-check-001
+        receipt_path: receipt_v0_1
+        sample_fields:
+          receipt_v0_1.verdict: PASS
+          receipt_v0_1.confidence: 1.0
+          receipt_v0_1.reason_code: SPEC_MATCH
+          receipt_v0_1.ts: "2026-04-15T17:21:16.517881Z"
+          receipt_v0_1.verifier_kid: sar-prod-ed25519-03
+          receipt_v0_1.counterparty: "0x1234567890abcdef1234567890abcdef12345678"
+          receipt_v0_1.receipt_id: "sha256:2917b2c38b6bc8c6b46f43cb6302e52d3d1ae1db4160c3c1a821fbda620238d8"
+
+  - canonical: behavioral_trust
+    internal: (none)
+    match: no_mapping
+    notes: >
+      SAR records post-execution outcome evidence for a single verification
+      event. It does not compute a longitudinal scored trust assessment derived
+      from observed behavior over time.
+
+  - canonical: wallet_state
+    internal: (none)
+    match: no_mapping
+    notes: >
+      SAR does not attest balances, on-chain holdings, or identity attachments.
+      Any wallet or counterparty reference in a SAR receipt is contextual to the
+      verified task outcome, not a wallet-state attestation.
+
+  - canonical: trust_verification
+    internal: (none)
+    match: no_mapping
+    notes: >
+      SAR does not attest KYC state, principal endorsement, or identity-layer
+      verification status.
+
+  - canonical: compliance_risk
+    internal: (none)
+    match: no_mapping
+    notes: >
+      SAR does not compute sanctions, AML, or regulatory exposure scores. It
+      only records whether a submitted output matched the provided spec.
+
+descriptor_dimensions:
+  enforcement_class: advisory
+  validity_temporal: at_issuance
+  refusal_authority: consumer_policy
+  invariant_survival: post_action
+  replay_class: full_replay
+  governed_action_class: compose
+
+verification:
+  live_endpoint: "https://defaultverifier.com/settlement-witness"
+  receipt_endpoint: "https://defaultverifier.com/settlement-witness/receipt/{receipt_id}"
+  explorer: "https://defaultverifier.com/explorer"
+  jwks_url: "https://defaultverifier.com/.well-known/jwks.json"
+  key_registry: "https://defaultverifier.com/.well-known/sar-keys.json"
+  signature_format: "Ed25519"
+  canonicalization: "RFC 8785 (JCS)"
+  verifier_key_field: "receipt_v0_1.verifier_kid"
+  signed_payload_root: "receipt_v0_1"
+  signed_payload_notes: >
+    The DefaultVerifier implementation signs the canonicalized `receipt_v0_1`
+    object. When `counterparty` is present, it is included in signature scope
+    and receipt_id derivation for current production receipts.
+
+composition:
+  with_continuity_analyzer:
+    relationship: complementary_layer
+    notes: >
+      The continuity analyzer evaluates whether governance continuity should
+      hold before execution. SAR provides post-execution evidence of what was
+      actually executed. Together they form a layered model pairing pre-action
+      governance-survival inference with post-action outcome evidence.
+
+notes: >
+  This crosswalk is intentionally scoped to the live DefaultVerifier /
+  SettlementWitness implementation. The broader SAR protocol reference at
+  sarprotocol.org documents a related receipt model, but differs on
+  `counterparty` handling: the reference draft describes `counterparty` as
+  outside the signed core, while the live DefaultVerifier implementation includes
+  `counterparty` inside `receipt_v0_1` and in signature scope when present.
+
+limitations: >
+  SAR alone does not determine whether an action should have happened, whether a
+  governing policy was valid, or whether enforcement continuity held. It records
+  post-execution verification results. Identity verification, payment
+  enforcement, dispute resolution, and longitudinal trust scoring remain outside
+  SAR's scope and must be supplied by composing systems.

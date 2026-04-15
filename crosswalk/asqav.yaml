@@ -1,0 +1,334 @@
+# crosswalk/asqav.yaml
+#
+# Maps asqav governance primitives to the canonical vocabulary
+# defined in vocabulary.yaml v0.1.
+#
+# asqav is a server-side AI agent governance SDK. It provides ML-DSA-65
+# (FIPS 204) signing, hash-chained audit trails, policy enforcement,
+# compliance bundles, scope tokens, behavioral monitoring, and multi-party
+# threshold signing. The agent never holds the signing key.
+#
+# Home: https://asqav.com
+# Spec: https://asqav.com/docs
+# Author: Joao Marques
+# License: MIT
+
+system:
+  name: asqav
+  home: https://asqav.com
+  github: https://github.com/jagmarques/asqav-sdk
+  spec_version: "v0.2.14, April 2026"
+  role: >
+    AI agent governance SDK. Server-side ML-DSA-65 (FIPS 204) signing,
+    hash-chained audit trails, policy enforcement, compliance bundles,
+    scope tokens, behavioral monitoring, multi-party threshold signing.
+  identity_layer: "ML-DSA-65 (FIPS 204) server-side keypairs. Agent never holds signing key."
+  license: MIT
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# How asqav represents each canonical signal_type from vocabulary.yaml.
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    asqav_term: "SignedActionReceipt"
+    asqav_field: "agent.sign() return value"
+    asqav_definition: >
+      A tamper-evident, ML-DSA-65 signed receipt for every agent action.
+      Each receipt contains: signature_id, agent_id, action, context,
+      timestamp, previous_hash, hash, and trace_id. Receipts are
+      hash-chained so modifying any entry invalidates all subsequent
+      hashes. Signing happens server-side; the agent SDK is a thin
+      API client.
+    mapping: exact_match
+    note: >
+      Direct mapping. asqav signed action receipts are the primary
+      governance attestation artifact. Each receipt is independently
+      verifiable via ML-DSA-65 signature verification and hash chain
+      replay. The signer is the asqav server, not the agent itself,
+      providing independent third-party attestation.
+    issuers_in_production: ["asqav API (api.asqav.com)"]
+    signed_shapes:
+      standard:
+        fields: ["signature_id", "agent_id", "action", "context",
+                 "timestamp", "previous_hash", "hash", "trace_id"]
+        signing: "ML-DSA-65 (FIPS 204) server-side signature"
+
+  behavioral_trust:
+    asqav_term: "BehavioralMonitoring"
+    asqav_field: "behavioral monitoring events"
+    asqav_definition: >
+      Runtime behavioral monitoring that tracks agent action patterns
+      and detects anomalies. The monitoring system observes action
+      frequency, types, and context over time. Anomalous behavior
+      triggers alerts and can trigger emergency halt.
+    mapping: close_match
+    note: >
+      Close match. asqav behavioral monitoring tracks agent behavior
+      and detects deviations from expected patterns. The canonical
+      behavioral_trust is a scored assessment; asqav monitoring is
+      event-driven with anomaly detection rather than continuous
+      scoring. Both aim to assess whether agent behavior is trustworthy.
+
+  security_posture:
+    asqav_term: "PolicyEnforcement"
+    asqav_field: "agent.preflight() / policy rules"
+    asqav_definition: >
+      Declarative policy rules that gate agent actions before execution.
+      Policies define which actions are permitted, denied, or require
+      approval. The preflight check evaluates the requested action
+      against active policies and returns a cleared/blocked decision
+      with human-readable explanations. Policies are enforced
+      server-side; a compromised agent cannot bypass them.
+    mapping: close_match
+    note: >
+      Close match. security_posture covers artifact and output governance.
+      asqav PolicyEnforcement covers runtime action governance, what the
+      agent is permitted to do during execution. Both define constraints
+      on agent behavior but at different enforcement surfaces. asqav
+      policies are pre-execution constraints; security_posture is a
+      post-evaluation assessment.
+    constraint_expressions:
+      supported: ["permit", "deny", "require_approval"]
+      evaluation_order: "deny-override (deny takes precedence over permit)"
+
+  trust_verification:
+    asqav_term: "ScopeToken"
+    asqav_field: "agent.create_scope_token()"
+    asqav_definition: >
+      A signed, portable proof of what an agent is authorized to do.
+      Contains: agent_id, actions list, ttl, nonce (replay protection),
+      and ML-DSA-65 signature. The receiving service verifies the
+      signature using asqav's public key, checks the action list and
+      expiry, and makes its access decision. No callback to the agent's
+      org required.
+    mapping: close_match
+    note: >
+      Close match. trust_verification covers identity verification
+      status. asqav ScopeTokens verify authorization status, proving
+      what an agent is allowed to do rather than who it is. Scope tokens
+      include nonce-based replay protection (v0.2.14). Verification is
+      portable and does not require a callback to the issuing org.
+
+  passport_grade:
+    asqav_term: "ComplianceBundle"
+    asqav_field: "asqav.export_bundle()"
+    asqav_definition: >
+      A self-contained JSON document packaging all signed action receipts
+      for a given audit period, organized by compliance framework
+      (eu_ai_act_art12, eu_ai_act_art14, dora_ict, soc2). Includes
+      a Merkle root computed over all receipt hashes for independent
+      verification. The bundle is the auditor-facing artifact.
+    mapping: partial
+    note: >
+      Partial mapping. passport_grade is a composite trust grade from
+      agent passport issuance. asqav ComplianceBundle is a composite
+      compliance evidence package, not a scored grade. Both are
+      composite artifacts aggregating multiple attestations, but asqav
+      bundles target specific regulatory frameworks rather than issuing
+      a trust score.
+
+  wallet_state:
+    asqav_term: null
+    mapping: no_mapping
+    note: >
+      asqav has no on-chain wallet integration. Agent identity is
+      ML-DSA-65 keypair-based, not wallet-based. Out of scope for
+      the governance SDK.
+
+  wallet_intelligence:
+    asqav_term: null
+    mapping: no_mapping
+    note: >
+      No wallet-pattern analysis. asqav operates at the agent action
+      layer, not the financial layer. Out of scope.
+
+  reasoning_integrity:
+    asqav_term: null
+    mapping: no_mapping
+    note: >
+      asqav does not attest to model-level reasoning quality. It
+      provides tamper-evident records of what the agent did, not
+      whether the agent reasoned correctly. Distinct governance
+      surfaces.
+
+  compliance_risk:
+    asqav_term: null
+    mapping: no_mapping
+    note: >
+      asqav does not produce scored compliance risk assessments.
+      It produces compliance evidence bundles organized by framework.
+      A downstream system could compute a risk score from asqav
+      audit trails, but asqav itself does not score risk.
+
+  job_performance:
+    asqav_term: null
+    mapping: no_mapping
+    note: >
+      asqav does not assess task completion quality. It records and
+      signs what the agent did, not how well it performed. Complementary
+      to systems that attest to task outcomes.
+
+  settlement_witness:
+    asqav_term: null
+    mapping: no_mapping
+    note: >
+      asqav does not produce outcome attestations bound to financial
+      settlements. The audit trail records actions but does not bind
+      to payment or escrow release. Out of scope.
+
+# ─────────────────────────────────────────────────
+# VERIFICATION PATTERN
+# How asqav verification works.
+# ─────────────────────────────────────────────────
+verification_pattern:
+  name: "Server-side ML-DSA-65 verification"
+  steps:
+    - step: 1
+      name: "Signature verification"
+      description: >
+        Verify the ML-DSA-65 signature on the action receipt using
+        asqav's public key. Confirms the receipt was issued by the
+        asqav server and has not been tampered with.
+      failure_mode: "Signature invalid, receipt may have been tampered with"
+
+    - step: 2
+      name: "Hash chain integrity"
+      description: >
+        Replay the hash chain across all receipts in a session.
+        Each receipt's hash must match the computed hash of its
+        fields plus the previous receipt's hash. A break in the
+        chain indicates tampering or deletion.
+      failure_mode: "Hash chain broken, receipts may have been deleted or modified"
+
+    - step: 3
+      name: "Scope token verification"
+      description: >
+        For cross-service calls, verify the scope token signature,
+        check the action list against the requested operation,
+        verify TTL has not expired, and check the nonce has not
+        been seen before (replay protection).
+      failure_mode: "Scope token invalid, expired, or replayed"
+
+    - step: 4
+      name: "Policy compliance"
+      description: >
+        Evaluate the action against active policy rules via
+        preflight check. Returns cleared/blocked with reasons
+        and human-readable explanation.
+      failure_mode: "Action blocked by policy with explanation"
+
+  composite_result:
+    output: "Verified audit trail with hash chain integrity and policy compliance"
+    trust_model: "Third-party attestation (server-side signing, agent never holds key)"
+    replay_capability: "full_replay via asqav.replay() or from exported compliance bundle"
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# How asqav maps to each canonical descriptor dimension.
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+  enforcement_class: "binding"
+  note_enforcement: >
+    asqav policy enforcement is binding. Preflight checks block
+    actions before execution when policy rules deny them. The
+    enforcement runs server-side so a compromised agent cannot
+    bypass it. Emergency halt revokes all agent credentials
+    immediately.
+
+  validity_temporal: "continuously"
+  note_validity: >
+    Every agent action is signed continuously throughout the
+    session. Hash chaining provides continuous validity evidence
+    across the full operational lifetime. Scope tokens add
+    time-bounded validity windows for cross-service authorization.
+
+  refusal_authority: "issuer"
+  note_refusal: >
+    Refusal authority lives with the asqav server (the issuer),
+    not the agent. Policy enforcement, scope token validation,
+    and emergency halt are all server-side decisions. The agent
+    cannot override a denial.
+
+  invariant_survival: "permanent"
+  note_invariant: >
+    The hash-chained audit trail is append-only and permanent.
+    Once an action is signed, it cannot be removed or modified
+    without breaking the chain. Compliance bundles with Merkle
+    roots provide independently verifiable permanent records.
+
+  replay_class: "full_replay"
+  note_replay: >
+    Any verifier can replay the full audit trail via
+    asqav.replay() or from an exported compliance bundle.
+    The replay re-verifies every link in the hash chain and
+    every ML-DSA-65 signature. No API access required when
+    replaying from a bundle.
+
+  governed_action_class: ["read", "write", "transfer", "delegate", "publish", "compose"]
+  note_governed: >
+    asqav governs arbitrary action types via semantic patterns
+    (sql-read, sql-destructive, file-write, http-external,
+    shell-execute, pii-access) that map to canonical action
+    classes. Custom action types are also supported.
+
+# ─────────────────────────────────────────────────
+# IDENTITY METHOD
+# How asqav implements agent identity.
+# ─────────────────────────────────────────────────
+identity:
+  method: "ML-DSA-65 server-side keypairs"
+  derivation: >
+    Each agent gets a dedicated ML-DSA-65 key pair generated
+    server-side. The private key never leaves the asqav server.
+    The public key serves as the agent's verifiable identity
+    and can be verified by any FIPS 204 compliant implementation.
+  key_material: "ML-DSA-65 (FIPS 204) lattice-based keypairs"
+  signing: "ML-DSA-65 server-side signatures via asqav API"
+  note: >
+    Key distinction from agent-held identity systems: the agent
+    never touches the signing key. This prevents a compromised
+    agent from forging its own attestations. The asqav server
+    acts as a neutral third-party signer.
+
+# ─────────────────────────────────────────────────
+# FRAMEWORK INTEGRATIONS
+# Agent frameworks with native asqav support.
+# ─────────────────────────────────────────────────
+integrations:
+  - framework: LangChain
+    adapter: "asqav.extras.langchain.AsqavCallbackHandler"
+    observe_mode: true
+    note: "Callback handler signs chain starts, tool calls, and LLM interactions"
+
+  - framework: CrewAI
+    adapter: "asqav.extras.crewai.AsqavCrewCallback"
+    observe_mode: true
+    note: "Signs crew task delegation, tool use, and agent communication"
+
+  - framework: DSPy
+    adapter: "asqav.extras.dspy.AsqavDSPyCallback"
+    observe_mode: true
+    note: "Signs module execution, LLM calls, and tool invocations"
+
+  - framework: smolagents
+    adapter: "asqav.extras.smolagents.AsqavSmolagentsHook"
+    observe_mode: true
+    note: "Wraps tools to sign start, end, and error events"
+
+  - framework: OpenAI Agents
+    adapter: "asqav.extras.openai_agents"
+    observe_mode: true
+
+  - framework: LlamaIndex
+    adapter: "asqav.extras.llamaindex"
+    observe_mode: true
+
+  - framework: LiteLLM
+    adapter: "asqav.extras.litellm"
+    observe_mode: true
+
+  - framework: Haystack
+    adapter: "asqav.extras.haystack"
+    observe_mode: true

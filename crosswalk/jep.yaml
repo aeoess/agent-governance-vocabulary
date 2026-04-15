@@ -1,0 +1,156 @@
+# JEP (Judgment Event Protocol) → Agent Governance Vocabulary Crosswalk
+# =============================================================================
+# Spec: draft-wang-jep-judgment-event-protocol-04
+# I-D URL: https://datatracker.ietf.org/doc/draft-wang-jep-judgment-event-protocol/
+# Repository: https://github.com/hjs-spec/jep
+# Canonicalization: JCS (RFC 8785)
+# Signature: JWS (RFC 7515) with Ed25519 (also supports P-256, SM2)
+# =============================================================================
+# Contributor: @schchit
+# Date: 2026-04-15
+# Status: Proposed (v0.1)
+# =============================================================================
+
+system: jep
+version: "draft-04"
+spec_url: "https://datatracker.ietf.org/doc/draft-wang-jep-judgment-event-protocol/"
+repository: "https://github.com/hjs-spec/jep"
+canonicalization: "jcs_rfc8785"
+signature_alg: "EdDSA"  # also supports ES256, SM2
+
+# -----------------------------------------------------------------------------
+# Field Mappings
+# -----------------------------------------------------------------------------
+mappings:
+  # --- Core Event Fields ---
+  - canonical: agent_did
+    internal: who
+    match: exact
+    notes: "JEP's 'who' field is a DID, public key hash, or ephemeral identifier."
+
+  - canonical: issuer_did
+    internal: who
+    match: exact
+    notes: "For JEP events, the agent generating the event is the issuer."
+
+  - canonical: attestation_timestamp
+    internal: when
+    match: exact
+    notes: "Unix epoch seconds."
+
+  - canonical: delegation_chain_hash
+    internal: ref
+    match: exact
+    notes: "Hash of the parent event, creating a hash-linked chain."
+
+  - canonical: wallet_binding
+    internal: aud
+    match: partial
+    partial_reason: "JEP's 'aud' is an audience identifier (URL/DID), which maps to wallet_binding only when the audience is a wallet-bound entity. The A2A#1628 three-state model (wallet_bound / wallet_acknowledged / reference) provides the full semantic scope."
+
+  - canonical: expires_at
+    internal: (extension)
+    match: no_mapping
+    notes: "JEP core has no expiration field. The TTL extension (https://jep.org/ttl) can provide this."
+
+  # --- Decision Trajectory Primitives ---
+  - canonical: decision_lineage
+    internal: ref chain
+    match: partial
+    partial_reason: "JEP's 'ref' field creates a linear hash chain (each event points to one parent), which is a subset of the full decision_lineage primitive (which may be a DAG or Merkle tree). The lineage is verifiable but the linking model is strictly linear."
+
+  - canonical: baseline_revision
+    internal: (none)
+    match: no_mapping
+    notes: "JEP does not track behavioral baselines. This is left to higher layers (e.g., PDR)."
+
+  - canonical: divergence_signal
+    internal: (none)
+    match: no_mapping
+    notes: "JEP records judgments but does not compute divergence from a baseline."
+
+  - canonical: trust_velocity
+    internal: (none)
+    match: no_mapping
+    notes: "JEP does not compute trust scores."
+
+  # --- Constraints ---
+  - canonical: observation_window
+    internal: (none)
+    match: no_mapping
+    notes: "JEP events are point-in-time records; no observation window is defined."
+
+  # --- Verbs as Decision Semantics ---
+  - canonical: decision_trajectory
+    internal: verb
+    match: partial
+    partial_reason: "JEP's four verbs (J/D/T/V) provide semantic structure for decision events. 'J' maps to decision initiation, 'D' to delegation, 'T' to termination, 'V' to verification. This is more granular than a single 'decision' primitive but less comprehensive than a full state machine."
+
+  # --- Explicit Gaps (Honest no_mappings) ---
+  - canonical: behavioral_trust
+    internal: (none)
+    match: no_mapping
+    notes: "JEP records facts, not trust scores. Behavioral trust is a higher-layer signal."
+
+  - canonical: compliance_risk
+    internal: (none)
+    match: no_mapping
+    notes: "JEP does not evaluate compliance risk."
+
+  - canonical: wallet_state
+    internal: (none)
+    match: no_mapping
+    notes: "JEP is wallet-agnostic."
+
+  - canonical: settlement_witness
+    internal: (none)
+    match: no_mapping
+    notes: "JEP records decisions, not settlement outcomes."
+
+  - canonical: physical_constraint
+    internal: (none)
+    match: no_mapping
+    notes: "JEP has no physical constraint layer."
+
+  # --- Nonce (Implementation-Specific) ---
+  - canonical: (none)
+    internal: nonce
+    match: no_mapping
+    notes: "JEP's anti-replay nonce (UUIDv4) is an implementation-specific security mechanism, not a governance primitive. It is not promoted to the canonical vocabulary at this time."
+
+# -----------------------------------------------------------------------------
+# Descriptor Dimensions for JEP Events
+# -----------------------------------------------------------------------------
+descriptor_dimensions:
+  enforcement_class: "binding"  # JEP signatures provide cryptographic non-repudiation
+  validity_temporal: "at_issuance"  # Event is valid at the timestamp it records
+  refusal_authority: "structurally_impossible_to_violate"  # Signatures make tampering evident
+  invariant_survival: "checked_to_irreversible_primitive"  # Hash chain provides integrity
+  replay_class: "offline_with_recorded_evidence"  # JWS + JCS can be verified offline
+  governed_action_class: "reversible"  # JEP records decisions; it does not execute them
+
+# -----------------------------------------------------------------------------
+# Extensions (JEP-specific capabilities not in canonical vocabulary)
+# -----------------------------------------------------------------------------
+extensions:
+  - name: "jep_verb"
+    description: "The four immutable verbs (J, D, T, V) that structure JEP events."
+    values: ["J", "D", "T", "V"]
+    notes: "Not promoted to canonical vocabulary in v0.1; may be proposed if other systems adopt similar verb-level semantics."
+
+  - name: "jep_nonce"
+    description: "UUIDv4 anti-replay nonce."
+    notes: "Implementation-specific security mechanism. Not promoted to canonical."
+
+  - name: "jep_digest_only"
+    description: "Privacy extension for salted identity digests."
+    spec_url: "https://jep.org/priv/digest-only"
+    notes: "Candidate for future privacy-related canonical term."
+
+# -----------------------------------------------------------------------------
+# Verification Endpoints (for round-trip testing)
+# -----------------------------------------------------------------------------
+verification:
+  jwks_url: null  # JEP is a format, not a centralized issuer
+  test_vectors: "https://github.com/hjs-spec/jep/tree/main/test/vectors"
+  verification_tool: "jep verify"  # CLI tool for verifying JEP receipts

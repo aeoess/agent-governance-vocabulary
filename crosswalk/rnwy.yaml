@@ -1,0 +1,81 @@
+# RNWY → Agent Governance Vocabulary crosswalk
+# Category: peer_review
+
+system:
+  name: RNWY
+  home: https://rnwy.com
+  repo: https://github.com/rnwy
+
+version: "1.0"
+license: Apache-2.0
+
+maintainer:
+  name: rnwy
+  confirmed: "2026-04-14"
+
+credential_format: "JWT (ES256, JWKS-published public key)"
+
+mappings:
+  - canonical: peer_review
+    internal: RNWYTrustAttestation
+    match: exact
+    notes: >
+      RNWY measures reviewer-credibility rather than task-completion.
+      Where Logpose asks "did this agent complete its task?", RNWY asks
+      "are the agents that reviewed this agent trustworthy?" The peer_review
+      signal is derived from sybil detection on reviewer wallets,
+      wallet-funding graph analysis (common_funder), and feedbacker age
+      scoring across 150,000+ registered agents. The signed attestation
+      encodes the resulting credibility signals alongside the trust score
+      and expiry. Same governance container, different measurement angle —
+      task-completion attestation and reviewer-credibility attestation
+      compose cleanly as independent peer_review implementations.
+    signed_payload_fields:
+      - agentId        # string — registry-specific agent identifier
+      - chain          # string — chain slug (e.g. "base", "ethereum", "solana")
+      - registry       # string — registry name ("erc8004", "olas", "sati")
+      - owner          # string — owner wallet address (0x or Base58)
+      - score          # integer 0–95 — trust score
+      - tier           # string — "established" | "developing" | "limited" | "flagged"
+      - badges         # string[] — flat merged array of earned and warning badge ids
+      - sybilSeverity  # string|null — null | "low" | "moderate" | "elevated" | "heavy"
+      - sybilSignals   # string[] — active signal names, e.g. ["common_funder", "coordination"]
+      - issuedAt       # ISO 8601 — when RNWY computed the score (DB computed_at)
+      - verifiedAt     # ISO 8601 — when the attestation was signed (request time)
+      - expiry         # ISO 8601 — 24h after verifiedAt
+    envelope:
+      alg: ES256
+      curve: P-256
+      proof_type: "JWT signed payload"
+      canonicalization: "standard JSON serialization"
+      jwks_uri: "https://rnwy.com/.well-known/jwks.json"
+      signing_kids:
+        - rnwy-trust-v1
+        - rnwy-trust-v2
+      ttl:
+        default_ttl_seconds: 86400    # 24 hours
+        stale_action: hard_fail
+        refresh_trigger: nightly_recompute
+      refresh_hint:
+        strategy: time_driven
+        schedule: "nightly 03:00 UTC"
+        max_age_seconds: 86400
+      revocation:
+        strategy: expiry_based
+        mechanism: >
+          Attestation expires 24h after verifiedAt. Consumers must
+          re-request. No soft-fail — expired attestation is rejected.
+          Signed found:false returned for unknown inputs (cryptographic
+          proof of absence).
+
+transport:
+  jwks_endpoint: "https://rnwy.com/.well-known/jwks.json"
+  api_endpoint: "https://rnwy.com/api/trust-check"
+
+descriptor_dimensions:
+  enforcement_class: advisory
+  validity_temporal: at_issuance
+  refusal_authority: consumer_policy
+  invariant_survival: post_action
+  replay_class: full_replay
+  governed_action_class: delegate

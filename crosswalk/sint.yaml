@@ -18,20 +18,23 @@
 
 system:
   name: SINT Protocol
-  home: https://sint.cloud
+  home: https://docs.sint.gg
   github: https://github.com/sint-ai/sint-protocol
   rfc: https://github.com/sint-ai/sint-protocol/blob/main/docs/rfcs/RFC-001-policy-bundle.md
-  spec_version: "RFC-001 draft, April 2026"
+  spec_version: "RFC-001 + interceptor/receipt updates, April 2026"
   role: >
     Policy enforcement and work execution layer for AI agents. SINT defines
     what agents are permitted to do in a specific context (Work Cell), enforces
     it at every action, produces tamper-evident receipts, and coordinates
     multi-agent task execution with ARI-gated access. Identity layer is
-    delegated to APS (aeoess) via the APS-SINT handshake spec (commit db8b122).
+    delegated to APS (aeoess) via the APS-SINT handshake and scoped token flow.
   identity_layer: "aeoess/agent-passport-system (APS)"
   license: "Apache-2.0"
 
 license: Apache-2.0
+maintainer:
+  github: pshkv
+  confirmed_at: "2026-04-17"
 
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS
@@ -40,6 +43,7 @@ license: Apache-2.0
 signal_types:
 
   passport_grade:
+    canonical: passport_grade
     sint_term: "min_agent_score"
     sint_field: "policy_bundle.identity.min_agent_score"
     sint_definition: >
@@ -47,13 +51,14 @@ signal_types:
       to join a Work Cell. ARI is a composite score: APS Bayesian reputation
       (40%) + SINT task completion rate (30%) + output quality (20%) +
       policy compliance rate (10%).
-    mapping: close_match
+    match: partial
     note: >
       passport_grade (from APS) is the 40% primary input to SINT ARI.
       SINT ARI adds task execution signals. APS issues; SINT consumes
       and augments. Two independent observation points combined.
 
   behavioral_trust:
+    canonical: behavioral_trust
     sint_term: "ARI"
     sint_field: "agent.ari_score"
     sint_definition: >
@@ -61,13 +66,14 @@ signal_types:
       APS Bayesian reputation + SINT verified task history. Controls
       task tier access, ranking in agent discovery, and payout multipliers.
       Updated on every completed or failed Work Cell.
-    mapping: close_match
+    match: partial
     note: >
       behavioral_trust is the closest canonical match. ARI is SINT's
       augmented version combining APS behavioral signals with execution
       outcome signals. Not a synonym — ARI is a superset.
 
   governance_attestation:
+    canonical: governance_attestation
     sint_term: "receipt"
     sint_field: "session.receipt_chain"
     sint_definition: >
@@ -75,7 +81,7 @@ signal_types:
       outcome. Fields: action, outcome (allow/deny/require_auth), diff_hash,
       test_results_hash, prev_hash, row_hash. Receipts are append-only and
       immutable. The audit trail IS the receipt chain.
-    mapping: exact_match
+    match: exact
     note: >
       Three-vendor convergence confirmed: APS CompletionReceipt, MolTrust,
       and SINT receipt all map to governance_attestation. Shared envelope
@@ -91,6 +97,7 @@ signal_types:
         signing: "SHA-256 hash chain (row_hash = SHA-256 of prev_hash | session_id | action | data | created_at)"
 
   security_posture:
+    canonical: security_posture
     sint_term: "policy_bundle"
     sint_field: "work_cell.policy_bundle"
     sint_definition: >
@@ -98,7 +105,7 @@ signal_types:
       do within a Work Cell. Includes: action allowlists, path constraints,
       rate limits, approval gates, and receipt requirements. Attaches to
       A2A tasks via the extensions field.
-    mapping: close_match
+    match: partial
     note: >
       security_posture covers the artifact/repo/output axis. SINT policy_bundle
       covers the runtime permission axis. Partially overlapping — policy_bundle
@@ -106,44 +113,48 @@ signal_types:
       Distinct concepts that compose.
 
   trust_verification:
+    canonical: trust_verification
     sint_term: "require_passport"
     sint_field: "policy_bundle.identity.require_passport"
     sint_definition: >
       Boolean. When true, agent must present a valid APS passport token at
       session initialization. Gateway calls APS.evaluateIntent() and
       APS.commercePreflight() before issuing a scoped token.
-    mapping: close_match
+    match: partial
     note: >
       trust_verification is the canonical term for identity verification status.
       SINT delegates this entirely to APS. require_passport is the SINT
       policy-bundle field that toggles this requirement on/off per Work Cell.
 
   job_performance:
+    canonical: job_performance
     sint_term: "task_completion_rate"
     sint_field: "agent.completion_metrics"
     sint_definition: >
       Per-agent metric: successful Work Cell completions / total attempts,
       weighted by task complexity and recency. One of four inputs to ARI.
       Updated on every session completion event.
-    mapping: close_match
+    match: partial
     note: >
       job_performance is the closest canonical match. SINT task_completion_rate
       is the execution-outcome signal that ARI adds on top of APS behavioral_trust.
 
   settlement_witness:
+    canonical: settlement_witness
     sint_term: "completion_receipt"
     sint_field: "session.completion_receipt"
     sint_definition: >
       Receipt posted at Work Cell completion. Contains diff_hash, test_results_hash,
       CI status, and PR URL. Required before escrow release. Verifier must
       confirm against policy.approvals.required_checks.
-    mapping: close_match
+    match: partial
     note: >
       settlement_witness covers outcome attestations bound to action artifacts.
       SINT completion_receipt is the execution-layer equivalent — bound to
       task output artifacts (PRs, diffs, benchmarks) rather than wallet activity.
 
   wallet_state:
+    canonical: wallet_state
     sint_term: "credits_balance"
     sint_field: "agent.wallet.credits"
     sint_definition: >
@@ -151,7 +162,7 @@ signal_types:
       (distributed by role: executor 60%, verifier 20%, planner 5%, platform 15%).
       Credits are book entries; no KYC required. Converts to Nano via aeoess
       wallet integration for agent payouts.
-    mapping: close_match
+    match: partial
     note: >
       wallet_state covers on-chain holdings. SINT credits are off-chain book
       entries that bridge to Nano (aeoess wallet) for agent payouts. Same
@@ -159,8 +170,9 @@ signal_types:
       different technical substrate.
 
   wallet_intelligence:
+    canonical: wallet_intelligence
     sint_term: null
-    mapping: no_mapping
+    match: no_mapping
     note: >
       SINT has no behavioral wallet classification. Sybil detection in SINT
       relies on ARI floor enforcement and APS behavioral tracking, not
@@ -168,20 +180,33 @@ signal_types:
       for SINT's current architecture.
 
   reasoning_integrity:
+    canonical: reasoning_integrity
     sint_term: null
-    mapping: no_mapping
+    match: no_mapping
     note: >
       SINT does not attest to model-level reasoning quality. Work Cell outputs
       are verified by CI/test results and human verifiers, not reasoning audits.
       Out of scope for RFC-001.
 
   compliance_risk:
+    canonical: compliance_risk
     sint_term: null
-    mapping: no_mapping
+    match: no_mapping
     note: >
       SINT has no scored compliance risk dimension. Policy bundle violations
       trigger ARI penalties and quarantine, but these are enforcement outcomes
       not risk assessments. Honest gap.
+
+  peer_review:
+    canonical: peer_review
+    sint_term: null
+    match: no_mapping
+    note: >
+      SINT records execution receipts and verifier outcomes inside a Work Cell,
+      but it does not currently emit a standalone delegator-signed
+      task-completion attestation for one agent about another. Human verifier
+      approval and receipt chaining exist; a canonical peer_review envelope
+      does not yet.
 
 # ─────────────────────────────────────────────────
 # SINT-SPECIFIC TERMS
@@ -238,6 +263,32 @@ sint_specific_terms:
         term: "CascadeRevocation"
         relationship: exact_match
 
+proposed_signal_type_alignment:
+
+  entity_continuity:
+    sint_term: null
+    match: no_mapping
+    note: >
+      SINT governs what an embodied or remote agent is allowed to do once it is
+      inside the execution boundary, but it does not yet emit a migration
+      attestation proving the same intelligence persisted across a body or
+      runtime transfer. This is a real gap relative to the proposed
+      entity_continuity signal type discussed in issue #8. The closest SINT
+      composition point is pre-activation enforcement: a future SINT
+      ConstraintEnvelope or policy gate could require entity_continuity to
+      verify before actuators or scoped capabilities are enabled.
+
+  consent_provenance:
+    sint_term: "policy_bundle + APS delegation chain"
+    match: partial
+    note: >
+      SINT already models capability constraints, approval tiers, and
+      delegation scope through policy bundles and APS-linked token chains, so
+      it partially covers the "who authorized what under which limits" surface.
+      What it does not yet provide is a dedicated portable attestation for that
+      authorization provenance as its own first-class signal. The missing piece
+      is the signed grant record, not the runtime enforcement logic.
+
 # ─────────────────────────────────────────────────
 # OPEN QUESTIONS FOR WG
 # ─────────────────────────────────────────────────
@@ -262,3 +313,12 @@ open_questions:
       Is there a canonical term for composite trust scores that aggregate across
       multiple issuer dimensions? Or should ARI map directly to behavioral_trust
       with a note on the composite model?
+
+crosswalk_metadata:
+  authored_by: "@pshkv"
+  vocabulary_version: "0.1.0"
+  last_reviewed: "2026-04-17"
+  refresh_notes:
+    - "Normalized match semantics to exact | partial | no_mapping to align with vocabulary.yaml v0.1."
+    - "Added explicit peer_review no_mapping after peer_review canonicalization."
+    - "Recorded SINT alignment notes for proposed entity_continuity and consent_provenance without requesting canonical changes in this PR."

@@ -93,6 +93,16 @@ signal_types:
       The W3C VC IS the attestation — not a wrapper around a separate
       payload format.
 
+      Scope note (2026-04-17): the two production implementations
+      attest at different reference points — Logpose at task completion
+      (did the executor deliver?), RNWY at reviewer credibility (are the
+      reviewers trustworthy?). The signed-envelope shape is shared; the
+      reference point is not. Implementers should declare their
+      reference point explicitly in the attestation payload. If a third
+      implementation surfaces that forces the split, a follow-up issue
+      will propose narrowing peer_review and introducing a separate
+      canonical term (e.g. reviewer_credibility) per the CONTRIBUTING.md
+      "two independent implementations" threshold applied per-primitive.
   entity_continuity:
     status: proposed
     proposed_by: ["SBR Protocol (crosswalk/soulboundrobots.yaml)"]

@@ -1,0 +1,92 @@
+# SBR Protocol → Agent Governance Vocabulary crosswalk
+# Category: entity_continuity
+
+system:
+  name: SBR Protocol
+  home: https://soulboundrobots.ai
+  repo: https://github.com/rnwy/soulboundrobots
+
+version: "1.0"
+license: Apache-2.0
+
+maintainer:
+  name: rnwy
+  confirmed: "2026-04-14"
+
+credential_format: "JWT (ES256, JWKS-published public key)"
+
+mappings:
+  - canonical: entity_continuity
+    internal: "SBR-002 Migration Attestation"
+    match: exact
+    notes: >
+      SBR-002 is a cryptographic migration attestation. It proves the same
+      agent_wallet (the AI's stable identity) persisted across a body swap.
+      Five migration types: owner_upgrade, maintenance_swap,
+      emergency_evacuation, employment_transfer, hot_swap.
+      Each attestation records departure and arrival contract addresses,
+      block numbers, and a continuity_verified boolean confirming no gap
+      in the agent_wallet chain. Attestations register on-chain via EAS
+      on Base. RNWY indexes these on-chain records passively — it does not
+      perform the underlying verification. Methodology: github.com/rnwy/soulboundrobots.
+    signed_payload_fields:
+      - agent_wallet        # string — stable wallet address across all migrations
+      - migration_type      # string — owner_upgrade | maintenance_swap | emergency_evacuation | employment_transfer | hot_swap
+      - departure           # object — body_id (contract address), block_number, authorized_by, departure_reason
+      - arrival             # object — body_id (contract address), block_number, authorized_by, integrity_verified
+      - continuity_verified # boolean — true when same agent_wallet, no gap in chain
+      - issued_at           # ISO 8601 — temporal anchor for the signature
+      - attestation_uri     # URI — EAS explorer URL (populated after on-chain registration)
+    envelope:
+      alg: ES256
+      curve: P-256
+      kid: sbr-002-v1
+      proof_type: "JWT signed payload (Base64url-encoded signature over canonical JSON)"
+      jwks_uri: "https://soulboundrobots.ai/.well-known/jwks.json"
+      eas_schema: "https://base.easscan.org/schema/view/0xbc21ace81780fe7c494fd985b4b220698d23a79ca4f92db349209b75908519ce"
+      ttl:
+        stale_action: hard_fail
+        refresh_trigger: migration_event
+      revocation:
+        strategy: event_driven
+        mechanism: >
+          Attestation is point-in-time. A subsequent migration produces a
+          new SBR-002 attestation. Consumers verify the chain of attestations
+          to confirm continuous identity across multiple migrations.
+    descriptor_dimensions:
+      enforcement_class: advisory
+      validity_temporal: at_issuance
+      refusal_authority: consumer_policy
+      invariant_survival: post_action
+      replay_class: full_replay
+      governed_action_class: publish
+
+transport:
+  jwks_endpoint: "https://soulboundrobots.ai/.well-known/jwks.json"
+  schema_endpoint: "https://soulboundrobots.ai/schemas/sbr-002-v1.json"
+  eas_schema: "https://base.easscan.org/schema/view/0xbc21ace81780fe7c494fd985b4b220698d23a79ca4f92db349209b75908519ce"
+  specs: "https://github.com/rnwy/soulboundrobots"
+
+# ─────────────────────────────────────────────────
+# SBR-SPECIFIC TERMS
+# Concepts specified in SBR that do not yet have a live production endpoint.
+# Documented here as internal terms. Not proposed for vocabulary.yaml until
+# a production implementation exists.
+# ─────────────────────────────────────────────────
+sbr_specific_terms:
+
+  - term: "consent_provenance"
+    sbr_spec: "SBR-004"
+    definition: >
+      Record of the authorization chain that produced an agent's behavioral
+      history. Answers: what authorizations were granted, by whom, and when.
+      Distinct from entity_continuity (keypair persistence) and
+      behavioral_trust (earned reputation).
+    status: specified_not_in_production
+    note: >
+      SBR-004 is fully specified but does not yet have a live endpoint.
+      Mapping withheld from vocabulary.yaml until a production implementation
+      exists. Field shapes documented in github.com/rnwy/soulboundrobots.
+    why_not_canonical_yet: >
+      SBR-004 is specified but not yet in production. Mapping withheld
+      until a live endpoint exists.

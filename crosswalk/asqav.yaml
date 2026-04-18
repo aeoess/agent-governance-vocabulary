@@ -42,7 +42,7 @@ signal_types:
       hashes. Signing happens server-side; the agent SDK is a thin
       API client.
     mapping: exact_match
-    note: >
+    notes: >
       Direct mapping. asqav signed action receipts are the primary
       governance attestation artifact. Each receipt is independently
       verifiable via ML-DSA-65 signature verification and hash chain
@@ -64,7 +64,7 @@ signal_types:
       frequency, types, and context over time. Anomalous behavior
       triggers alerts and can trigger emergency halt.
     mapping: close_match
-    note: >
+    notes: >
       Close match. asqav behavioral monitoring tracks agent behavior
       and detects deviations from expected patterns. The canonical
       behavioral_trust is a scored assessment; asqav monitoring is
@@ -82,7 +82,7 @@ signal_types:
       with human-readable explanations. Policies are enforced
       server-side; a compromised agent cannot bypass them.
     mapping: close_match
-    note: >
+    notes: >
       Close match. security_posture covers artifact and output governance.
       asqav PolicyEnforcement covers runtime action governance, what the
       agent is permitted to do during execution. Both define constraints
@@ -104,7 +104,7 @@ signal_types:
       expiry, and makes its access decision. No callback to the agent's
       org required.
     mapping: close_match
-    note: >
+    notes: >
       Close match. trust_verification covers identity verification
       status. asqav ScopeTokens verify authorization status, proving
       what an agent is allowed to do rather than who it is. Scope tokens
@@ -121,7 +121,7 @@ signal_types:
       a Merkle root computed over all receipt hashes for independent
       verification. The bundle is the auditor-facing artifact.
     mapping: partial
-    note: >
+    notes: >
       Partial mapping. passport_grade is a composite trust grade from
       agent passport issuance. asqav ComplianceBundle is a composite
       compliance evidence package, not a scored grade. Both are
@@ -132,7 +132,7 @@ signal_types:
   wallet_state:
     asqav_term: null
     mapping: no_mapping
-    note: >
+    notes: >
       asqav has no on-chain wallet integration. Agent identity is
       ML-DSA-65 keypair-based, not wallet-based. Out of scope for
       the governance SDK.
@@ -140,14 +140,14 @@ signal_types:
   wallet_intelligence:
     asqav_term: null
     mapping: no_mapping
-    note: >
+    notes: >
       No wallet-pattern analysis. asqav operates at the agent action
       layer, not the financial layer. Out of scope.
 
   reasoning_integrity:
     asqav_term: null
     mapping: no_mapping
-    note: >
+    notes: >
       asqav does not attest to model-level reasoning quality. It
       provides tamper-evident records of what the agent did, not
       whether the agent reasoned correctly. Distinct governance
@@ -156,7 +156,7 @@ signal_types:
   compliance_risk:
     asqav_term: null
     mapping: no_mapping
-    note: >
+    notes: >
       asqav does not produce scored compliance risk assessments.
       It produces compliance evidence bundles organized by framework.
       A downstream system could compute a risk score from asqav
@@ -165,7 +165,7 @@ signal_types:
   job_performance:
     asqav_term: null
     mapping: no_mapping
-    note: >
+    notes: >
       asqav does not assess task completion quality. It records and
       signs what the agent did, not how well it performed. Complementary
       to systems that attest to task outcomes.
@@ -173,7 +173,7 @@ signal_types:
   settlement_witness:
     asqav_term: null
     mapping: no_mapping
-    note: >
+    notes: >
       asqav does not produce outcome attestations bound to financial
       settlements. The audit trail records actions but does not bind
       to payment or escrow release. Out of scope.
@@ -300,22 +300,22 @@ integrations:
   - framework: LangChain
     adapter: "asqav.extras.langchain.AsqavCallbackHandler"
     observe_mode: true
-    note: "Callback handler signs chain starts, tool calls, and LLM interactions"
+    notes: "Callback handler signs chain starts, tool calls, and LLM interactions"
 
   - framework: CrewAI
     adapter: "asqav.extras.crewai.AsqavCrewCallback"
     observe_mode: true
-    note: "Signs crew task delegation, tool use, and agent communication"
+    notes: "Signs crew task delegation, tool use, and agent communication"
 
   - framework: DSPy
     adapter: "asqav.extras.dspy.AsqavDSPyCallback"
     observe_mode: true
-    note: "Signs module execution, LLM calls, and tool invocations"
+    notes: "Signs module execution, LLM calls, and tool invocations"
 
   - framework: smolagents
     adapter: "asqav.extras.smolagents.AsqavSmolagentsHook"
     observe_mode: true
-    note: "Wraps tools to sign start, end, and error events"
+    notes: "Wraps tools to sign start, end, and error events"
 
   - framework: OpenAI Agents
     adapter: "asqav.extras.openai_agents"

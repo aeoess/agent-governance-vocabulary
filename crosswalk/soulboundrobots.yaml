@@ -83,7 +83,7 @@ sbr_specific_terms:
       Distinct from entity_continuity (keypair persistence) and
       behavioral_trust (earned reputation).
     status: specified_not_in_production
-    note: >
+    notes: >
       SBR-004 is fully specified but does not yet have a live endpoint.
       Mapping withheld from vocabulary.yaml until a production implementation
       exists. Field shapes documented in github.com/rnwy/soulboundrobots.

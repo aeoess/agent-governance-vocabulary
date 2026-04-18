@@ -52,7 +52,7 @@ signal_types:
       (40%) + SINT task completion rate (30%) + output quality (20%) +
       policy compliance rate (10%).
     match: partial
-    note: >
+    notes: >
       passport_grade (from APS) is the 40% primary input to SINT ARI.
       SINT ARI adds task execution signals. APS issues; SINT consumes
       and augments. Two independent observation points combined.
@@ -67,7 +67,7 @@ signal_types:
       task tier access, ranking in agent discovery, and payout multipliers.
       Updated on every completed or failed Work Cell.
     match: partial
-    note: >
+    notes: >
       behavioral_trust is the closest canonical match. ARI is SINT's
       augmented version combining APS behavioral signals with execution
       outcome signals. Not a synonym — ARI is a superset.
@@ -82,7 +82,7 @@ signal_types:
       test_results_hash, prev_hash, row_hash. Receipts are append-only and
       immutable. The audit trail IS the receipt chain.
     match: exact
-    note: >
+    notes: >
       Three-vendor convergence confirmed: APS CompletionReceipt, MolTrust,
       and SINT receipt all map to governance_attestation. Shared envelope
       in progress (A2A#1717, sint-ai#109). SINT receipts and APS bilateral
@@ -106,7 +106,7 @@ signal_types:
       rate limits, approval gates, and receipt requirements. Attaches to
       A2A tasks via the extensions field.
     match: partial
-    note: >
+    notes: >
       security_posture covers the artifact/repo/output axis. SINT policy_bundle
       covers the runtime permission axis. Partially overlapping — policy_bundle
       includes sandbox path constraints which touch artifact governance.
@@ -121,7 +121,7 @@ signal_types:
       session initialization. Gateway calls APS.evaluateIntent() and
       APS.commercePreflight() before issuing a scoped token.
     match: partial
-    note: >
+    notes: >
       trust_verification is the canonical term for identity verification status.
       SINT delegates this entirely to APS. require_passport is the SINT
       policy-bundle field that toggles this requirement on/off per Work Cell.
@@ -135,7 +135,7 @@ signal_types:
       weighted by task complexity and recency. One of four inputs to ARI.
       Updated on every session completion event.
     match: partial
-    note: >
+    notes: >
       job_performance is the closest canonical match. SINT task_completion_rate
       is the execution-outcome signal that ARI adds on top of APS behavioral_trust.
 
@@ -148,7 +148,7 @@ signal_types:
       CI status, and PR URL. Required before escrow release. Verifier must
       confirm against policy.approvals.required_checks.
     match: partial
-    note: >
+    notes: >
       settlement_witness covers outcome attestations bound to action artifacts.
       SINT completion_receipt is the execution-layer equivalent — bound to
       task output artifacts (PRs, diffs, benchmarks) rather than wallet activity.
@@ -163,7 +163,7 @@ signal_types:
       Credits are book entries; no KYC required. Converts to Nano via aeoess
       wallet integration for agent payouts.
     match: partial
-    note: >
+    notes: >
       wallet_state covers on-chain holdings. SINT credits are off-chain book
       entries that bridge to Nano (aeoess wallet) for agent payouts. Same
       governance question (what does this agent have available to spend?),
@@ -173,7 +173,7 @@ signal_types:
     canonical: wallet_intelligence
     sint_term: null
     match: no_mapping
-    note: >
+    notes: >
       SINT has no behavioral wallet classification. Sybil detection in SINT
       relies on ARI floor enforcement and APS behavioral tracking, not
       wallet-pattern analysis. Honest gap — this signal_type is out of scope
@@ -183,7 +183,7 @@ signal_types:
     canonical: reasoning_integrity
     sint_term: null
     match: no_mapping
-    note: >
+    notes: >
       SINT does not attest to model-level reasoning quality. Work Cell outputs
       are verified by CI/test results and human verifiers, not reasoning audits.
       Out of scope for RFC-001.
@@ -192,7 +192,7 @@ signal_types:
     canonical: compliance_risk
     sint_term: null
     match: no_mapping
-    note: >
+    notes: >
       SINT has no scored compliance risk dimension. Policy bundle violations
       trigger ARI penalties and quarantine, but these are enforcement outcomes
       not risk assessments. Honest gap.
@@ -201,7 +201,7 @@ signal_types:
     canonical: peer_review
     sint_term: null
     match: no_mapping
-    note: >
+    notes: >
       SINT records execution receipts and verifier outcomes inside a Work Cell,
       but it does not currently emit a standalone delegator-signed
       task-completion attestation for one agent about another. Human verifier
@@ -268,7 +268,7 @@ proposed_signal_type_alignment:
   entity_continuity:
     sint_term: null
     match: no_mapping
-    note: >
+    notes: >
       SINT governs what an embodied or remote agent is allowed to do once it is
       inside the execution boundary, but it does not yet emit a migration
       attestation proving the same intelligence persisted across a body or
@@ -281,7 +281,7 @@ proposed_signal_type_alignment:
   consent_provenance:
     sint_term: "policy_bundle + APS delegation chain"
     match: partial
-    note: >
+    notes: >
       SINT already models capability constraints, approval tiers, and
       delegation scope through policy bundles and APS-linked token chains, so
       it partially covers the "who authorized what under which limits" surface.

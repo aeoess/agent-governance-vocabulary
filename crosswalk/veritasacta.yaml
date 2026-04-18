@@ -210,7 +210,7 @@ descriptor_dimensions:
 gaps:
 
   - area: "Issuer-blind verification"
-    note: |
+    notes: |
       The vocabulary assumes issuers are known and discoverable (e.g.,
       `issuer_uri`, JWKS endpoints). VeritasActa intentionally breaks
       this assumption: the verifier does not learn the issuer's identity.
@@ -224,7 +224,7 @@ gaps:
       issuer identity from the receipt alone).
 
   - area: "Multi-receipt bundles"
-    note: |
+    notes: |
       Knowledge Units contain multiple receipts (one per model response
       in a deliberation). Bundle verification is all-or-nothing: either
       every receipt in the bundle is valid, or the entire KU is rejected.
@@ -234,7 +234,7 @@ gaps:
       verification policies.
 
   - area: "Content-addressed vs wallet-addressed attestations"
-    note: |
+    notes: |
       Most vocabulary signal_types assume wallet-addressed attestations
       (the signed subject is a wallet or identity). VeritasActa receipts
       are content-addressed (the signed subject is a content hash).

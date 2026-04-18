@@ -196,7 +196,7 @@ descriptor_dimensions:
 gaps:
 
   - area: "Format-aware `wallet_state` routing"
-    note: |
+    notes: |
       InsumerAPI routes by wallet format: EVM wallets go through /v1/trust
       for the curated multi-chain profile; Solana, XRPL, and Bitcoin go
       through /v1/attest, and any format can additionally request
@@ -208,7 +208,7 @@ gaps:
       populate it as `multi_chain` with the 33-chain set referenced.
 
   - area: "`conditionHash` tamper detection"
-    note: |
+    notes: |
       /v1/attest signs a SHA-256 hash of each evaluated condition's
       parameters (`conditionHash`) alongside the boolean result. Consumers
       that submitted the conditions can recompute the hash offline and

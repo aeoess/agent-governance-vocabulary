@@ -1,0 +1,363 @@
+# crosswalk/signet.yaml
+#
+# Maps Signet governance primitives to the canonical vocabulary
+# defined in vocabulary.yaml v0.1.
+#
+# Signet is a local-first cryptographic signing SDK for AI agent
+# tool calls. Ed25519 signatures over JCS-canonicalized (RFC 8785)
+# payloads, SHA-256 hash-chained audit logs, delegation chains with
+# scoped authority, bilateral co-signing, and policy attestation.
+# Everything verifies offline with the public key only.
+#
+# Home: https://github.com/Prismer-AI/signet
+# Author: William Hou
+# License: Apache-2.0
+
+system:
+  name: signet
+  home: https://github.com/Prismer-AI/signet
+  github: https://github.com/Prismer-AI/signet
+  spec_version: "v0.9.1, April 2026"
+  role: >
+    Local-first cryptographic signing SDK for AI agent tool calls.
+    Ed25519 signed receipts, SHA-256 hash-chained audit log,
+    delegation chains, bilateral co-signing, policy attestation.
+    Rust core with Python (PyO3) and TypeScript (WASM) bindings.
+  identity_layer: "Ed25519 keypairs stored locally (~/.signet/keys/). Agent holds the signing key."
+  license: Apache-2.0
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    signet_term: "Receipt"
+    signet_field: "SigningAgent.sign() return value"
+    signet_definition: >
+      Ed25519 signed receipt for every agent tool call. Each receipt
+      contains: id, action (tool, params_hash, target, transport,
+      session, call_id, response_hash, trace_id, parent_receipt_id),
+      signer (pubkey, name, owner), timestamp, nonce, and signature.
+      Receipts are hash-chained in an append-only audit log. Signing
+      happens client-side; the agent holds its own key.
+    mapping: exact_match
+    notes: >
+      Direct mapping. Signet receipts are the primary governance
+      attestation artifact. Each receipt is independently verifiable
+      via Ed25519 signature verification and hash chain replay.
+      Four receipt versions: v1 (unilateral), v2 (compound with
+      response hash), v3 (bilateral co-signing), v4 (delegation
+      chain). All versions share the same canonical signing scheme
+      (JCS RFC 8785 + Ed25519).
+    issuers_in_production: ["Signet CLI", "signet-auth PyPI package", "@signet-auth/core npm package"]
+    signed_shapes:
+      v1_unilateral:
+        fields: ["v", "action", "signer", "ts", "nonce"]
+        optional_signed: ["policy", "exp", "authorization"]
+        signing: "Ed25519 over JCS-canonicalized payload"
+      v3_bilateral:
+        fields: ["agent_receipt", "response", "server", "ts_response", "nonce"]
+        signing: "Two independent Ed25519 signatures (agent + server)"
+      v4_delegated:
+        fields: ["v", "action", "signer", "ts", "nonce", "authorization.chain_hash", "authorization.root_pubkey"]
+        signing: "Ed25519, delegation chain verified against trusted roots"
+
+  security_posture:
+    signet_term: "PolicyAttestation"
+    signet_field: "receipt.policy"
+    signet_definition: >
+      Signed attestation that a policy was evaluated before
+      the action was signed. Contains: policy_hash (SHA-256 of
+      JCS-canonicalized policy), policy_name, matched_rules,
+      decision (allow/deny/require_approval), and reason. The
+      attestation is inside the Ed25519 signature scope — the
+      policy decision and the action are co-signed atomically.
+    mapping: close_match
+    notes: >
+      Close match. security_posture covers artifact and output
+      governance. Signet PolicyAttestation covers runtime action
+      governance — which policy version produced which decision
+      for which tool call. Both define constraints on agent
+      behavior but at different enforcement surfaces. Signet
+      policy evaluation is pre-signing (the receipt is only
+      produced if the policy allows it or if the denial itself
+      is being attested).
+    constraint_expressions:
+      supported: ["allow", "deny", "require_approval"]
+      evaluation_order: "max-severity (deny > require_approval > allow)"
+
+  trust_verification:
+    signet_term: "DelegationToken"
+    signet_field: "sign_delegation() return value"
+    signet_definition: >
+      Signed, portable proof of what an agent is authorized to
+      do. Contains: delegator identity, delegate identity, scope
+      (tools, targets, max_depth, expires), issued_at, nonce, and
+      Ed25519 signature. Permissions can only narrow through the
+      chain, never widen. Verification is offline — no callback
+      to the delegator required.
+    mapping: close_match
+    notes: >
+      Close match. trust_verification covers identity verification
+      status. Signet DelegationTokens verify authorization status
+      — proving what an agent is allowed to do, who granted it,
+      and whether the grant is still valid (via expires/TTL).
+      Includes nonce-based replay protection. Short-lived tokens
+      (--ttl 1h) are recommended over long-lived ones.
+
+  passport_grade:
+    signet_term: null
+    mapping: no_mapping
+    notes: >
+      Signet does not issue composite trust grades. The audit log
+      and receipt chain provide raw evidence that a downstream
+      system could use to compute a grade, but Signet itself does
+      not score trust.
+
+  behavioral_trust:
+    signet_term: null
+    mapping: no_mapping
+    notes: >
+      Signet does not compute behavioral trust scores. It provides
+      the signed action history that a behavioral analysis system
+      could consume. The hash-chained audit log is the input;
+      scoring is out of scope.
+
+  wallet_state:
+    signet_term: null
+    mapping: no_mapping
+    notes: >
+      Signet has no on-chain wallet integration. Agent identity is
+      Ed25519 keypair-based, not wallet-based.
+
+  wallet_intelligence:
+    signet_term: null
+    mapping: no_mapping
+    notes: >
+      No wallet-pattern analysis. Signet operates at the agent
+      action layer, not the financial layer.
+
+  reasoning_integrity:
+    signet_term: null
+    mapping: no_mapping
+    notes: >
+      Signet does not attest to model-level reasoning quality.
+      It provides tamper-evident records of what the agent did,
+      not whether the agent reasoned correctly.
+
+  compliance_risk:
+    signet_term: null
+    mapping: no_mapping
+    notes: >
+      Signet does not produce scored compliance risk assessments.
+      It produces signed evidence (receipts with PolicyAttestation)
+      that a compliance system could use to compute risk scores.
+      See docs/COMPLIANCE.md for SOC 2, ISO 27001, EU AI Act,
+      DORA, and NIST AI RMF control mappings.
+
+  job_performance:
+    signet_term: null
+    mapping: no_mapping
+    notes: >
+      Signet does not assess task completion quality. response_hash
+      in receipts proves what the tool returned, but does not
+      evaluate whether the result was good.
+
+  settlement_witness:
+    signet_term: null
+    mapping: no_mapping
+    notes: >
+      Signet does not produce outcome attestations bound to
+      financial settlements. Bilateral co-signing (v3) proves
+      both parties participated in a transaction, but does not
+      bind to payment or escrow release.
+
+  peer_review:
+    signet_term: null
+    mapping: no_mapping
+    notes: >
+      Signet does not produce peer review attestations. Bilateral
+      co-signing (v3) proves mutual participation, but this is
+      cryptographic co-signing, not a quality assessment by a
+      delegating agent.
+
+# ─────────────────────────────────────────────────
+# VERIFICATION PATTERN
+# ─────────────────────────────────────────────────
+verification_pattern:
+  name: "Client-side Ed25519 offline verification"
+  steps:
+    - step: 1
+      name: "Signature verification"
+      description: >
+        Verify the Ed25519 signature on the receipt using the
+        signer's public key. Confirms the receipt was produced
+        by the holder of the signing key and has not been
+        tampered with. No network call required.
+      failure_mode: "SignatureMismatchError — receipt tampered or wrong key"
+
+    - step: 2
+      name: "Hash chain integrity"
+      description: >
+        Replay the SHA-256 hash chain across all audit records.
+        Each record's hash covers the receipt and the previous
+        record's hash. A break indicates tampering or deletion.
+        Verification via `signet explore --chain` or
+        `audit_verify_chain()` API.
+      failure_mode: "ChainBreak — records deleted, modified, or reordered"
+
+    - step: 3
+      name: "Expiration check"
+      description: >
+        If the receipt carries an `exp` field, verify it has
+        not expired. Default verify() is strict (rejects expired).
+        verify_allow_expired() available for forensic contexts.
+      failure_mode: "InvalidReceiptError — receipt expired at {exp}"
+
+    - step: 4
+      name: "Delegation chain verification (v4 only)"
+      description: >
+        Verify the full delegation chain: each token's signature,
+        scope narrowing (permissions only narrow, never widen),
+        expiration, and chain_hash integrity. Verify the signer
+        is the delegate of the last token in the chain. Verify
+        the chain root is in the trusted roots list.
+      failure_mode: "UnauthorizedError — chain invalid, scope violated, or untrusted root"
+
+    - step: 5
+      name: "Bilateral verification (v3 only)"
+      description: >
+        Verify both the agent's signature and the server's
+        signature independently. Optional: nonce replay check
+        (NonceChecker trait), timestamp window check,
+        session/call_id cross-check.
+      failure_mode: "SignatureMismatchError — agent or server signature invalid"
+
+    - step: 6
+      name: "Policy attestation check"
+      description: >
+        If the receipt carries a PolicyAttestation, the policy
+        hash, matched rules, and decision are inside the
+        signature scope. Tampering with the policy decision
+        invalidates the signature.
+      failure_mode: "Detected via step 1 (signature verification)"
+
+  composite_result:
+    output: "Verified receipt chain with signature integrity, chain continuity, and policy attestation"
+    trust_model: "Self-sovereign (agent holds its own key, verifier needs only the public key)"
+    replay_capability: "full_replay via audit_verify_chain() or signet explore --chain"
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+  enforcement_class: "binding"
+  note_enforcement: >
+    When a policy is configured, sign_with_policy() evaluates
+    rules before signing. Denied actions do not produce signed
+    receipts. Enforcement is client-side — a compromised process
+    can skip signing entirely, but cannot forge a receipt with
+    a different policy decision.
+
+  validity_temporal: "continuously"
+  note_validity: >
+    Every tool call is signed continuously. Hash chaining provides
+    continuous validity evidence. Delegation tokens add time-bounded
+    validity windows (--ttl). Receipt expiration (exp) provides
+    issuer-declared validity windows.
+
+  refusal_authority: "issuer"
+  note_refusal: >
+    Policy denial is evaluated by the signing process (the issuer).
+    In bilateral mode (v3), the MCP server co-signs independently.
+    Neither party can unilaterally override the other's signature.
+
+  invariant_survival: "permanent"
+  note_invariant: >
+    The hash-chained audit trail is append-only. Once a receipt is
+    signed, modifying it invalidates the Ed25519 signature. Deleting
+    it breaks the SHA-256 hash chain. Both are independently
+    detectable.
+
+  replay_class: "full_replay"
+  note_replay: >
+    Any verifier with the public key can replay the full audit
+    trail offline. No API access, no network, no server required.
+    `signet explore --chain` verifies chain integrity and all
+    signatures in one command.
+
+  governed_action_class: ["read", "write", "transfer", "delegate", "publish", "compose"]
+  note_governed: >
+    Signet governs arbitrary tool calls. The action.tool field is
+    free-form. Policy rules can match on tool name, target, and
+    params patterns. Common governed actions: file read/write,
+    shell execution, web search, API calls, database queries.
+
+# ─────────────────────────────────────────────────
+# IDENTITY METHOD
+# ─────────────────────────────────────────────────
+identity:
+  method: "Ed25519 client-side keypairs"
+  derivation: >
+    Each agent gets a dedicated Ed25519 keypair stored at
+    ~/.signet/keys/. Private key optionally encrypted with
+    Argon2id + XChaCha20-Poly1305. Public key used for
+    verification. Key names are human-readable identifiers.
+  key_material: "Ed25519 (RFC 8032) keypairs"
+  signing: "Client-side Ed25519 signatures"
+  note: >
+    Key distinction from server-side signing systems: the agent
+    holds its own key. This enables offline signing and verification
+    without any external service. The tradeoff is that a compromised
+    agent process can sign with its own key. Bilateral co-signing
+    (v3) mitigates this by requiring an independent server signature.
+
+# ─────────────────────────────────────────────────
+# FRAMEWORK INTEGRATIONS
+# ─────────────────────────────────────────────────
+integrations:
+  - framework: LangChain
+    adapter: "signet_auth.langchain.SignetCallbackHandler"
+    observe_mode: true
+    notes: "Signs tool start, tool end, and tool error events"
+
+  - framework: CrewAI
+    adapter: "signet_auth.langchain.SignetCallbackHandler (LangChain-compatible)"
+    observe_mode: true
+    notes: "CrewAI uses LangChain callbacks; Signet handler works directly"
+
+  - framework: Claude Code
+    adapter: "signet claude install (PostToolUse hook)"
+    observe_mode: true
+    notes: "Official Claude Code plugin on Anthropic marketplace"
+
+  - framework: MCP (any server)
+    adapter: "signet proxy --target <cmd> --key <name>"
+    observe_mode: true
+    notes: "Transparent stdio proxy with bilateral co-signing. No code changes to agent or server."
+
+  - framework: Python (any)
+    adapter: "signet_auth.decorator.signet_sign"
+    observe_mode: true
+    notes: "@signet_sign decorator signs any Python function call"
+
+# ─────────────────────────────────────────────────
+# CROSS-REFERENCES
+# ─────────────────────────────────────────────────
+cross_references:
+  - context: "Microsoft Agent Governance Toolkit"
+    url: "https://github.com/microsoft/agent-governance-toolkit/pull/1196"
+    notes: "Signet attestation example merged into AGT examples"
+
+  - context: "IETF draft-farley-acta-signed-receipts"
+    url: "https://github.com/VeritasActa/agt-integration-profile/pull/1"
+    notes: "Conformance self-certification in progress. Same crypto primitives (JCS + Ed25519 + SHA-256); wire format adapter documented."
+
+  - context: "LangChain ComplianceBackend Protocol RFC"
+    url: "https://github.com/langchain-ai/langchain/issues/35691"
+    notes: "Named contributor implementation. ComplianceBackend adapter shipped in signet-auth 0.9.1."
+
+  - context: "NIST NCCoE AI Agent Identity & Authorization"
+    url: "https://www.nccoe.nist.gov/projects/software-and-ai-agent-identity-and-authorization"
+    notes: "Signet covers 3 of 4 NCCoE pillars: authorization (delegation), delegation (scoped chains), logging/non-repudiation (signed receipts)."

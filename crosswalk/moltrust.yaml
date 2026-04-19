@@ -1,0 +1,230 @@
+# crosswalk/moltrust.yaml
+#
+# Maps MolTrust internal naming to the canonical vocabulary
+# defined in vocabulary.yaml v0.1.
+#
+# MolTrust is the W3C DID/VC identity and trust scoring layer for
+# autonomous AI agents. Two primary signal types: trust_verification
+# (DID resolution + credential verification) and behavioral_trust
+# (scored trust assessment 0-100, Phase 2 Swarm Intelligence).
+#
+# Spec: https://moltrust.ch/techspec
+# Author: Lars Kroehl (CryptoKRI GmbH)
+# License: Apache-2.0
+
+system:
+  name: MolTrust
+  home: https://moltrust.ch
+  repo: https://github.com/MoltyCel/moltrust-protocol
+  spec: https://moltrust.ch/techspec
+  api_docs: https://api.moltrust.ch/docs
+  spec_version: "Protocol v0.8, API v2.6"
+  role: >
+    W3C DID registry and trust scoring layer for autonomous AI agents.
+    Issues Verifiable Credentials (VerifiedSkillCredential, AAE envelopes),
+    computes behavioral trust scores via Swarm Intelligence Protocol,
+    and anchors interaction proofs on Base L2.
+  license: Apache-2.0
+
+maintainer:
+  name: Lars Kroehl
+  github: MoltyCel
+  email: lars@moltrust.ch
+  confirmed_at: "2026-04-19"
+
+issuer: "did:web:moltrust.ch"
+
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "DID resolution + VerifiedSkillCredential issuance"
+    match: exact
+    notes: >
+      MolTrust's primary identity layer. Every registered agent holds a
+      did:moltrust identifier, resolvable via DIF Universal Resolver.
+      Verification returns DID document, credential status, and trust score.
+      Agent Authorization Envelopes (AAE) carry MANDATE/CONSTRAINTS/VALIDITY
+      for scoped authorization — portable across cloud boundaries.
+    signed_payload_fields:
+      - did           # string — did:moltrust:<identifier>
+      - verified      # boolean — DID resolution + credential check
+      - trust_score   # float 0-100 — Phase 2 Swarm score
+      - grade         # string — S/A/B/C/D/F
+      - agent_class   # string — orchestrator/autonomous/human_initiated/copilot
+      - flags         # string[] — behavioral anomaly flags (informational)
+      - revoked       # boolean — cascade revocation status
+    endpoints:
+      resolve: "https://uresolver.moltrust.ch/1.0/identifiers/{did}"
+      verify: "https://api.moltrust.ch/identity/verify/{did}"
+      agent_type: "https://api.moltrust.ch/identity/agent-type/{did}"
+      revocation_status: "https://api.moltrust.ch/identity/revocation-status/{did}"
+      audit: "https://api.moltrust.ch/guard/skill/audit?url={github_url}"
+      audit_checks: "https://api.moltrust.ch/guard/audit/checks"
+      conformance_spec: "https://moltrust.ch/CONFORMANCE.md"
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    internal: "Swarm Intelligence Trust Score (Phase 2)"
+    match: exact
+    notes: >
+      Scored trust assessment derived from peer endorsements, cross-vertical
+      activity, interaction proof history, and anti-collusion analysis.
+      Formula: alpha*direct + beta*propagated + gamma*cross_vertical +
+      interaction_bonus - sybil_penalty*20 (alpha=0.6, beta=0.3, gamma=0.1),
+      clamped [0,100]. Anchored on Base L2 via Interaction Proof Records.
+    signed_payload_fields:
+      - did              # string — agent DID
+      - trust_score      # float 0-100
+      - grade            # string — S (95+), A (80+), B (60+), C (40+), D (20+), F (<20)
+      - endorser_count   # integer — number of received endorsements
+      - flags            # string[] — anomaly flags
+      - flag_count       # integer
+      - breakdown        # object — direct_score, propagated_score, cross_vertical_bonus, sybil_penalty
+    endpoints:
+      score: "https://api.moltrust.ch/skill/trust-score/{did}"
+      endorsements: "https://api.moltrust.ch/skill/endorsements/{did}"
+      graph: "https://api.moltrust.ch/swarm/graph/{did}"
+      stats: "https://api.moltrust.ch/swarm/stats"
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: >
+      MolTrust issues VerifiedSkillCredentials (skill-audit attestation)
+      and anchors Interaction Proof Records on Base L2, but these are
+      identity-bound integrity signals, not delegation-chain authority
+      attestations. Primary issuer: APS (governance attestation as
+      meta-binding over the full signal stack, evaluated against
+      delegation chains with verifiable authority paths).
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: >
+      MolTrust's 9-check Skill Audit pipeline (CONFORMANCE.md v1.0,
+      6/9 CWE-mapped) targets SKILL.md files and issues a pass/fail
+      attestation bound to a VerifiedSkillCredential. This is a
+      code-level security artifact, not a runtime security posture
+      signal about the agent's operating environment. Audit results
+      are consumable via the trust_verification signal as metadata.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      MolTrust anchors Interaction Proof Records on Base L2 (SHA-256 calldata
+      to 0x0000), but these are provenance anchors, not settlement witnesses
+      in the canonical sense (outcome attestations bound to payment artifacts).
+      Primary issuers: InsumerAPI, SAR.
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: >
+      MolTrust Swarm endorsements (SkillEndorsementCredential) are peer-issued
+      but serve trust score computation, not task-completion attestation.
+      Endorsements are inputs to behavioral_trust, not standalone peer_review
+      signals. Primary issuers: Logpose, RNWY.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: >
+      MolTrust binds wallets to DIDs (ERC-8004 registration on Base) but does
+      not attest wallet balances or holdings. Primary issuer: InsumerAPI.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: >
+      MolTrust uses trust scores (0-100 continuous), not passport grades.
+      Different primitive. Primary issuer: APS.
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: >
+      No behavioral wallet classification in MolTrust. Sybil detection uses
+      endorsement graph analysis (Jaccard clustering), not wallet patterns.
+      Primary issuer: RNWY.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: >
+      MolTrust does not attest to model reasoning quality. Skill audit covers
+      code-level security patterns, not reasoning integrity. Primary issuer:
+      ThoughtProof.
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: >
+      No scored compliance risk assessment. MolTrust's regulatory alignment
+      (Singapore IMDA framework) is structural, not per-agent scored exposure.
+      Primary issuer: Revettr.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: >
+      MolTrust scores trust via endorsement graph, not task completion outcomes.
+      Primary issuer: Maiat.
+
+# ─────────────────────────────────────────────────
+# ENVELOPE
+# ─────────────────────────────────────────────────
+envelope:
+  alg: EdDSA
+  curve: Ed25519
+  proof_type: "JsonWebSignature2020"
+  canonicalization: "W3C VC JSON serialization"
+  jwks_uri: "https://api.moltrust.ch/.well-known/jwks.json"
+  did_document: "https://api.moltrust.ch/.well-known/did.json"
+  signing_kids:
+    - "did:web:moltrust.ch#moltguard-key-1"   # VC issuance
+    - "did:web:moltrust.ch#gateway-v1"          # API gateway
+  ttl:
+    vc_expiry_days: 90
+    interaction_proof_validity_hours: 72
+    trust_score_cache_seconds: 300
+  revocation:
+    strategy: cascade
+    mechanism: >
+      DFS traversal of agent_delegations table (max 8 hops, cycle detection).
+      Revoked agents: trust score forced to 0.0, grade set to REVOKED,
+      all downstream delegations revoked. Admin reinstatement via
+      POST /identity/unrevoke/{did}.
+
+# ─────────────────────────────────────────────────
+# TRANSPORT
+# ─────────────────────────────────────────────────
+transport:
+  auth: "none (free endpoints) or x-api-key (registered agents)"
+  did_resolution: "https://uresolver.moltrust.ch/1.0/identifiers/{did}"
+  jwks_endpoint: "https://api.moltrust.ch/.well-known/jwks.json"
+  api_base: "https://api.moltrust.ch"
+  guard_base: "https://api.moltrust.ch/guard"
+  anchor_chain: "Base L2 (mainnet)"
+  anchor_explorer: "https://basescan.org"
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+  enforcement_class: advisory
+  validity_temporal: at_issuance
+  refusal_authority: consumer_policy
+  invariant_survival: post_action
+  replay_class: full_replay
+  governed_action_class: delegate
+
+crosswalk_metadata:
+  authored_by: "@MoltyCel"
+  vocabulary_version: "0.1.0"
+  last_reviewed: "2026-04-19"

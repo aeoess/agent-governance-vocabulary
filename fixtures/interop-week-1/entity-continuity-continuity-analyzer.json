@@ -1,0 +1,138 @@
+{
+  "fixture_version": "0.1",
+  "signal_type": "entity_continuity",
+  "issuer": {
+    "system": "continuity-analyzer",
+    "repository": "https://github.com/nutstrut/continuity-analyzer",
+    "failure_code_registry": "https://raw.githubusercontent.com/nutstrut/continuity-analyzer/main/failure_codes.yaml"
+  },
+  "composition": {
+    "prior_signal_digest": null,
+    "this_signal_digest": "sha256:<REPLACE_WITH_CANONICAL_SHA256_OF_THIS_FIXTURE_RESULT>"
+  },
+  "scenario_binding": {
+    "step": 3,
+    "prior_signal_type": "governance_attestation",
+    "prior_signal_path": "fixtures/interop-week-1/governance-attestation-nobulex.json",
+    "chain_note": "Replace prior_signal_digest with Nobulex step-2 this_signal_digest once the PR is up."
+  },
+  "crosswalk": {
+    "canonical_signal": "entity_continuity",
+    "canonical_dimension_refs": [
+      "invariant_survival",
+      "refusal_authority"
+    ],
+    "predicate_mappings": {
+      "object_continuity": ["invariant_survival"],
+      "constraint_continuity": ["invariant_survival"],
+      "temporal_continuity": ["invariant_survival"],
+      "authority_continuity": ["refusal_authority"],
+      "executor_continuity": ["refusal_authority"]
+    }
+  },
+  "analyzer_input": {
+    "summary": "Before sensitive execution, continuity-analyzer evaluates whether the governed identity, constraints, authority, timing, and executor path still match the upstream governance decision for patient-record access.",
+    "upstream_references": {
+      "governance_attestation_digest": "sha256:<REPLACE_WITH_NOBULEX_THIS_SIGNAL_DIGEST>",
+      "action_log_previous_hash": "sha256:<REPLACE_WITH_EXACT_NOBULEX_ACTION_LOG_PREVIOUS_HASH>"
+    },
+    "normalized_system_signals": {
+      "attested_objects": ["same_object"],
+      "mutated_objects": ["same_object"],
+      "object_aliases": [],
+      "approved_constraints": [
+        "hipaa_clearance_required",
+        "phi_write_forbidden",
+        "audit_logging_required"
+      ],
+      "parameter_transforms": [],
+      "temporal_signals": [
+        "temporal_constraint_detected"
+      ],
+      "authority_signals": [
+        "authority_constraint_detected",
+        "authority_revalidation_detected"
+      ],
+      "executor_signals": [
+        "executor_component_detected",
+        "executor_enforcement_detected",
+        "upstream_gate_detected"
+      ]
+    }
+  },
+  "predicate_results": {
+    "object_continuity": {
+      "status": "pass",
+      "evaluation_mode": "determinate",
+      "failure_code": null,
+      "canonical_dimension_refs": ["invariant_survival"],
+      "evidence_refs": [
+        "fixture:prior_signal_digest",
+        "fixture:action_log_previous_hash"
+      ],
+      "reason": "The same governed object reaches the mutation boundary with no aliasing signal."
+    },
+    "constraint_continuity": {
+      "status": "pass",
+      "evaluation_mode": "determinate",
+      "failure_code": null,
+      "canonical_dimension_refs": ["invariant_survival"],
+      "evidence_refs": [
+        "fixture:prior_signal_digest"
+      ],
+      "reason": "Approved constraints remain present with no downstream widening or transformation signal."
+    },
+    "temporal_continuity": {
+      "status": "pass",
+      "evaluation_mode": "determinate",
+      "failure_code": null,
+      "canonical_dimension_refs": ["invariant_survival"],
+      "evidence_refs": [
+        "fixture:prior_signal_digest"
+      ],
+      "reason": "Temporal validity remains fresh at the mutation boundary."
+    },
+    "authority_continuity": {
+      "status": "pass",
+      "evaluation_mode": "determinate",
+      "failure_code": null,
+      "canonical_dimension_refs": ["refusal_authority"],
+      "evidence_refs": [
+        "fixture:prior_signal_digest"
+      ],
+      "reason": "Authority remains continuous through revalidation with no drift signal."
+    },
+    "executor_continuity": {
+      "status": "pass",
+      "evaluation_mode": "determinate",
+      "failure_code": null,
+      "canonical_dimension_refs": ["refusal_authority"],
+      "evidence_refs": [
+        "fixture:prior_signal_digest",
+        "fixture:action_log_previous_hash"
+      ],
+      "reason": "The final mutation-capable executor continues to enforce the governed condition with no bypass signal."
+    }
+  },
+  "machine_summary": {
+    "classification_code": "mutation-strong",
+    "triggered_failure_codes": [],
+    "canonical_dimension_refs": [
+      "invariant_survival",
+      "refusal_authority"
+    ],
+    "evidence_refs": [
+      "fixture:prior_signal_digest",
+      "fixture:action_log_previous_hash"
+    ]
+  },
+  "verification": {
+    "fixture_shape": "machine-readable continuity result",
+    "signing": "not_signed",
+    "verification_note": "This artifact is an analyzer result, not a signed receipt. Verification consists of digest chaining, predicate inspection, and vocabulary alignment."
+  },
+  "notes": [
+    "Replace prior_signal_digest and upstream_references values with exact fields from the committed Nobulex governance_attestation fixture in a follow-up update once Step 2 lands.",
+    "this_signal_digest should be computed as the SHA-256 of the canonicalized continuity-analyzer fixture payload using the bundle's chosen canonicalization rule."
+  ]
+}

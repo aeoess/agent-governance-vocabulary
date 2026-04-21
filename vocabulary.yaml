@@ -164,6 +164,170 @@ descriptor_dimensions:
     values: ["read", "write", "transfer", "delegate", "publish", "compose"]
 
 # ─────────────────────────────────────────────────
+# CONTEXT DIMENSIONS (per @pshkv + @tomjwxf + #26 convergence)
+# Values the evaluator derives or accumulates at decision time, whether or
+# not any issuer was involved. Distinct from signal_types (issuer-signed)
+# and descriptor_dimensions (governance-force properties of a signal).
+# The test that keeps this section from drifting back into signal semantics:
+# if an issuer could sign it, it belongs in signal_types instead.
+# v0.1 draft, 4 day-1 entries. resolution_source enum is recommended (not
+# required) in v0.1 — fields are documented at each entry but entries may
+# be published without one and add it in v0.2 without a breaking change.
+# For dimensions where the resolution source varies per evaluation (notably
+# physical_environment_state), the field at the definition level records
+# the most common path; the actual resolution source travels on each
+# per-evaluation value. See note under physical_environment_state.
+# ─────────────────────────────────────────────────
+context_dimensions:
+  counterparty_standing:
+    definition: >
+      Per-evaluation context value capturing the standing of the counterparty
+      to a proposed action. Policy engines compose it from multiple signed
+      signals (wallet account age, KYC tier, prior-completion count,
+      jurisdiction) plus unsigned request context to gate commitment-class
+      actions on counterparty maturity.
+    non_signal_test: >
+      No single issuer can sign counterparty_standing because the value is
+      derived at evaluation time from a composition of multiple signed
+      signals plus unsigned runtime context. An issuer can sign a
+      contributing signal (e.g. wallet_state.account_age, peer_review
+      completion record) but not the composed standing.
+    implementations:
+      - "protect-mcp (Cedar context attribute)"
+    example_fields:
+      - "context.counterparty_account_age_days"
+      - "context.counterparty_completion_count"
+      - "context.counterparty_kyc_tier"
+    composing_signals_examples:
+      - wallet_state
+      - trust_verification
+      - peer_review
+      - settlement_witness
+    resolution_source: signal_composed
+    notes: |
+      First-impl seeded via protect-mcp Cedar policies (tomjwxf). Second
+      implementation required before canonical promotion per the same 2+
+      rule used for signal_types.
+
+  request_origin:
+    definition: >
+      Per-evaluation context value capturing where the request arrived
+      through at decision time: direct vs relay, trusted vs untrusted
+      boundary, internal-network vs public-network origin, jurisdiction
+      of arrival point. Derived by the gateway or resolver at request time,
+      not attested by any issuer.
+    non_signal_test: >
+      No issuer can sign request_origin because the value is a property of
+      the request arrival event itself. An issuer could sign a policy that
+      consumes request_origin (e.g. "require trusted-boundary for transfer
+      actions") but cannot pre-attest the origin of a future request.
+    implementations:
+      - "protect-mcp (Cedar context attribute)"
+      - "SINT runtime (boundary-security evaluation)"
+    example_fields:
+      - "context.request_source"
+      - "context.request_channel"
+      - "context.arrival_boundary"
+      - "context.origin_jurisdiction"
+    resolution_source: gateway_derived
+    notes: |
+      Cross-implementation convergence from protect-mcp Cedar policies
+      (tomjwxf, boundary-security patterns) and SINT runtime (pshkv,
+      network-boundary enforcement). Two-impl threshold potentially already
+      met; defer canonical promotion until the resolution_source field is
+      settled for the section as a whole.
+
+  session_dynamics:
+    definition: >
+      Per-evaluation context value capturing facts about the live
+      interaction session: session age, cumulative tool calls in session,
+      prior denials in session, retry depth, whether escalation has
+      already triggered in-session. Accumulated by the gateway over the
+      session lifetime, not attested by any issuer.
+    non_signal_test: >
+      No issuer can sign session_dynamics because the values exist only
+      within a session boundary and are not persisted or attested outside
+      that boundary. Distinguishes this from counterparty_standing, which
+      also composes multiple inputs but persists across sessions.
+    implementations:
+      - "protect-mcp (Cedar context attribute)"
+      - "SINT runtime (session-scoped enforcement)"
+    example_fields:
+      - "context.session_tool_count"
+      - "context.prior_deny_count"
+      - "context.retry_depth"
+      - "context.session_age_seconds"
+      - "context.escalated_to_human"
+    resolution_source: gateway_accumulated
+    notes: |
+      Key distinguishing property vs counterparty_standing is ephemerality:
+      session_dynamics values live and die within the session boundary.
+      Defining-contributor framing from pshkv: "values the enforcement
+      surface itself accumulates, whether or not any issuer was involved."
+
+  physical_environment_state:
+    definition: >
+      Per-evaluation context value capturing physical-world state at
+      decision time: temperature, velocity, force, geofence status,
+      human proximity, interlock state, permit state. Sourced from
+      sensors or physical attestors; evaluated by policy engines in
+      cyber-physical contexts (robots, vehicles, industrial systems,
+      cold chain).
+    non_signal_test: >
+      No issuer can sign physical_environment_state because the value
+      changes by the second and is a property of the physical world at
+      the moment of evaluation, not an attestable claim about past
+      state. A sensor can sign a reading of the state at a point in
+      time, but the dimension itself is the live value consumed at
+      decision time.
+    implementations:
+      - "SINT runtime (DynamicEnvelopePlugin)"
+      - "ScopeBlind cold chain attestation (ATECC608B secure element signing Ed25519 receipts)"
+    example_fields:
+      - "context.current_temperature_c"
+      - "context.shock_g"
+      - "context.gps_within_geofence"
+      - "context.human_detected"
+      - "context.interlock_state"
+      - "context.permit_state"
+      - "context.velocity_mps"
+    resolution_source: sensor_attested
+    notes: |
+      Completes the day-1 set as the only dimension the digital-native
+      entries don't cover. SINT's DynamicEnvelopePlugin evaluating
+      `min(token.maxVelocityMps, obstacle_distance × reaction_factor)`
+      per action is the cyber-physical analog of Cedar's
+      `counterparty_account_age_days < 30` — both are context dimensions
+      derived at evaluation time from sensor or signal input plus
+      policy-level constraint.
+
+      Per-evaluation resolution: for this dimension specifically, the
+      resolution source varies by which sub-field is read. Temperature
+      readings typically resolve as `sensor_attested`, geofence status
+      typically as `gateway_derived` (GPS fix + policy-zone lookup),
+      human_proximity varies by deployment. The `sensor_attested` value
+      at the definition level records the most common path; producers
+      should carry the actual per-field resolution_source on the
+      evaluated value when it differs. Defining-contributor framing
+      from @pshkv on #26.
+
+# resolution_source enum (v0.1 — recommended, not required per pshkv feedback on #26):
+#   gateway_derived      — gateway computes at request time (no persistence, no signing)
+#   gateway_accumulated  — gateway accumulates over session lifetime
+#   signal_composed      — derived from one or more signed signals at eval time
+#   sensor_attested      — from signed sensor readings (physical contexts)
+#   agent_reported       — agent self-reports (weakest trust mode, reserved for cases where no other resolution is available)
+#
+# v0.2 consideration: pshkv's alternative 4-value partition
+# (agent | gateway | external_attestor | infrastructure) collapses
+# gateway_derived + gateway_accumulated into `gateway`, splits
+# `external_attestor` from `infrastructure` (TEE/secure-element), and
+# treats `signal_composed` as derivative. If the v0.1 5-value partition
+# surfaces ambiguities in production use, the 4-value alternative is
+# the documented fallback for v0.2. Tracked on #26 for the v0.2 cycle.
+
+
+# ─────────────────────────────────────────────────
 # CROSSWALK MATCH SEMANTICS (per @QueBallSharken)
 # Crosswalks MUST express partial match, not force clean mapping.
 # ─────────────────────────────────────────────────

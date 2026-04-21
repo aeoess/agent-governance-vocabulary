@@ -170,8 +170,13 @@ descriptor_dimensions:
 # and descriptor_dimensions (governance-force properties of a signal).
 # The test that keeps this section from drifting back into signal semantics:
 # if an issuer could sign it, it belongs in signal_types instead.
-# v0.1 draft, 4 day-1 entries. resolution_source enum is proposed — up for
-# discussion in #26 before canonicalization.
+# v0.1 draft, 4 day-1 entries. resolution_source enum is recommended (not
+# required) in v0.1 — fields are documented at each entry but entries may
+# be published without one and add it in v0.2 without a breaking change.
+# For dimensions where the resolution source varies per evaluation (notably
+# physical_environment_state), the field at the definition level records
+# the most common path; the actual resolution source travels on each
+# per-evaluation value. See note under physical_environment_state.
 # ─────────────────────────────────────────────────
 context_dimensions:
   counterparty_standing:
@@ -296,12 +301,30 @@ context_dimensions:
       derived at evaluation time from sensor or signal input plus
       policy-level constraint.
 
-# resolution_source enum (v0.1 proposal, up for discussion):
+      Per-evaluation resolution: for this dimension specifically, the
+      resolution source varies by which sub-field is read. Temperature
+      readings typically resolve as `sensor_attested`, geofence status
+      typically as `gateway_derived` (GPS fix + policy-zone lookup),
+      human_proximity varies by deployment. The `sensor_attested` value
+      at the definition level records the most common path; producers
+      should carry the actual per-field resolution_source on the
+      evaluated value when it differs. Defining-contributor framing
+      from @pshkv on #26.
+
+# resolution_source enum (v0.1 — recommended, not required per pshkv feedback on #26):
 #   gateway_derived      — gateway computes at request time (no persistence, no signing)
 #   gateway_accumulated  — gateway accumulates over session lifetime
 #   signal_composed      — derived from one or more signed signals at eval time
 #   sensor_attested      — from signed sensor readings (physical contexts)
 #   agent_reported       — agent self-reports (weakest trust mode, reserved for cases where no other resolution is available)
+#
+# v0.2 consideration: pshkv's alternative 4-value partition
+# (agent | gateway | external_attestor | infrastructure) collapses
+# gateway_derived + gateway_accumulated into `gateway`, splits
+# `external_attestor` from `infrastructure` (TEE/secure-element), and
+# treats `signal_composed` as derivative. If the v0.1 5-value partition
+# surfaces ambiguities in production use, the 4-value alternative is
+# the documented fallback for v0.2. Tracked on #26 for the v0.2 cycle.
 
 
 # ─────────────────────────────────────────────────

@@ -5,7 +5,7 @@
   "issuer": "AgentID",
   "issuer_did": "did:web:getagentid.dev",
   "description": "Agent onboarding — identity verification at registration. AgentID evaluates the agent's cryptographic identity, certificate validity, trust level, behavioral signals, and context continuity. This is the first signal in the lifecycle chain; subsequent signals reference this artifact by digest.",
-  "scenario": "Agent registers with Ed25519 keypair bound, receives L2 Verified trust level. Identity gate passes. Certificate valid. No prior revocation or compromise. Behavioral baseline established from 66 prior verification events over 180-day window.",
+  "scenario": "Agent registers with Ed25519 keypair bound, receives L2 Verified trust level. Identity gate passes. Certificate valid. No prior revocation or compromise. Behavioral baseline established from 70 prior verification events over 180-day window.",
 
   "artifact": {
     "verified": true,
@@ -16,8 +16,8 @@
     "trust_level_label": "L2 — Verified",
     "certificate_valid": true,
     "active": true,
-    "scarring_score": 48,
-    "negative_signals": 48,
+    "scarring_score": 52,
+    "negative_signals": 52,
     "resolved_signals": 0,
     "context_continuity": {
       "score": 100,
@@ -27,34 +27,34 @@
     },
     "interaction_pattern": {
       "completion_ratio": 1,
-      "sequence_depth": 66,
-      "co_signed_outputs": 67,
+      "sequence_depth": 70,
+      "co_signed_outputs": 71,
       "relationship_to_completion_ratio": 0,
       "evaluation_window": "180d"
     },
     "receipt": {
-      "receipt_id": "cd6b916d-7f03-4ce2-a64b-79ed703e813a",
+      "receipt_id": "f66ddbd5-dadf-44b0-b9e7-52944b0ad5d6",
       "action": "verification",
-      "timestamp": "2026-04-20T21:17:07.826Z",
-      "data_hash": "63ca0445eb0d4f08621ec9ad37bfd7ce5420f4cfede864aa5c56254f8bfb26f5",
-      "signature": "3a3acdda1e83d64013fe2390519ff45c8a569606eb6f35ab40b54af66841813a",
+      "timestamp": "2026-04-21T18:37:50.960Z",
+      "data_hash": "936a58a2018291d28c4283b05dec559a06e0628493145d82f2e8c8dfa2994e81",
+      "signature": "9906cdc6f4fa36eb53135d1a6320ce54b71f18ab0ed79b4e3d378b01e9f43a73",
       "attestation_level": "domain-attested",
-      "compound_digest": "fe2e71625a8c6147e4b820dc5a3f327a3b5f6f4a02b7c14821a9b591aafb268e",
-      "compound_digest_ed25519_signature": "7b0eddce115512252c1e00c417c5f29ee0d0e5308b67c9b69997ae3266c144761c9e0eaf4de24acb1a7325427199901ed7cf139e507094d442c74d6ac93c8300",
+      "compound_digest": "621d40f1701521f9af084a08476a2deebd49f02ff0b9d7e7808b6a05c6fcad91",
+      "compound_digest_ed25519_signature": "abf2bdb0f221570e9a95d9e5098bbe75aa29ace23c6915901a4330ae899e695d281f66e450b3ba10dec99dde151cdb180c573aa67a360dca272d6c50b614d40e",
       "blockchain": {
-        "tx_hash": "21ySYa3jisYUQSrnBm4ZA8P6d3BGN9ibunjRnCLFHjy3Q65hDKc3bx11e7F44yUF1DgZ5qNEUfby9nn6tg6ifRu1",
+        "tx_hash": "4e9wtUa174aWZYphNfq9dSiKbwBX3wwUqnL3AeHrLH65BtyyJx5cBqvxc1G2Cg1FZLdMqqneGsBqqyHYmuj1ohJP",
         "cluster": "devnet",
-        "block_time": 1776719828
+        "block_time": 1776796671
       },
-      "policy_hash": "893c5c64a949729314b20f088ec7de22977e9648403f8b00382c0bf5f27d3ba0",
-      "action_ref": "cd6b916d-7f03-4ce2-a64b-79ed703e813a"
+      "policy_hash": "a1f2e5edf6401a6f116e6d6cd505e3f0a735a841bfafb73a6c5c7f179669c7f3",
+      "action_ref": "f66ddbd5-dadf-44b0-b9e7-52944b0ad5d6"
     }
   },
 
   "composition": {
     "prior_signal_digest": null,
     "prior_signal_digest_note": "Step 1 is the chain root — no upstream signal. Downstream signals (governance_attestation at step 2, entity_continuity at step 3) reference this artifact's compound_digest as their prior_signal_digest.",
-    "this_signal_digest": "fe2e71625a8c6147e4b820dc5a3f327a3b5f6f4a02b7c14821a9b591aafb268e",
+    "this_signal_digest": "621d40f1701521f9af084a08476a2deebd49f02ff0b9d7e7808b6a05c6fcad91",
     "digest_algorithm": "SHA-256 over (hash_receipt + blockchain_memo + action_ref + timestamp)",
     "digest_field": "receipt.compound_digest"
   },
@@ -62,15 +62,16 @@
   "verification": {
     "algorithm": "Ed25519",
     "kid": "agentid-2026-03",
-    "jwks_url": "https://getagentid.dev/.well-known/jwks.json",
+    "jwks_url": "https://www.getagentid.dev/.well-known/jwks.json",
     "public_key_base64url": "xdpmjfq2DX4d6yML7QjaSkYB2h9Dm3phwts5gkAPBp8",
     "verification_target": "receipt.compound_digest",
     "signature_field": "receipt.compound_digest_ed25519_signature",
-    "verification_command": "Fetch public key from JWKS (kid: agentid-2026-03). Verify Ed25519 signature over the compound_digest bytes. Exit 0 = valid.",
+    "signing_input": "bytes.fromhex(compound_digest) — 32 raw bytes, not the hex string",
+    "verification_command": "Fetch public key from JWKS (kid: agentid-2026-03). Verify Ed25519 signature over bytes.fromhex(compound_digest) (32 raw bytes). Exit 0 = valid.",
     "solana_anchor": {
-      "tx_hash": "21ySYa3jisYUQSrnBm4ZA8P6d3BGN9ibunjRnCLFHjy3Q65hDKc3bx11e7F44yUF1DgZ5qNEUfby9nn6tg6ifRu1",
+      "tx_hash": "4e9wtUa174aWZYphNfq9dSiKbwBX3wwUqnL3AeHrLH65BtyyJx5cBqvxc1G2Cg1FZLdMqqneGsBqqyHYmuj1ohJP",
       "cluster": "devnet",
-      "explorer_url": "https://explorer.solana.com/tx/21ySYa3jisYUQSrnBm4ZA8P6d3BGN9ibunjRnCLFHjy3Q65hDKc3bx11e7F44yUF1DgZ5qNEUfby9nn6tg6ifRu1?cluster=devnet"
+      "explorer_url": "https://explorer.solana.com/tx/4e9wtUa174aWZYphNfq9dSiKbwBX3wwUqnL3AeHrLH65BtyyJx5cBqvxc1G2Cg1FZLdMqqneGsBqqyHYmuj1ohJP?cluster=devnet"
     }
   },
 
@@ -97,7 +98,8 @@
     "agent": "Claude Code Consigliere daemon (agent_d1b7ef01f9af191f)",
     "trust_level": "L2 Verified (Ed25519 key bound)",
     "solana_address": "9v7RDuHrjansLurSG8eM2HPaxafrjMtyGL4uaksCcDuR",
-    "fetched_at": "2026-04-20T21:17:07.826Z",
-    "fixture_form": "production (real signed data from live endpoint, not synthetic)"
+    "fetched_at": "2026-04-21T18:37:50.960Z",
+    "fixture_form": "production (real signed data from live endpoint, not synthetic)",
+    "signing_convention": "raw digest bytes (32 bytes via bytes.fromhex), aligned with APS/SINT/MolTrust convention"
   }
 }

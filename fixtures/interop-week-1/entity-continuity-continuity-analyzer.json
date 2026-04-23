@@ -8,7 +8,7 @@
   },
   "composition": {
     "prior_signal_digest": null,
-    "this_signal_digest": "sha256:<REPLACE_WITH_CANONICAL_SHA256_OF_THIS_FIXTURE_RESULT>"
+    "this_signal_digest": "sha256:96942da3ad2ce8283d0a9c890f281fd5e0d82c9c7e6d796c26b980893cfeeeb6"
   },
   "scenario_binding": {
     "step": 3,

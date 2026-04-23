@@ -208,6 +208,33 @@ signal_types:
       approval and receipt chaining exist; a canonical peer_review envelope
       does not yet.
 
+  entity_continuity:
+    canonical: entity_continuity
+    sint_term: "ConstraintEnvelope.migrationAttestation"
+    sint_field: "constraintEnvelope.migrationAttestation"
+    sint_definition: >
+      Structural precondition on ConstraintEnvelope. When migrationAttestation
+      is present, the envelope validates only if continuityVerified === true
+      with all four shape fields populated (priorSubject, currentSubject,
+      continuityVerified, attestation). This makes entity_continuity a scope-
+      grant gate at the execution boundary: invalid envelope = no scope grant,
+      which is functionally equivalent to refusing all SINT-governed actions
+      for the embodied agent until continuity is proven. Matches the SBR-002
+      (Soulbound Robots) reference schema for embodied-AI migrations: body
+      swaps, wallet rotations, runtime handoffs.
+    match: structural
+    notes: >
+      Shipped in sint-protocol PR #178 (Apr 23) with 5 validation rules on the
+      migration-attestation block and 8 new test cases. Validation is applied
+      regardless of envelope version (forward-compatible). This is the first
+      reference implementation of entity_continuity as a scope-grant gate
+      rather than an advisory signal, and it sits at the execution boundary
+      (mutation_boundary in pending vocab PR #43 measurement_point proposal),
+      not at session boundary. The composition point APS issuers can rely on:
+      when a SINT ConstraintEnvelope is attached to a delegation, the
+      migration-attestation check becomes a precondition on every action the
+      envelope governs.
+
 # ─────────────────────────────────────────────────
 # SINT-SPECIFIC TERMS
 # Concepts in SINT that don't map to current vocabulary.yaml signal_types.
@@ -265,29 +292,22 @@ sint_specific_terms:
 
 proposed_signal_type_alignment:
 
-  entity_continuity:
-    sint_term: null
-    match: no_mapping
-    notes: >
-      SINT governs what an embodied or remote agent is allowed to do once it is
-      inside the execution boundary, but it does not yet emit a migration
-      attestation proving the same intelligence persisted across a body or
-      runtime transfer. This is a real gap relative to the proposed
-      entity_continuity signal type discussed in issue #8. The closest SINT
-      composition point is pre-activation enforcement: a future SINT
-      ConstraintEnvelope or policy gate could require entity_continuity to
-      verify before actuators or scoped capabilities are enabled.
-
   consent_provenance:
-    sint_term: "policy_bundle + APS delegation chain"
+    sint_term: "policy_bundle.consent_chain + APS delegation chain"
+    sint_field: "policyBundle.consentChain"
     match: partial
     notes: >
       SINT already models capability constraints, approval tiers, and
-      delegation scope through policy bundles and APS-linked token chains, so
-      it partially covers the "who authorized what under which limits" surface.
-      What it does not yet provide is a dedicated portable attestation for that
-      authorization provenance as its own first-class signal. The missing piece
-      is the signed grant record, not the runtime enforcement logic.
+      delegation scope through policy bundles and APS-linked token chains,
+      covering the "who authorized what under which limits" surface via
+      composition with APS Layer 1 (delegation_root + scope_hash + chain_sig
+      per aps-sint-handshake-v1). The gap is a dedicated portable attestation
+      for authorization provenance as its own first-class signal, separable
+      from the runtime enforcement logic. Tracked as a v1.1 addition in
+      coordination with the v1.0 to v1.1 promotion from sint-protocol PR #168
+      canonical-signing clarifications. When shipped, the composition story
+      will be: APS chains prove the delegation path, SINT attestations prove
+      the consent record at each scope-grant point in that path.
 
 # ─────────────────────────────────────────────────
 # OPEN QUESTIONS FOR WG
@@ -317,8 +337,9 @@ open_questions:
 crosswalk_metadata:
   authored_by: "@pshkv"
   vocabulary_version: "0.1.0"
-  last_reviewed: "2026-04-17"
+  last_reviewed: "2026-04-23"
   refresh_notes:
     - "Normalized match semantics to exact | partial | no_mapping to align with vocabulary.yaml v0.1."
     - "Added explicit peer_review no_mapping after peer_review canonicalization."
-    - "Recorded SINT alignment notes for proposed entity_continuity and consent_provenance without requesting canonical changes in this PR."
+    - "Recorded SINT alignment notes for proposed entity_continuity and consent_provenance without requesting canonical changes in earlier PR."
+    - "2026-04-23: Moved entity_continuity from proposed_signal_type_alignment to signal_types as a composition match. Reflects sint-protocol PR #178 (migrationAttestation as structural precondition on ConstraintEnvelope). consent_provenance upgraded to close_match with composition note pointing at policy_bundle.consent_chain + APS delegation chain."

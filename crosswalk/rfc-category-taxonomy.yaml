@@ -214,45 +214,64 @@ mappings:
     needs_issuer_confirmation: true
 
   # ───── 3 ─────────────────────────────────────────
-  # NOTE: target_category currently mirrors signal_type name per the
-  # YAML's v0.1 1:1-naming assumption (open_question q1). Per
-  # @douglasborthwick-crypto's crosswalk-to-rfc-1734.md, this signal
-  # is NOT a top-level RFC category — the markdown homes it as
-  # `wallet_state` (subtype: wallet_intelligence) PRIMARY, with
-  # `behavioral` as the alternate. The dual_home fields below capture
-  # douglas's two-home recommendation; the existing target_category
-  # is preserved for now and flagged here for reconciliation in v0.2.
+  # Apr 14 consensus (issue #6): @pshkv's Apr 11 wallet-addressed-
+  # vs-wallet-state framing carried Apr 14 by @aeoess +
+  # @douglasborthwick-crypto. wallet_intelligence homes as
+  # `behavioral` (primary), with `wallet_state` retained as the
+  # alternate on the addressing-index axis. Per
+  # @douglasborthwick-crypto's Apr 14 10:12 wording: "Keeping
+  # `wallet_state` as `dual_home_candidate` on the addressing-
+  # index axis preserves the signal that the row happens to use
+  # a wallet as key without collapsing the semantic distinction."
+  # Consumer-side confirmation (separate artifact): @rnwy on
+  # A2A#1734 comment 16704028, 2026-04-24, publicly restating
+  # primary category as behavioral.
   - signal_type: wallet_intelligence
-    target_category: wallet_intelligence     # proposed (NOTE: misaligned with douglas's markdown — see comment above)
+    target_category: behavioral              # Apr 14 consensus — primary
     target_category_status: proposed
-    match: exact
+    match: "TBD — deferred to @aeoess; see open_questions.wallet_intelligence_homing_shape"
     dual_home_candidate: true
-    alternate_category: behavioral
+    alternate_category: wallet_state         # flipped from behavioral — addressing-index axis
     dual_home_rationale: |
-      Per @douglasborthwick-crypto on A2A#1734: mechanically a
-      wallet_state signal (derived from on-chain state), but
-      semantically closer to behavioral (it scores the wallet's
-      historical behavior pattern, not its current position).
-      Markdown proposes dual-home: discoverable under both
-      categories with a primary category of wallet_state and a
-      behavioral_overlap: true flag. The two signals compose
-      differently and consumers may want to weight them separately.
+      Apr 14 consensus on issue #6: wallet_intelligence classifies
+      longitudinal behavioral patterns over wallet history (Signal
+      Depth / Risk Intensity quadrant), not chain-state-at-block-N.
+      Primary home is `behavioral`. `wallet_state` is retained as
+      the alternate on the addressing-index axis per @pshkv's
+      Apr 11 wallet-addressed-vs-wallet-state framing — the row
+      happens to use a wallet as key but the classification surface
+      is behavioral, not positional. Dual-home preserves the
+      addressing-index signal without collapsing the semantic
+      distinction. Consumers composing with row 1 (wallet_state at
+      block N) and this row (behavioral history of the same wallet)
+      can weight the two signals independently.
+      Consumer-side confirmation (separate artifact): @rnwy on
+      A2A#1734 comment 16704028, 2026-04-24, publicly restating
+      wallet_intelligence primary category as behavioral.
     issuers_in_production:
       - "RNWY Wallet (kid rnwy-wallet-v1)"
     signed_payload_fields:
-      - "TBD — confirm with @rnwy on the operator-level wallet classification payload"
+      - iss
+      - sub
+      - wallet
+      - signalDepth
+      - riskIntensity
+      - quadrant
+      - activityZone
+      - riskZone
+      - issuedAt
+      - verifiedAt
+      - expiry
     payload_fields_source: |
-      RNWY's wallet_intelligence envelope shape is referenced in
-      crosswalk/insumerapi.yaml notes (kid rnwy-wallet-v1, shipped
-      2026-04-10) but the per-claim field set is not in this repo.
-      Marking TBD rather than guessing.
+      Enumerated from crosswalk/a2a.yaml > signal_types.wallet_intelligence.description
+      per PR #32 (merged 2026-04-18 by @rnwy).
     notes: |
       Behavioral classification of wallet activity (sybil signals,
       volume patterns, sanctions proximity per vocabulary.yaml). The
       RFC category should accommodate quantitative classification
       outputs (sybil_severity, volume_class, etc.) without forcing
       a single scoring scheme.
-    needs_issuer_confirmation: true
+    needs_issuer_confirmation: false
 
   # ───── 4 ─────────────────────────────────────────
   - signal_type: reasoning_integrity
@@ -536,8 +555,16 @@ open_questions:
   # questions for v0.2 review" section.
 
   - id: wallet_intelligence_homing_shape
-    status: unresolved_v0.2
-    framing: |
+    status: resolved_apr14
+    resolution: |
+      Apr 14 consensus on issue #6: @pshkv's Apr 11 wallet-
+      addressed-vs-wallet-state framing carried Apr 14 by @aeoess
+      + @douglasborthwick-crypto. Primary category is `behavioral`,
+      alternate is `wallet_state` on the addressing-index axis.
+      dual_home_candidate: true kept. See row 3 for the applied
+      diff. Consumer-side confirmation (separate artifact): @rnwy
+      on A2A#1734 comment 16704028, 2026-04-24.
+    original_framing: |
       wallet_intelligence sits between wallet_state and behavioral.
       Needs a dual_home_mechanic decision before v0.2 freezes.
       Per douglas's markdown: should RNWY rnwy-wallet-v1 be

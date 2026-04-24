@@ -1,0 +1,104 @@
+# PIC (Provenance & Intent Contracts) → Agent Governance Vocabulary Crosswalk
+# =============================================================================
+# DRAFT — Starter by @aeoess per aaif/project-proposals#14 commitment (2026-04-24).
+# Intended for @madeinplutofabio (PIC maintainer) to adopt, amend, or replace.
+#
+# Spec:       PIC Standard — local-first action-boundary verification contract
+# Repository: https://github.com/madeinplutofabio/pic-standard
+# Proposal:   https://github.com/aaif/project-proposals/issues/16
+# DOI:        https://doi.org/10.5281/zenodo.18725562
+# PyPI:       https://pypi.org/project/pic-standard/
+# =============================================================================
+
+system:
+  name: pic-standard
+  home: "https://github.com/madeinplutofabio/pic-standard"
+license: Apache-2.0
+maintainer:
+  github: madeinplutofabio
+  status: pending_adoption  # starter PR; awaiting maintainer confirmation
+version: "1.0"
+canonicalization: "pic_canonical_json_v1"
+signature_alg: "EdDSA"
+
+# -----------------------------------------------------------------------------
+# Role in the four-layer agent-identity model
+# -----------------------------------------------------------------------------
+role: |
+  PIC is a verification-gate primitive that runs at the action boundary.
+  Before a high-impact tool call executes, PIC verifies an Action Proposal
+  (intent + impact + provenance + claims + evidence + tool binding) and
+  fails closed if the causal chain from claim to evidence to trusted
+  provenance is invalid or missing.
+
+  In the passport / delegation-chain / visa three-layer framing (AAIF #14),
+  PIC is distinct from visa: visa is the token/scope grant issued to the
+  agent; PIC is the receiver-side verification contract that gates action
+  execution. Open question deferred to maintainer: should verification-gate
+  sit under visa as a sub-field, or as its own surface parallel to visa?
+  (Per aaif/project-proposals#14 thread with @madeinplutofabio.)
+
+# -----------------------------------------------------------------------------
+# Action Proposal field → canonical vocabulary
+# -----------------------------------------------------------------------------
+# PIC's Action Proposal fields per README: intent, impact, provenance,
+# claims+evidence, action. Canonical vocabulary is signal-oriented
+# (behavioral_trust, wallet_state, trust_verification, ...); PIC is
+# verdict-oriented. Most fields land as no_mapping pending either:
+#   (a) canonical additions for verification-gate primitives, or
+#   (b) a novel structural section for PIC (see nobulex.yaml precedent).
+# Maintainer's call on which path.
+
+mappings:
+  - internal: intent
+    canonical: null
+    match: no_mapping
+    notes: |
+      Free-form or structured intent declaration. No first-class canonical
+      signal for agent intent. Candidate for future canonical term if other
+      verification-gate systems also expose intent fields.
+
+  - internal: impact
+    canonical: governed_action_class
+    match: non_equivalent_similar_label
+    notes: |
+      PIC `impact` enum (money, privacy, irreversible, compute, ...) classifies
+      by consequence category. Canonical `governed_action_class` enum (read,
+      write, transfer, delegate, publish, compose) classifies by operation
+      type. Different question, overlapping label. Partial overlaps exist
+      (PIC `money` ↔ canonical `transfer`); PIC `irreversible` spans multiple
+      canonical ops.
+
+  - internal: provenance
+    canonical: null
+    match: no_mapping
+    notes: |
+      Input-source trust levels (which inputs influenced the decision, at
+      what trust tier). Distinct from canonical `counterparty_standing`,
+      which is about counterparty reputation rather than input-source trust.
+
+  - internal: claims_and_evidence
+    canonical: null
+    match: no_mapping
+    notes: |
+      Verification-contract-internal: the agent asserts claims, PIC verifies
+      evidence backs them (SHA-256 hashes, Ed25519 signatures, trusted-key
+      lifecycle). Related conceptually to CTEF v0.3.1 `evidence_basis.bundle_hash`
+      (kenneives/AgentGraph), which operates at gateway-verdict layer rather
+      than action-boundary gate.
+
+  - internal: action
+    canonical: null
+    match: no_mapping
+    notes: |
+      Tool-binding reference (the actual tool call the proposal gates).
+      Operator-internal, not a portable signal.
+
+# -----------------------------------------------------------------------------
+# Verdict outputs
+# -----------------------------------------------------------------------------
+verdict_values:
+  - pic_output: allow
+    notes: "Action Proposal accepted; tool call proceeds."
+  - pic_output: block
+    notes: "Action Proposal rejected (fail-closed); tool call does not execute."

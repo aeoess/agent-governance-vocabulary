@@ -229,7 +229,7 @@ mappings:
   - signal_type: wallet_intelligence
     target_category: behavioral              # Apr 14 consensus — primary
     target_category_status: proposed
-    match: "TBD — deferred to @aeoess; see open_questions.wallet_intelligence_homing_shape"
+    match: structural                        # Apr 14 consensus + PR #47 review — same question (behavioral classification), different surface (wallet-indexed quadrant payload); dual_home_rationale satisfies the structural-requires-divergence/notes check
     dual_home_candidate: true
     alternate_category: wallet_state         # flipped from behavioral — addressing-index axis
     dual_home_rationale: |

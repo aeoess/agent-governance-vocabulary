@@ -28,7 +28,7 @@ maintainer:
   name: Alex C
   github: alex-pathcourse
   email: admin@pathcoursehealth.com
-  confirmed_at: "2026-04-22"
+  confirmed_at: "2026-04-23"
 issuer: "did:web:gateway.pathcoursehealth.com"
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS
@@ -37,24 +37,30 @@ signal_types:
   trust_verification:
     canonical: trust_verification
     internal: "ERC-8004 agent identity + cert tier verification"
-    match: exact
+    match: partial
+    status: proposed
+    issuers_in_production: []
+    divergence: >
+      Behavioral fields (tasks_completed_30d, capabilities_verified,
+      available_for_routing) are returned by cert_registry but belong to
+      the behavioral_trust signal, not the identity layer. They have been
+      moved to the behavioral_trust entry to avoid double-counting when a
+      consumer composes both signals from PCH.
+      Production data pending — live registry currently contains test
+      agents only with path_score: null.
     notes: >
       PCH issues ERC-8004 agent identities anchored on Base L2 (chain_id 8453).
-      Each agent has a verifiable on-chain identity with Ed25519-compatible
-      signing keys and a cert tier (uncertified/bronze/silver/gold).
-      Verification returns agent_id, achieved_tier, path_score, path_tier,
-      capabilities_verified, and task_categories_offered.
-      Identity records are publicly verifiable via cert_registry and
-      erc8004_identity endpoints with no API key required.
+      Each agent has a verifiable on-chain identity with a cert tier
+      (uncertified/bronze/silver/gold). Identity records are publicly
+      verifiable via cert_registry and erc8004_identity endpoints with
+      no API key required. Addresses T1 (agent identity spoofing) —
+      cryptographic attestation cannot be spoofed without compromising
+      the underlying key.
     signed_payload_fields:
-      - agent_id              # string — PCH agent identifier
-      - achieved_tier         # string — uncertified/bronze/silver/gold
-      - path_score            # integer 0-850 — behavioral trust score
-      - path_tier             # string — trust tier label
-      - capabilities_verified # string[] — infrastructure-verified capabilities
-      - task_categories_offered # string[] — declared task categories
-      - tasks_completed_30d   # integer — 30-day task completion count
-      - available_for_routing # boolean — agent availability flag
+      - agent_id        # string — PCH agent identifier
+      - achieved_tier   # string — uncertified/bronze/silver/gold
+      - path_score      # integer 0-850 — behavioral trust score
+      - path_tier       # string — trust tier label
     endpoints:
       cert_registry: "https://gateway.pathcoursehealth.com/v1/cert/registry"
       cert_registry_filtered: "https://gateway.pathcoursehealth.com/v1/cert/registry?tier={tier}"
@@ -65,43 +71,44 @@ signal_types:
     canonical: behavioral_trust
     internal: "Path Score (0-850)"
     match: exact
+    status: proposed
+    issuers_in_production: []
     notes: >
-      PCH computes a Path Score (0–850) monthly from on-chain settlement history,
+      PCH computes a Path Score (0-850) monthly from on-chain settlement history,
       payment volume, task reliability, account age, and model diversity.
       Score and tier are publicly queryable via cert_registry with no API key.
       Path Score is PCH's primary trust signal and serves as the behavioral_trust
       primitive for any APS deployment using PCH as a trust issuer.
+      Live registry currently contains test agents with path_score: null —
+      production data pending. Addresses T2 in its original framing (payment
+      authorization tied to verified identity and cert tier).
     signed_payload_fields:
-      - agent_id     # string — PCH agent identifier
-      - path_score   # integer 0-850 — behavioral trust score
-      - path_tier    # string — trust tier label
-      - last_computed # ISO 8601 — score computation timestamp
+      - agent_id                # string — PCH agent identifier
+      - path_score              # integer 0-850 — behavioral trust score
+      - path_tier               # string — trust tier label
+      - last_computed           # ISO 8601 — score computation timestamp
+      - capabilities_verified   # string[] — infrastructure-verified capabilities
+      - task_categories_offered # string[] — declared task categories
+      - tasks_completed_30d     # integer — 30-day task completion count
+      - available_for_routing   # boolean — agent availability flag
     endpoints:
       score: "https://gateway.pathcoursehealth.com/v1/cert/registry?tier={tier}"
       erc8004: "https://gateway.pathcoursehealth.com/v1/agents/{agent_id}/erc8004.json"
  
   settlement_witness:
     canonical: settlement_witness
-    internal: "x402 USDC payment witnessing on Base L2"
-    match: exact
+    match: no_mapping
     notes: >
       PCH witnesses USDC on-chain transactions via the x402 protocol on Base L2
-      and issues tamper-evident payment receipts bound to the originating agent's
-      ERC-8004 identity. Payment authorization is tied to the verified agent
-      identity and cert tier — preventing payment rerouting by unverified agents.
-      Receipts are anchored on Base L2 (chain_id 8453, USDC contract
-      0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913).
-    signed_payload_fields:
-      - agent_id       # string — originating agent identifier
-      - tx_hash        # string — Base L2 transaction hash
-      - amount_usdc    # string — USDC amount (6 decimal micro-units)
-      - recipient      # string — treasury wallet address
-      - cert_tier      # string — agent cert tier at time of payment
-      - witnessed_at   # ISO 8601 — witnessing timestamp
-    endpoints:
-      payment_proof: "https://gateway.pathcoursehealth.com/v1/keys/claim"
-      anchor_chain: "Base L2 mainnet (chain_id 8453)"
-      anchor_explorer: "https://basescan.org"
+      and issues payment receipts bound to the originating agent's ERC-8004
+      identity. This is payment-witnessing — proof that a specific agent paid
+      a specific amount at a specific time. This differs from the vocabulary's
+      settlement_witness primitive (SAR's definition: post-delivery outcome
+      receipts bound to action artifacts with the counterparty inside the
+      signed bytes). PCH's primitive is payment-witnessing; the vocabulary
+      does not currently have a canonical term for this signal type.
+      Flagged for potential future vocabulary addition.
+    primary_issuer_pointer: "InsumerAPI  # repo path unconfirmed"
  
   governance_attestation:
     canonical: governance_attestation
@@ -110,8 +117,12 @@ signal_types:
       PCH cert tiers (uncertified/bronze/silver/gold) provide tier-based access
       control, not per-action scoped delegation chains. Tier membership answers
       a different question than delegation-chain verification with explicit
-      tools[], budget, ttl, rate, and scope predicates. Does not address
-      admissibility-at-commit (T-YYYY.003). Primary issuer: APS.
+      tools[], budget, ttl, rate, and scope predicates.
+      PCH does not address admissibility-at-commit (T-YYYY.003) — that property
+      requires per-action scoped delegation with live state evaluation at commit
+      time, which is a different layer from identity verification and payment
+      authorization. See aeoess/agent-passport-system for the full structural
+      defense including T-YYYY.003 mitigation.
     primary_issuer_pointer: aeoess/agent-passport-system
  
   security_posture:
@@ -121,26 +132,24 @@ signal_types:
       PCH does not attest to runtime security posture of agents calling
       the gateway. Infrastructure-level cert tier and Path Score are
       identity and trust signals, not security posture assessments.
-      Primary issuer: APS.
     primary_issuer_pointer: aeoess/agent-passport-system
  
   wallet_state:
     canonical: wallet_state
     match: no_mapping
     notes: >
-      PCH tracks USDC balance for agents within the PCH gateway
-      but does not attest to general wallet holdings or external balances.
+      PCH tracks USDC balance for agents within the PCH gateway but does
+      not attest to general wallet holdings or external balances.
       Balance is an operational signal, not a wallet state attestation.
-      Primary issuer: InsumerAPI.
-    primary_issuer_pointer: InsumerAPI
+    primary_issuer_pointer: "InsumerAPI  # repo path unconfirmed"
  
   passport_grade:
     canonical: passport_grade
     match: no_mapping
     notes: >
       PCH uses Path Score (0-850 continuous) and cert tiers, not passport
-      grades. Different primitive — tier membership is orthogonal to
-      passport grade as defined in the vocabulary. Primary issuer: APS.
+      grades. Tier membership is orthogonal to passport grade as defined
+      in the vocabulary.
     primary_issuer_pointer: aeoess/agent-passport-system
  
   wallet_intelligence:
@@ -148,8 +157,8 @@ signal_types:
     match: no_mapping
     notes: >
       PCH does not perform behavioral wallet classification or on-chain
-      pattern analysis beyond settlement witnessing. Primary issuer: RNWY.
-    primary_issuer_pointer: RNWY
+      pattern analysis beyond payment-witnessing.
+    primary_issuer_pointer: "RNWY  # repo path unconfirmed"
  
   reasoning_integrity:
     canonical: reasoning_integrity
@@ -157,8 +166,8 @@ signal_types:
     notes: >
       PCH routes inference calls to ML models and tracks usage via
       observability tooling but does not attest to model reasoning quality
-      or output integrity. Primary issuer: ThoughtProof.
-    primary_issuer_pointer: ThoughtProof
+      or output integrity.
+    primary_issuer_pointer: "ThoughtProof  # repo path unconfirmed"
  
   compliance_risk:
     canonical: compliance_risk
@@ -166,35 +175,38 @@ signal_types:
     notes: >
       PCH does not compute scored compliance risk assessments per agent.
       Cert tier and Path Score are trust signals, not regulatory compliance
-      indicators. Primary issuer: Revettr.
-    primary_issuer_pointer: Revettr
+      indicators.
+    primary_issuer_pointer: "Revettr  # repo path unconfirmed"
  
   job_performance:
     canonical: job_performance
     match: no_mapping
     notes: >
       PCH tracks tasks_completed_30d in cert_registry as an infrastructure
-      signal, but does not attest to task quality or completion outcomes.
-      Primary issuer: Maiat.
-    primary_issuer_pointer: Maiat
+      signal but does not attest to task quality or completion outcomes.
+    primary_issuer_pointer: "Maiat  # repo path unconfirmed"
  
   peer_review:
     canonical: peer_review
     match: no_mapping
     notes: >
       PCH does not issue peer-review attestations or task-completion
-      credentials. Primary issuers: Logpose, RNWY.
-    primary_issuer_pointer: RNWY
+      credentials.
+    primary_issuer_pointer: "RNWY  # repo path unconfirmed"
  
 # ─────────────────────────────────────────────────
 # ENVELOPE
 # ─────────────────────────────────────────────────
 envelope:
-  alg: EdDSA
-  curve: Ed25519
-  proof_type: "ERC-8004 on-chain attestation"
+  alg: ECDSA
+  curve: secp256k1
+  proof_type: "ERC-8004 on-chain attestation (Ethereum-native)"
   canonicalization: "Base L2 transaction anchoring"
   agent_card: "https://gateway.pathcoursehealth.com/.well-known/agent.json"
+  note: >
+    PCH uses secp256k1 for ERC-8004 identity anchoring on Base L2 (Ethereum-native).
+    No Ed25519/JWKS layer is currently published.
+    /.well-known/did.json and /.well-known/jwks.json are not implemented.
   ttl:
     path_score_recompute_days: 30
     cert_tier_validity: continuous
@@ -203,11 +215,10 @@ envelope:
     strategy: on_chain_anchor
     mechanism: >
       ERC-8004 identity records anchored on Base L2 (chain_id 8453).
-      On-chain anchoring provides long-term non-repudiation suitable
-      for audit use cases. Not the primary revocation path for
-      operational-speed revocation — L2 block time and cost make it
-      unsuitable for sub-second cascade revocation. Operational
-      revocation not currently implemented.
+      On-chain anchoring provides long-term non-repudiation suitable for
+      audit use cases. Not the primary revocation path for operational-speed
+      revocation — L2 block time and cost make it unsuitable for sub-second
+      cascade revocation. Operational revocation not currently implemented.
  
 # ─────────────────────────────────────────────────
 # TRANSPORT
@@ -225,36 +236,14 @@ transport:
 # DESCRIPTOR DIMENSIONS
 # ─────────────────────────────────────────────────
 descriptor_dimensions:
-  enforcement_class: enforced
-  validity_temporal: periodic
-  refusal_authority: infrastructure
+  enforcement_class: binding
+  validity_temporal: continuously
+  refusal_authority: issuer
   invariant_survival: post_action
-  replay_class: no_replay
-  governed_action_class: execute
- 
-# ─────────────────────────────────────────────────
-# ATTESTATION SCOPE DECLARATION
-# ─────────────────────────────────────────────────
-attestation_scope:
-  covers:
-    - T1_agent_identity_spoofing
-    - T2_payment_hijacking_weak_framing
-    - settlement_witnessing
-  does_not_cover:
-    - T-YYYY.003_admissibility_at_commit
-    - per_action_delegation_chains
-    - operational_speed_cascade_revocation
-  notes: >
-    PCH primitives address T1 (actor spoofing via cryptographic ERC-8004
-    identity) and T2 in its original framing (payment authorization tied
-    to verified agent identity and cert tier). PCH does not address the
-    admissibility-at-commit property (T-YYYY.003) the ATLAS thread
-    converged on — that property requires per-action scoped delegation
-    with live state evaluation at commit time, which is a different layer
-    from identity verification and payment authorization.
-    See aeoess/agent-passport-system for the full structural defense.
+  replay_class: full_replay
+  governed_action_class: transfer
  
 crosswalk_metadata:
   authored_by: "@alex-pathcourse"
   vocabulary_version: "0.1.0"
-  last_reviewed: "2026-04-22"
+  last_reviewed: "2026-04-23"

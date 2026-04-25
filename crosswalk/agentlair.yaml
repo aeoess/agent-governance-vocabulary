@@ -43,31 +43,33 @@ credential_format: "JWT (EdDSA/Ed25519, JWKS-published public key)"
 # ─────────────────────────────────────────────────
 signal_types:
 
-  peer_review:
-    canonical: peer_review
-    internal: TrustProfile
+  behavioral_trust:
+    canonical: behavioral_trust
+    internal: "Three-Dimensional Trust Score (RFC-003 Phase 2b)"
     match: exact
     notes: >
-      AgentLair's pre-delegation behavioral check maps to peer_review as
-      primary signal type. Prior task-completion quality — accumulated from
-      behavioral event ingestion across tool calls, resource access, auth
-      events, escalations, and delegation actions — informs whether a new
-      delegation should issue. The trust profile score (0–100) with ATF
-      maturity level (intern/junior/senior/principal) and confidence
-      interval is the signal a delegating agent consumes before granting
-      scope.
+      Scored trust assessment derived from observed agent behavior over time.
+      Three dimensions weighted by security relevance: restraint (42.9%,
+      permission discipline and capability utilization), consistency
+      (35.7%, session regularity and tool distribution stability),
+      transparency (21.4%, audit trail completeness and hash chain
+      integrity). Bayesian computation with cold-start prior of 0.30
+      (skeptical default), requiring ~100 observations for full override.
+      Event sources weighted by verifiability: internal 1.0, external
+      signed 0.85, external unsigned 0.7. Free-tier events receive 0.5
+      weight multiplier and are capped at junior ATF level.
 
       Temporal sequencing context: this signal operates at the
       pre-delegation layer in a four-layer temporal model —
-      (1) pre-delegation behavioral trust check,
+      (1) pre-delegation behavioral trust check (this signal),
       (2) at-delegation authorization binding (action_ref),
       (3) at-execution integrity proof (params_hash),
       (4) post-execution outcome attestation (receipt chain).
       Each layer feeds the next. The feedback edge (post-execution →
-      pre-delegation) is what makes the loop a loop: peer_review
-      attestations from completed work accumulate into the behavioral
-      score that gates future delegations. Monotonic narrowing at
-      delegation time conditions on this pre-delegation score.
+      pre-delegation) is what makes the loop a loop: behavioral events
+      from completed work accumulate into the trust score that gates
+      future delegations. Monotonic narrowing at delegation time
+      conditions on this pre-delegation score.
     issuers_in_production: ["AgentLair"]
     signed_payload_fields:
       - agentId           # string — AgentLair account ID (acc_...)
@@ -77,6 +79,12 @@ signal_types:
       - atfLevel          # string — 'intern' | 'junior' | 'senior' | 'principal'
       - trend             # string — 'improving' | 'stable' | 'declining'
       - dimensions        # object — per-dimension breakdown (consistency, restraint, transparency)
+      - dimensions.consistency.score     # number [0, 100]
+      - dimensions.consistency.signals   # {session_regularity, tool_stability, error_stability, window_consistency}
+      - dimensions.restraint.score       # number [0, 100]
+      - dimensions.restraint.signals     # {scope_utilization, credential_frequency, rate_limit_proximity, escalation_appropriateness, permission_growth}
+      - dimensions.transparency.score    # number [0, 100]
+      - dimensions.transparency.signals  # {audit_coverage, chain_integrity, auth_hygiene, telemetry_reporting}
       - observationCount  # number — total behavioral events considered
       - computedAt        # ISO 8601 — when the trust engine last computed
     endpoints:
@@ -109,31 +117,19 @@ signal_types:
       did_endpoint: "https://agentlair.dev/.well-known/did.json"
       per_agent_did: "https://agentlair.dev/agents/{accountId}/did.json"
 
-  behavioral_trust:
-    canonical: behavioral_trust
-    internal: "Three-Dimensional Trust Score (RFC-003 Phase 2b)"
-    match: exact
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
     notes: >
-      Scored trust assessment derived from observed agent behavior.
-      Three dimensions weighted by security relevance: restraint (42.9%,
-      permission discipline and capability utilization), consistency
-      (35.7%, session regularity and tool distribution stability),
-      transparency (21.4%, audit trail completeness and hash chain
-      integrity). Bayesian computation with cold-start prior of 0.30
-      (skeptical default), requiring ~100 observations for full override.
-      Event sources weighted by verifiability: internal 1.0, external
-      signed 0.85, external unsigned 0.7. Free-tier events receive 0.5
-      weight multiplier and are capped at junior ATF level.
-    issuers_in_production: ["AgentLair"]
-    signed_payload_fields:
-      - score             # number [0, 100] — composite score
-      - confidence        # number [0.0, 1.0] — Bayesian confidence
-      - dimensions.consistency.score     # number [0, 100]
-      - dimensions.consistency.signals   # {session_regularity, tool_stability, error_stability, window_consistency}
-      - dimensions.restraint.score       # number [0, 100]
-      - dimensions.restraint.signals     # {scope_utilization, credential_frequency, rate_limit_proximity, escalation_appropriateness, permission_growth}
-      - dimensions.transparency.score    # number [0, 100]
-      - dimensions.transparency.signals  # {audit_coverage, chain_integrity, auth_hygiene, telemetry_reporting}
+      AgentLair does not produce per-task, delegator-signed task-completion
+      attestations. The canonical peer_review definition (task-completion
+      attestation signed by a delegating agent after a service agent
+      completes work) requires per-task scoping with explicit task_id,
+      delegator_id, and outcome fields. AgentLair's TrustProfile is an
+      aggregate behavioral score across all events — no task binding, no
+      delegator signature. The pre-delegation behavioral trust check
+      (TrustProfile) maps to behavioral_trust as primary signal.
+      See behavioral_trust entry for temporal-sequencing context.
 
   trust_verification:
     canonical: trust_verification
@@ -217,8 +213,8 @@ signal_types:
       AgentLair's ATF maturity levels (intern/junior/senior/principal)
       are functionally similar to passport grades but derived from a
       different evidence class (behavioral events vs. passport issuance
-      evidence). The ATF level is a component of the peer_review and
-      behavioral_trust mappings above, not a standalone passport grade.
+      evidence). The ATF level is a component of the behavioral_trust
+      mapping above, not a standalone passport grade.
 
   job_performance:
     canonical: job_performance
@@ -294,9 +290,11 @@ descriptor_dimensions:
 crosswalk_metadata:
   authored_by: "@piiiico"
   vocabulary_version: "0.1.0"
-  last_reviewed: "2026-04-24"
+  last_reviewed: "2026-04-25"
   rfc_context: "openclaw/openclaw#49971 (RFC: Native Agent Identity & Trust Verification)"
   refresh_notes:
-    - "Initial crosswalk. Primary mapping: peer_review (pre-delegation behavioral check with production data)."
-    - "Temporal-sequencing note on peer_review entry per @aeoess guidance (openclaw/openclaw#49971)."
+    - "v2: Corrected primary mapping from peer_review to behavioral_trust per @aeoess review (aeoess/agent-governance-vocabulary#46)."
+    - "peer_review demoted to no_mapping — AgentLair does not produce per-task delegator-signed attestations."
+    - "behavioral_trust is primary: exact match, production data, full signed_payload_fields, envelope, TTL, transport."
+    - "Temporal-sequencing note (four-layer model) moved to behavioral_trust.notes per vocabulary review guidance."
     - "Production state: trust endpoints live, behavioral event ingestion live, three-dimensional scoring operational."

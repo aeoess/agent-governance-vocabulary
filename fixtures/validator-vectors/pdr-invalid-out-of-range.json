@@ -1,0 +1,10 @@
+{
+  "_comment": "PDR vector — invalid input with response_token_variance > 1.0 in third fingerprint. Validator should reject with clear error message.",
+  "_co_authored_by": "@nanookclaw",
+  "window_size": 10,
+  "fingerprints": [
+    {"tool_call_distribution": 0.50, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.52, "error_rate": 0.03, "task_completion_rate": 0.95, "response_token_variance": 0.32},
+    {"tool_call_distribution": 0.55, "error_rate": 0.04, "task_completion_rate": 0.93, "response_token_variance": 1.42}
+  ]
+}

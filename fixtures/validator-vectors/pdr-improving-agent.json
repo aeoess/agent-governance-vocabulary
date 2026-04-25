@@ -1,0 +1,17 @@
+{
+  "_comment": "PDR vector — agent's behavior stabilizes over 10-session window. Pairwise divergences shrink toward zero. Per nanook spec, negative slopes clamp to 1.0 (improving agents are not penalized).",
+  "_co_authored_by": "@nanookclaw",
+  "window_size": 10,
+  "fingerprints": [
+    {"tool_call_distribution": 0.95, "error_rate": 0.20, "task_completion_rate": 0.45, "response_token_variance": 0.93},
+    {"tool_call_distribution": 0.84, "error_rate": 0.17, "task_completion_rate": 0.65, "response_token_variance": 0.69},
+    {"tool_call_distribution": 0.77, "error_rate": 0.14, "task_completion_rate": 0.74, "response_token_variance": 0.58},
+    {"tool_call_distribution": 0.72, "error_rate": 0.12, "task_completion_rate": 0.79, "response_token_variance": 0.52},
+    {"tool_call_distribution": 0.68, "error_rate": 0.10, "task_completion_rate": 0.83, "response_token_variance": 0.47},
+    {"tool_call_distribution": 0.65, "error_rate": 0.09, "task_completion_rate": 0.86, "response_token_variance": 0.43},
+    {"tool_call_distribution": 0.63, "error_rate": 0.08, "task_completion_rate": 0.88, "response_token_variance": 0.40},
+    {"tool_call_distribution": 0.62, "error_rate": 0.075, "task_completion_rate": 0.89, "response_token_variance": 0.385},
+    {"tool_call_distribution": 0.615, "error_rate": 0.073, "task_completion_rate": 0.895, "response_token_variance": 0.378},
+    {"tool_call_distribution": 0.613, "error_rate": 0.072, "task_completion_rate": 0.897, "response_token_variance": 0.376}
+  ]
+}

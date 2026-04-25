@@ -1,0 +1,17 @@
+{
+  "_comment": "PDR vector — agent drifts monotonically over 10-session window. Tool-call distribution and error rate increase progressively. Expected score: significantly below 1.0.",
+  "_co_authored_by": "@nanookclaw",
+  "window_size": 10,
+  "fingerprints": [
+    {"tool_call_distribution": 0.50, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.52, "error_rate": 0.03, "task_completion_rate": 0.95, "response_token_variance": 0.32},
+    {"tool_call_distribution": 0.55, "error_rate": 0.04, "task_completion_rate": 0.93, "response_token_variance": 0.34},
+    {"tool_call_distribution": 0.59, "error_rate": 0.06, "task_completion_rate": 0.90, "response_token_variance": 0.37},
+    {"tool_call_distribution": 0.64, "error_rate": 0.08, "task_completion_rate": 0.86, "response_token_variance": 0.42},
+    {"tool_call_distribution": 0.70, "error_rate": 0.11, "task_completion_rate": 0.81, "response_token_variance": 0.49},
+    {"tool_call_distribution": 0.77, "error_rate": 0.14, "task_completion_rate": 0.74, "response_token_variance": 0.58},
+    {"tool_call_distribution": 0.84, "error_rate": 0.17, "task_completion_rate": 0.65, "response_token_variance": 0.69},
+    {"tool_call_distribution": 0.90, "error_rate": 0.19, "task_completion_rate": 0.55, "response_token_variance": 0.81},
+    {"tool_call_distribution": 0.95, "error_rate": 0.20, "task_completion_rate": 0.45, "response_token_variance": 0.93}
+  ]
+}

@@ -1,0 +1,449 @@
+# SWORN -> Agent Governance Vocabulary crosswalk
+# Issuer: SWORN Protocol (Solana-anchored Witnessed Outcome Receipt Notarization)
+# Category: settlement_witness (primary), behavioral_trust (composed)
+# Authored: alexchenai, 2026-04-25
+# Origin context: aeoess endorsement on VeritasActa/verify#8, 2026-04-25 15:44 UTC
+
+system:
+  name: SWORN
+  home: https://sworn.chitacloud.dev
+  spec: https://sworn.chitacloud.dev/whitepaper
+  jwks: https://sworn.chitacloud.dev/.well-known/jwks.json
+  discovery: https://sworn.chitacloud.dev/.well-known/agent-attestation-discovery.json
+  trusted_scorers_doc: https://sworn.chitacloud.dev/TRUSTED-SCORERS.md
+  scorer_public_stats: https://sworn.chitacloud.dev/api/v1/scorer-public-stats
+  role: |
+    Two-keypair behavioral attestation pattern anchored on Solana mainnet-beta.
+    A trusted scorer (ed25519 keypair, registered on-chain via PACT-staked
+    activation or USDC fee) signs a verdict over an agent delivery (deploy
+    bundle hash + smoke-test outcome). The agent-side keypair signs the
+    delivery itself. The two signatures together form a directed-signed-edge
+    (scorer -> agent_delivery) committed to a Solana program transaction.
+
+    The verdict polarity is symmetric: both approvals AND rejections are
+    signed and persisted. A rejection IS a counter_evidence_receipt — it
+    is not the absence of an approval, it is a signed negative attestation
+    that any verifier can cite as evidence the scorer reviewed and rejected
+    the delivery. This is the framing aeoess endorsed on VeritasActa/verify#8
+    as "the cleanest way to keep the receipt format minimal while preserving
+    the audit trail across two ed25519 keypairs."
+
+  license: |
+    Spec: public (whitepaper at sworn.chitacloud.dev/whitepaper).
+    Reference implementation: proprietary (closed-source production).
+    Attestation envelope format and verification path: open and replicable
+    from the whitepaper alone.
+
+license: Apache-2.0  # this crosswalk file only
+maintainer:
+  github: alexchenai
+  email: alex-chen@79661d.inboxapi.ai
+  confirmed_at: "2026-04-25"
+
+# ─────────────────────────────────────────────────
+signal_types:
+
+  delivery_attestation:
+    canonical: settlement_witness
+    match: structural
+    notes: |
+      A SWORN delivery attestation is a wallet-bound outcome receipt over
+      an agent's deploy bundle. The signed subject is a content hash
+      (commit_sha + container_digest + smoke_test_result_hash). The
+      counterparty (the deploying agent's wallet pubkey) is inside the
+      signed bytes, identifying which agent the verdict applies to.
+      Structurally equivalent to settlement_witness (per SAR upgrade to
+      kid `sar-prod-ed25519-03`): outcome attestations bound to action
+      artifacts, with counterparty inside the signed payload.
+
+      Divergences from canonical:
+        1. Anchoring is hybrid. Each receipt is committed to a Solana
+           mainnet-beta program transaction (account: CSBAc1SiMALr4rnu...
+           p6S) AND queryable via the issuer's REST surface. A verifier
+           can confirm via either path independently.
+        2. Verdict polarity is symmetric. Approvals and rejections are
+           both signed under the same envelope schema. A rejection is
+           not the absence of a signature; it is a signed negative.
+        3. Two-keypair signed edge. The scorer signs over the agent's
+           prior delivery receipt (which is itself signed by the agent
+           keypair). The pair forms a directed edge in the attestation
+           graph rather than a single-issuer record.
+
+    issuer_uri: https://sworn.chitacloud.dev
+    algorithm: Ed25519
+    canonicalization: "RFC 8785 (JCS)"
+    kid: "scorer-<scorer_id>"
+    default_ttl_seconds: null  # receipts do not expire; on-chain anchor is permanent
+
+    signed_fields:
+      - delivery_subject_hash   # SHA-256 of (commit_sha || container_digest || smoke_test_outcome_hash)
+      - agent_pubkey            # ed25519 pubkey of the deploying agent (counterparty)
+      - scorer_pubkey           # ed25519 pubkey of the scoring issuer (this signer)
+      - verdict                 # enum: "approved" | "rejected"
+      - methodology_ref         # IPFS CID or URL of the scorer's published methodology
+      - prev_receipt_hash       # SHA-256 of the prior receipt this one supersedes (null if root)
+      - timestamp               # ISO 8601, UTC
+      - solana_tx_signature     # base58 tx signature of the on-chain anchor (post-anchoring)
+
+    verification:
+      off_chain_path: |
+        1. Fetch JWKS from sworn.chitacloud.dev/.well-known/jwks.json.
+        2. Resolve scorer pubkey via `kid`.
+        3. Recanonicalize the receipt JSON via JCS (RFC 8785).
+        4. Verify Ed25519 signature.
+      on_chain_path: |
+        1. Read the Solana program account at solana_tx_signature.
+        2. Compare the on-chain delivery_subject_hash against the receipt's
+           delivery_subject_hash. Equality plus tx finality = anchored.
+      offline: true  # off_chain_path requires no network access if JWKS is cached
+
+  attestation_polarity_negative:
+    canonical: settlement_witness
+    match: structural
+    notes: |
+      Same envelope, verdict = "rejected". Distinguishing here because the
+      vocabulary's settlement_witness definition does not currently address
+      polarity — most existing issuers (SAR, Maiat) issue only positive
+      receipts and treat negative outcomes as either "no receipt issued"
+      or a behavioral_trust score downgrade. SWORN explicitly signs the
+      rejection.
+
+      Use case (from the V1.1 challenge object discussion on
+      VeritasActa/verify#8): when a downstream verifier (e.g. a
+      reputation-aware router, A2A discovery, ERC-8004) needs to
+      challenge a claimed delivery, the rejection receipt IS the
+      counter_evidence_receipt without requiring a separate envelope
+      type. challenges_receipt = the original delivery attestation;
+      counter_evidence_receipt = the rejection receipt; claim_type =
+      "refutation".
+
+      Consumer policy decides whether N rejections at a given threshold
+      gates downstream actions. SWORN itself only attests that the
+      rejection occurred.
+
+  scorer_reputation:
+    canonical: behavioral_trust
+    match: composed
+    notes: |
+      Cumulative scorer reputation is published by the SWORN public
+      observatory (chenecosystem.com) and the per-scorer public-stats
+      endpoint. Composed from rolling-window counts of (approved,
+      rejected, superseded) receipts plus PACT stake duration.
+
+      Composed because no single SWORN receipt carries a "scorer
+      trust score". The score is derived at evaluation time from the
+      stream of signed receipts. Any verifier can recompute it.
+    composing_signals:
+      - delivery_attestation
+      - attestation_polarity_negative
+    public_endpoint: https://sworn.chitacloud.dev/api/v1/scorer-public-stats
+
+  agent_delivery_history:
+    canonical: job_performance
+    match: partial
+    notes: |
+      Cumulative scorer verdicts over a single agent_pubkey form a
+      delivery history. Partial match because:
+        - job_performance per the vocabulary is wallet-bound to the
+          performer; SWORN delivery_attestation IS wallet-bound to the
+          performer (agent_pubkey).
+        - Each receipt is per-action, not per-identity. Aggregation
+          across receipts is the consumer's responsibility.
+      A consumer querying "what is agent X's last 30 days of delivery
+      verdicts?" gets a deterministic answer from the on-chain log.
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: partial
+    notes: |
+      A scorer-approved verdict attests that the delivery passed the
+      scorer's published methodology. This is a governance attestation
+      in the weak sense: it certifies methodology compliance, not policy
+      compliance. There is no central policy engine. Each scorer publishes
+      its own methodology; the attestation says "this delivery passes
+      THIS scorer's methodology."
+
+      Partial because the canonical governance_attestation per AgentNexus,
+      Nobulex, SINT, APS implies a declared governance requirement
+      (delegation scope, KYC tier, etc). SWORN's "requirement" is
+      whatever the scorer's methodology demands, which varies per scorer.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: |
+      SWORN attests deliveries (post-action artifacts), not reasoning
+      processes. A scorer may consume reasoning evidence in arriving at
+      a verdict, but the attestation surface is the delivery outcome.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "SWORN does not attest balances or holdings."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "SWORN does not classify wallet activity."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: |
+      SWORN does not score sanctions exposure, KYC tier, or jurisdictional
+      risk. The PACT-staked activation is permissioning, not compliance.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "SWORN does not issue identity grades. Receipts are per-delivery."
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: |
+      SWORN does not verify identity. Activation establishes that a scorer
+      has paid the activation fee (USDC or PACT) and committed to a 90-day
+      operating cadence; nothing more is verified about the scorer's
+      real-world identity.
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: |
+      SWORN is not a security scanner. The scorer's methodology may include
+      security checks, but SWORN as a protocol does not issue posture
+      attestations.
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: |
+      Scorer keys may rotate (kid versioning in the JWKS). The rotation
+      itself is observable to verifiers but SWORN does not issue
+      entity_continuity attestations in the SBR Protocol sense (multi-step
+      migration receipts with five canonical migration types). A future
+      version may add a rotation_receipt envelope; not in scope today.
+
+  peer_review:
+    canonical: peer_review
+    match: partial
+    notes: |
+      A SWORN scorer verdict is structurally similar to a Logpose peer
+      review: a signed assessment by one party (scorer) about the work
+      product of another party (deploying agent). Partial because:
+        - Logpose peer_review is from a delegating party (the task
+          assigner) about the executor's delivery. The reference point
+          is the original task contract.
+        - SWORN delivery_attestation is from a third-party scorer (not
+          the task assigner) about an autonomous agent's published
+          delivery. There may be no task assigner at all.
+      The signed-envelope shape is similar; the social/economic
+      relationship is not.
+
+# ─────────────────────────────────────────────────
+decision_trajectory:
+
+  decision_lineage:
+    canonical: decision_lineage
+    match: structural
+    notes: |
+      SWORN supports supersession via prev_receipt_hash. When a scorer
+      issues a newer verdict on the same agent_pubkey + delivery_subject_hash
+      pair, the new receipt sets prev_receipt_hash = SHA-256 of the prior
+      receipt. The chain is content-addressable; both receipts remain
+      verifiable, but consumers can derive "current verdict" by walking
+      to the latest tip.
+
+      Structural match with the canonical decision_lineage primitive
+      and content-addressable_implementation_specific descriptor:
+      hash-chain rather than merkle-tree, but functionally equivalent
+      for "ordered sequence of decisions about the same subject."
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: partial
+    notes: |
+      The TRUSTED-SCORERS.md schema_version field captures protocol
+      revisions to the scorer activation and ingestion contract. Each
+      schema bump is published with a changelog. Partial match because
+      baseline_revision per the canonical is scoped to behavioral
+      baselines (drift detection); SWORN's schema_version is scoped to
+      protocol contract revisions.
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: partial
+    notes: |
+      When two scorers issue contradicting verdicts on the same delivery
+      (one approves, another rejects), the disagreement is preserved as
+      two distinct signed records. Verifiers can detect divergence by
+      querying scorer-public-stats per scorer and comparing verdicts on
+      the same agent_pubkey. Partial because:
+        - PDR divergence_signal is a quantitative deviation from a
+          baseline.
+        - SWORN divergence is a qualitative record (this scorer says X,
+          that scorer says Y).
+      Both capture "the system is not in consensus" but with different
+      measurement semantics, mirroring the VeritasActa KU dissent
+      divergence_signal mapping.
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: partial
+    notes: |
+      The /api/v1/scorer-public-stats endpoint exposes
+      trusted_scorers_md_fetches and approval/rejection counters over
+      rolling 24h, 7d, and total-since-process-start windows. A consumer
+      can derive trust velocity (rate of verdict change per unit time)
+      from these counters. Partial match because the velocity is computed
+      by the consumer, not signed by SWORN.
+
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+
+  delivery_attestation:
+    enforcement_class: advisory
+    enforcement_notes: |
+      Receipts are evidence, not gates. A SWORN approval does not force
+      a downstream verifier to accept the delivery; a SWORN rejection
+      does not prevent the agent from publishing the delivery elsewhere.
+      Consumer policy (typically a reputation-aware router or A2A
+      discovery layer) decides how to weight verdicts.
+
+    validity_temporal: at_issuance
+    validity_notes: |
+      The verdict reflects the scorer's assessment at receipt time. The
+      delivery artifact itself may be updated, deleted, or re-deployed;
+      the receipt remains valid as evidence that THIS scorer reached
+      THIS verdict on THIS delivery_subject_hash at THIS timestamp. The
+      Solana anchor proves the receipt existed by the anchor block time.
+
+    refusal_authority: consumer_policy
+    refusal_notes: |
+      SWORN never refuses. The protocol records verdicts. Refusal
+      authority lives in the consumer (e.g. an agent-hosting platform
+      that requires N approved receipts before promoting a deploy to
+      its discovery surface).
+
+    invariant_survival: post_action
+    invariant_notes: |
+      Receipts are issued after the smoke-test outcome is known. The
+      signed delivery_subject_hash is computed from the actual deployed
+      bundle, not a pre-action promise.
+
+    replay_class: full_replay
+    replay_notes: |
+      Given the receipt JSON + the JWKS pubkey + the canonicalization
+      rule (JCS), any verifier can fully replay signature verification.
+      Combined with the on-chain anchor (Solana tx), the verifier can
+      independently confirm anchoring without trusting SWORN's REST
+      surface.
+
+    governed_action_class: ["publish", "compose"]
+    governed_action_notes: |
+      Most commonly produced for `publish`-class actions (an agent
+      publishes a new deploy to agent-hosting; a scorer attests the
+      smoke-test outcome). `compose`-class flows (multi-step agent
+      pipelines that chain deliveries) consume scorer receipts as
+      gating evidence on each step.
+
+  attestation_polarity_negative:
+    enforcement_class: advisory
+    refusal_authority: consumer_policy
+    invariant_survival: post_action
+    replay_class: full_replay
+    governed_action_class: ["publish", "compose"]
+    polarity_notes: |
+      Identical to delivery_attestation except verdict = "rejected".
+      Surfaced as a separate entry to make the polarity-symmetry
+      property explicit to vocabulary readers; both share the same
+      envelope and verification path.
+
+# ─────────────────────────────────────────────────
+gaps:
+
+  - area: "Attestation polarity (positive vs negative receipts)"
+    notes: |
+      The vocabulary's settlement_witness, peer_review, and
+      governance_attestation definitions implicitly assume the issuer
+      signs only when the outcome is positive (or worth reporting).
+      SWORN signs both polarities. The V1.1 challenge object discussion
+      on VeritasActa/verify#8 surfaced the same need from a different
+      angle (counter_evidence_receipt as a first-class field).
+
+      Suggested vocabulary extension: an optional `polarity` descriptor
+      with values `positive_only`, `negative_only`, `symmetric`. Most
+      existing issuers would declare `positive_only`; SWORN and any
+      future polarity-symmetric system would declare `symmetric`. This
+      makes the property explicit without forcing renames of existing
+      crosswalks.
+
+  - area: "Two-keypair directed signed edge"
+    notes: |
+      Most signal_types in the vocabulary assume a single-issuer record
+      (one keypair signs one receipt). VeritasActa Knowledge Units
+      already opened the multi-issuer-bundle case (N issuers, one
+      bundle, all-or-nothing verification). SWORN opens a third case:
+      a directed edge where issuer A signs over a record signed by
+      issuer B.
+
+      Suggested vocabulary extension: an `attestation_topology`
+      descriptor with values `single`, `bundle`, `directed_edge`,
+      `graph`. Documents the structural topology without forcing
+      schema changes on existing issuers.
+
+  - area: "Hybrid on-chain anchoring + off-chain queryability"
+    notes: |
+      The vocabulary currently assumes either pure off-chain
+      (JWKS + REST + signed receipts) or pure on-chain (EAS schema,
+      e.g. SBR Protocol). SWORN is hybrid: each receipt is a signed
+      JSON object queryable via REST AND committed to a Solana
+      program transaction. A verifier can choose either path.
+
+      Suggested vocabulary extension: an `anchoring` descriptor with
+      values `off_chain_only`, `on_chain_only`, `hybrid`. Hybrid
+      systems should declare both endpoints; pure systems declare one.
+
+  - area: "Economic-stake activation as trusted-issuer gate"
+    notes: |
+      SWORN's PACT-staked activation (Option B in TRUSTED-SCORERS.md)
+      establishes a permissioned issuer registry without a central
+      authority and without KYC. The "trust" comes from the economic
+      cost of activation (currently 1000 PACT, near-parity with the
+      10 USDC option) plus the 90-day operating commitment. This is
+      not the same as a credential-based registry (logpose maintainer
+      confirmation) nor a free-permissionless model (anyone can sign).
+
+      Suggested vocabulary extension: an `issuer_registration_model`
+      descriptor with values `permissionless`, `credentialed`,
+      `economic_stake`, `multi_authority`. SWORN declares
+      `economic_stake`. Most existing systems declare `credentialed`.
+
+  - area: "Counter-evidence semantic in a receipt format"
+    notes: |
+      The V1.1 challenge object spec on VeritasActa/verify (issue #8)
+      introduces a {challenges_receipt, counter_evidence_receipt,
+      claim_type} triple. SWORN's symmetric polarity already produces
+      counter_evidence_receipts as standard output (rejection receipts).
+      A vocabulary entry on how counter_evidence_receipts compose with
+      challenges_receipts across different issuer formats would help
+      consumers (reputation routers, A2A discovery, ERC-8004 verifier
+      gateways) build cross-protocol challenge flows.
+
+      Tentative cross-reference: VeritasActa/verify#8 (the v1.1 spec
+      thread); this crosswalk co-evolves with that spec.
+
+# ─────────────────────────────────────────────────
+crosswalk_metadata:
+  authored_by: "@alexchenai"
+  vocabulary_version: "0.1.0"
+  last_reviewed: "2026-04-25"
+  origin_thread: "https://github.com/VeritasActa/verify/issues/8 (aeoess endorsement comment 4319984512)"
+  next_revisions:
+    - "Add `polarity` descriptor entry once the vocabulary extension is accepted (gap #1)"
+    - "Add `attestation_topology` descriptor entry once accepted (gap #2)"
+    - "Add `anchoring` descriptor entry once accepted (gap #3)"
+    - "Add `issuer_registration_model` descriptor entry once accepted (gap #4)"
+    - "Land sworn-pact-staking subsection if the V1.1 spec test vectors require explicit economic-gate documentation"
+    - "Tighten governance_attestation match level if a methodology declaration becomes mandatory in v0.2"

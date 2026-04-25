@@ -1,0 +1,265 @@
+# crosswalk/pic.yaml
+#
+# PIC Standard (Provenance & Intent Contracts) -> Agent Governance Vocabulary
+#
+# Spec:        PIC/1.0 -- Provenance & Intent Contracts for AI Agent Action Safety
+# Author:      Fabio Marcello Salvadori (@madeinplutofabio)
+# Repository:  https://github.com/madeinplutofabio/pic-standard
+# RFC:         docs/RFC-0001-pic-standard.md (defensive publication)
+# DOI:         https://doi.org/10.5281/zenodo.18725562
+# License:     Apache-2.0
+# Ref impl:    v0.8.0 (Python)
+#
+# Maintainer-authored crosswalk, per option 1 of aeoess/agent-governance-vocabulary#48.
+#
+# Center of gravity: PIC is verdict-oriented (action-boundary gate, allow/block
+# output) rather than signal-oriented. The primary primitive documented here is
+# the `verification_pattern` section. The `signal_types` mappings are a thin
+# canonical-vocabulary appendix; they are predominantly `no_mapping` today and
+# become a real mapping only once the signed Attestation Object stabilizes.
+
+system:
+  name: pic-standard
+  home: https://github.com/madeinplutofabio/pic-standard
+  spec: https://github.com/madeinplutofabio/pic-standard/blob/main/docs/RFC-0001-pic-standard.md
+  spec_version: "PIC/1.0"
+  role: >
+    Local-first action gating for AI agents. Before a high-impact tool
+    call executes, the agent emits a structured Action Proposal
+    (intent, impact, provenance, claims, evidence, action). The PIC
+    verifier resolves provenance against operator-controlled trust
+    roots, binds claims to evidence (SHA-256 digests, Ed25519
+    signatures, lifecycle / expiry / revocation), and fails closed if
+    the causal chain is invalid or insufficient. PIC is best modeled
+    here as a parallel action-boundary verification surface rather
+    than as a subtype of visa. The full pattern is documented in the
+    `verification_pattern` section below; signal-type mappings are
+    secondary.
+  identity_layer: >
+    Operator-controlled keyring (Ed25519). PIC consumes trust roots;
+    it does not issue agent identity or delegation chains. External
+    identity / passport / delegation systems compose with PIC at the
+    trust-root layer.
+  license: Apache-2.0
+
+license: Apache-2.0
+maintainer:
+  github: madeinplutofabio
+version: "PIC/1.0"
+canonicalization: "PIC-CJSON/1.0 (spec at docs/canonicalization.md, frozen in v0.8.0)"
+signature_alg: "Ed25519"
+
+# ─────────────────────────────────────────────────
+# PRIOR ART
+# Anchored timestamps for the techniques disclosed by PIC/1.0.
+# ─────────────────────────────────────────────────
+prior_art:
+  defensive_publication: "RFC-0001 (PIC/1.0), Apache-2.0"
+  first_commit: "2026-01-08"
+  first_public_release: "PyPI v0.1.0, 2026-01-09"
+  doi: "10.5281/zenodo.18725562"
+
+# ─────────────────────────────────────────────────
+# VERIFICATION PATTERN  (PRIMARY PRIMITIVE)
+#
+# Pre-execution verification at the action boundary. PIC's center of
+# gravity is the pattern below: a fail-closed gate over a structured
+# Action Proposal. Precedent for verification-pattern-as-primary
+# section: `crosswalk/nobulex.yaml` (8-step verification handshake),
+# noted in CONTRIBUTING.md as a sanctioned novel section "when it
+# documents a primitive existing shapes don't capture."
+# ─────────────────────────────────────────────────
+verification_pattern:
+  name: "Action Proposal Verification (PIC/1.0 fail-closed gate)"
+  reference_point: "pre-execution; immediately before tool call dispatch"
+  failure_default: "block (fail-closed)"
+
+  # ─── Inputs to the pattern: the Action Proposal ───
+  action_proposal_fields:
+
+    - field: intent
+      rationale: >
+        Agent intent declaration on the Action Proposal.
+        Operator-internal; no current canonical mapping.
+
+    - field: impact
+      rationale: >
+        Consequence-class taxonomy for the requested action (the public
+        README lists money, privacy, irreversible, compute, ...). This
+        is orthogonal to the canonical governed_action_class enum
+        (read, write, transfer, delegate, publish, compose), which
+        classifies by operation type. The two are complementary, not
+        competing. No current canonical mapping.
+
+    - field: provenance
+      rationale: >
+        Per-input source trust attribution: which inputs influenced
+        the proposal, at what trust tier, under whose key. Distinct
+        from canonical counterparty_standing (about the counterparty
+        to the action) and request_origin (about how the request
+        arrived). Candidate name for a future canonical term:
+        input_provenance. Defer canonical promotion until a second
+        implementation surfaces.
+
+    - field: claims
+      rationale: >
+        Verification-contract-internal: structured assertions the
+        agent makes about state of the world; PIC verifies cited
+        evidence backs each claim. Not a portable signal.
+
+    - field: evidence
+      rationale: >
+        Verification-contract-internal: cryptographic artifacts
+        (SHA-256 digests, Ed25519 signatures) cited by claims. Not a
+        portable signal.
+
+    - field: action
+      rationale: >
+        Tool-binding reference. Operator-internal.
+
+  # ─── The pattern itself ───
+  steps:
+    - step: 1
+      name: "Schema validation"
+      description: >
+        Validate the Action Proposal against the PIC/1.0 schema.
+      failure_mode: "block — proposal malformed"
+
+    - step: 2
+      name: "Provenance trust resolution"
+      description: >
+        Resolve provenance entries against operator-controlled trust
+        roots (keyring, trusted-source registry) and apply
+        causal-taint rules.
+      failure_mode: "block — taint not bridged for declared impact class"
+
+    - step: 3
+      name: "Claim -> evidence binding"
+      description: >
+        For each declared claim, verify the cited evidence binds:
+        SHA-256 digest match for hash evidence; Ed25519 signature
+        verification against the keyring for signature evidence;
+        lifecycle / expiry / revocation checks.
+      failure_mode: "block — claim unsupported by evidence"
+
+    - step: 4
+      name: "Verdict emission"
+      description: >
+        Emit allow or block. The signed verdict envelope (Attestation
+        Object) is still draft; field set and semantics are not yet
+        stabilized. See `signal_types.governance_attestation` below.
+      failure_mode: "n/a — verdict is the output"
+
+  # ─── Outputs of the pattern ───
+  verdict_values:
+    - pic_output: allow
+      meaning: "Action Proposal accepted; tool call proceeds."
+    - pic_output: block
+      meaning: "Action Proposal rejected (fail-closed); tool call does not execute. Reason recorded."
+
+  # ─── Where the pattern is invoked ───
+  # Public per README: PIC ships first-party integrations at common
+  # action-boundary surfaces. Each is a deployment site for the same
+  # underlying verification pattern.
+  integrations:
+    - name: "LangGraph"
+      surface: "PICToolNode in agent graphs"
+    - name: "MCP"
+      surface: "Tool guarding at the MCP boundary"
+    - name: "OpenClaw"
+      surface: "Tool-call gating"
+    - name: "Cordum"
+      surface: "Action-boundary integration"
+    - name: "HTTP bridge"
+      surface: "Non-Python consumers"
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS  (SECONDARY)
+#
+# How PIC's outputs map into the canonical signal vocabulary. Today
+# almost every entry is no_mapping: PIC is verdict-oriented, and the
+# signed envelope that would constitute a portable governance_attestation
+# is still a draft. This section will tighten when the Attestation
+# Object stabilizes.
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    pic_term: "Attestation Object (draft)"
+    match: no_mapping
+    notes: >
+      No mapping today; revisit once the signed Attestation Object
+      stabilizes (draft at docs/attestation-object-draft.md). The
+      eventual match calibration (exact / structural / partial) will
+      depend on descriptor-dimension fit — PIC's reference point is
+      the pre-execution action boundary, which differs from the
+      reference points of existing governance_attestation issuers.
+
+  reasoning_integrity:
+    match: no_mapping
+    notes: "PIC verifies action justification (causal chain claim -> evidence -> trusted provenance), not model-level reasoning quality."
+
+  trust_verification:
+    match: no_mapping
+    notes: "PIC consumes operator-configured trust roots; it does not issue identity verification status."
+
+  passport_grade:
+    match: no_mapping
+    notes: "PIC does not issue composite trust grades. Verdicts are per-action and binary."
+
+  behavioral_trust:
+    match: no_mapping
+    notes: "PIC does not score behavior over time; each Action Proposal is evaluated independently."
+
+  security_posture:
+    match: no_mapping
+    notes: "security_posture subjects are artifacts (repo, commit, output); PIC's subject is a pre-execution Action Proposal and verdict."
+
+  compliance_risk:
+    match: no_mapping
+    notes: "PIC produces a binary fail-closed verdict, not a scored exposure assessment."
+
+  wallet_state:
+    match: no_mapping
+    notes: "Out of scope. PIC operates at the action boundary, not the financial layer."
+
+  wallet_intelligence:
+    match: no_mapping
+    notes: "Out of scope."
+
+  job_performance:
+    match: no_mapping
+    notes: "PIC verifies pre-execution justification, not post-execution task delivery."
+
+  settlement_witness:
+    match: no_mapping
+    notes: "PIC evaluates pre-execution justification, not post-execution settlement. A receipt profile is on the roadmap as an optional extension."
+
+  peer_review:
+    match: no_mapping
+    notes: "Out of scope. PIC does not produce delegator-signed task-completion attestations."
+
+  entity_continuity:
+    match: no_mapping
+    notes: "Out of scope. PIC does not attest to identity persistence across infrastructure changes."
+
+# ─────────────────────────────────────────────────
+# RELATIONSHIP TO OTHER CROSSWALKED SYSTEMS
+# ─────────────────────────────────────────────────
+relationships:
+  identity_and_delegation_systems:
+    examples: ["APS (aeoess-aps.yaml)", "any DID-based identity layer"]
+    relation: >
+      Composable upstream. An identity / passport / delegation layer
+      can be wired into PIC's keyring as a trust root. PIC is best
+      modeled here as a parallel action-boundary verification surface
+      rather than as a subtype of visa.
+
+  governance_attestation_peers:
+    examples: ["AgentNexus", "Nobulex", "SINT", "APS"]
+    relation: >
+      Other governance_attestation issuers in the registry, listed
+      for cross-reference. Whether PIC eventually maps into this set,
+      and at what match calibration, depends on descriptor-dimension
+      fit once the Attestation Object stabilizes — see
+      signal_types.governance_attestation above.

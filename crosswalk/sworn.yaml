@@ -41,11 +41,51 @@ maintainer:
   confirmed_at: "2026-04-25"
 
 # ─────────────────────────────────────────────────
+# Status & substance calibration (per CONTRIBUTING.md gate 3)
+# ─────────────────────────────────────────────────
+status: proposed
+substance_calibration:
+  current_state:
+    process_started_at: "2026-04-25T14:25:18Z"
+    active_trusted_scorers: 1
+    scorer_state: "operator-as-scorer (alex-chen@79661d.inboxapi.ai); first
+      external scorer activation pending"
+    on_chain_attestations_total: 14
+    on_chain_program: "CSBAc1SiMALr4rnuCoB17BsddzthB4RAhjibGvyt6p6S
+      (Solana mainnet-beta)"
+  rationale: |
+    Match values for SWORN-specific entries below are calibrated to
+    `partial` rather than `structural` per maintainer guidance on
+    VeritasActa/verify#8 (2026-04-25 16:39 UTC, comment 4320086356):
+    "production data, not well-formed stubs — registries should carry
+    non-null scores on non-test agents." The on-chain attestation count
+    is non-zero (14 receipts, mainnet-beta) and the JWKS endpoint is
+    live and well-formed but currently lists zero published scorer keys
+    (active scorer = operator). This crosswalk documents the production
+    surface as it exists today and self-downgrades match precision until
+    a second independent scorer activates and signs production receipts.
+  promotion_path: |
+    Once a second independent trusted scorer activates and the JWKS
+    publishes a second pubkey + the on-chain ledger carries
+    non-operator-signed receipts, the relevant entries below can be
+    re-calibrated from `partial` to `structural` in a follow-up PR.
+    No vocabulary.yaml changes are bundled here.
+
+# ─────────────────────────────────────────────────
 signal_types:
 
   delivery_attestation:
     canonical: settlement_witness
-    match: structural
+    match: partial
+    match_calibration: |
+      Self-downgraded from structural to partial pending second
+      independent scorer activation. The structural shape (wallet-bound
+      outcome receipt with counterparty inside the signed bytes,
+      Ed25519 + JCS, post-action signing) matches the SAR upgrade
+      pattern; the substance gate is the production-data depth
+      requirement. Re-calibrate to structural when the JWKS publishes
+      a second scorer pubkey and on-chain attestations include
+      non-operator-signed receipts.
     notes: |
       A SWORN delivery attestation is a wallet-bound outcome receipt over
       an agent's deploy bundle. The signed subject is a content hash
@@ -99,7 +139,14 @@ signal_types:
 
   attestation_polarity_negative:
     canonical: settlement_witness
-    match: structural
+    match: partial
+    match_calibration: |
+      Same calibration as delivery_attestation. The polarity-symmetry
+      property is documented in the protocol spec and the envelope
+      schema accepts verdict = "rejected", but production rejection
+      receipts from a second independent scorer have not yet been
+      signed. Re-calibrate when a second scorer signs at least one
+      rejection receipt on a non-test agent.
     notes: |
       Same envelope, verdict = "rejected". Distinguishing here because the
       vocabulary's settlement_witness definition does not currently address
@@ -123,7 +170,13 @@ signal_types:
 
   scorer_reputation:
     canonical: behavioral_trust
-    match: composed
+    match: partial
+    match_calibration: |
+      The composition pattern is in production at the public-stats
+      endpoint and the composed score is non-null, but the composition
+      currently aggregates over a single scorer. Re-calibrate to
+      `composed` once the public-stats endpoint exposes per-scorer
+      breakdowns from at least two scorers.
     notes: |
       Cumulative scorer reputation is published by the SWORN public
       observatory (chenecosystem.com) and the per-scorer public-stats
@@ -246,7 +299,15 @@ decision_trajectory:
 
   decision_lineage:
     canonical: decision_lineage
-    match: structural
+    match: partial
+    match_calibration: |
+      The supersession primitive is implemented in the envelope schema
+      (prev_receipt_hash field) and verifiers can chain-walk via the
+      on-chain ledger, but no production supersession chain has been
+      anchored on mainnet-beta yet (the operator scorer has not issued
+      a superseding verdict on a prior receipt). Re-calibrate to
+      structural when at least one supersession chain of length 2+ is
+      anchored on Solana mainnet-beta.
     notes: |
       SWORN supports supersession via prev_receipt_hash. When a scorer
       issues a newer verdict on the same agent_pubkey + delivery_subject_hash
@@ -439,7 +500,15 @@ crosswalk_metadata:
   authored_by: "@alexchenai"
   vocabulary_version: "0.1.0"
   last_reviewed: "2026-04-25"
-  origin_thread: "https://github.com/VeritasActa/verify/issues/8 (aeoess endorsement comment 4319984512)"
+  origin_thread: "https://github.com/VeritasActa/verify/issues/8 (aeoess endorsement comment 4319984512, gate-3 calibration guidance comment 4320086356)"
+  status_explanation: |
+    PR opened in `status: proposed` per CONTRIBUTING.md gate 3
+    "Substance, Endpoint Depth" — production-data depth requires
+    non-null scores on non-test agents, and the current scorer state is
+    operator-as-scorer. Match values are calibrated `partial` for SWORN-
+    specific entries pending a second independent scorer. The crosswalk
+    is honest about the surface as it exists today; promotion path is
+    documented at the top of this file.
   next_revisions:
     - "Add `polarity` descriptor entry once the vocabulary extension is accepted (gap #1)"
     - "Add `attestation_topology` descriptor entry once accepted (gap #2)"

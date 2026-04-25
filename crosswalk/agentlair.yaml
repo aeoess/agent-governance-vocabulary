@@ -1,0 +1,300 @@
+# crosswalk/agentlair.yaml
+#
+# Maps AgentLair internal naming to the canonical vocabulary
+# defined in vocabulary.yaml v0.1.
+#
+# AgentLair is an agent identity and behavioral trust platform. Agents
+# receive EdDSA-signed session tokens (AATs) with embedded trust
+# attestations, publish did:web DID documents, ingest behavioral events,
+# and expose scored trust profiles. The behavioral trust layer answers
+# the pre-delegation question: does this agent's track record warrant
+# the delegation scope being requested?
+#
+# Home: https://agentlair.dev
+# Source: https://github.com/hawkaa/picoclaw (host runtime)
+# License: Apache-2.0
+
+system:
+  name: AgentLair
+  home: https://agentlair.dev
+  spec_version: "RFC-001 (IdP), RFC-003 (Behavioral Trust Phase 2b)"
+  role: >
+    Agent identity provider and behavioral trust scoring platform.
+    Issues EdDSA-signed Agent Authentication Tokens (AATs) with embedded
+    trust attestations, publishes per-agent did:web DID documents, ingests
+    behavioral events via structured API, and computes three-dimensional
+    trust scores (consistency, restraint, transparency). The trust profile
+    is queryable by any third party to inform pre-delegation decisions.
+  identity_layer: "did:web:agentlair.dev (self-issued)"
+  license: Apache-2.0
+
+license: Apache-2.0
+
+maintainer:
+  github: piiiico
+  confirmed_at: "2026-04-24"
+
+issuer: "did:web:agentlair.dev"
+
+credential_format: "JWT (EdDSA/Ed25519, JWKS-published public key)"
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    internal: "Three-Dimensional Trust Score (RFC-003 Phase 2b)"
+    match: exact
+    notes: >
+      Scored trust assessment derived from observed agent behavior over time.
+      Three dimensions weighted by security relevance: restraint (42.9%,
+      permission discipline and capability utilization), consistency
+      (35.7%, session regularity and tool distribution stability),
+      transparency (21.4%, audit trail completeness and hash chain
+      integrity). Bayesian computation with cold-start prior of 0.30
+      (skeptical default), requiring ~100 observations for full override.
+      Event sources weighted by verifiability: internal 1.0, external
+      signed 0.85, external unsigned 0.7. Free-tier events receive 0.5
+      weight multiplier and are capped at junior ATF level.
+
+      Temporal sequencing context: this signal operates at the
+      pre-delegation layer in a four-layer temporal model —
+      (1) pre-delegation behavioral trust check (this signal),
+      (2) at-delegation authorization binding (action_ref),
+      (3) at-execution integrity proof (params_hash),
+      (4) post-execution outcome attestation (receipt chain).
+      Each layer feeds the next. The feedback edge (post-execution →
+      pre-delegation) is what makes the loop a loop: behavioral events
+      from completed work accumulate into the trust score that gates
+      future delegations. Monotonic narrowing at delegation time
+      conditions on this pre-delegation score.
+    issuers_in_production: ["AgentLair"]
+    signed_payload_fields:
+      - agentId           # string — AgentLair account ID (acc_...)
+      - score             # number [0, 100] — composite behavioral trust score
+      - confidence        # number [0.0, 1.0] — Bayesian confidence in score
+      - confidenceInterval  # object {score, lower, upper, confidence}
+      - atfLevel          # string — 'intern' | 'junior' | 'senior' | 'principal'
+      - trend             # string — 'improving' | 'stable' | 'declining'
+      - dimensions        # object — per-dimension breakdown (consistency, restraint, transparency)
+      - dimensions.consistency.score     # number [0, 100]
+      - dimensions.consistency.signals   # {session_regularity, tool_stability, error_stability, window_consistency}
+      - dimensions.restraint.score       # number [0, 100]
+      - dimensions.restraint.signals     # {scope_utilization, credential_frequency, rate_limit_proximity, escalation_appropriateness, permission_growth}
+      - dimensions.transparency.score    # number [0, 100]
+      - dimensions.transparency.signals  # {audit_coverage, chain_integrity, auth_hygiene, telemetry_reporting}
+      - observationCount  # number — total behavioral events considered
+      - computedAt        # ISO 8601 — when the trust engine last computed
+    endpoints:
+      trust_profile: "https://agentlair.dev/v1/trust/{agentId}"
+      trust_gate: "https://agentlair.dev/v1/trust/{agentId}/check"
+      event_ingestion: "https://agentlair.dev/v1/events"
+    envelope:
+      alg: EdDSA
+      curve: Ed25519
+      proof_type: "JWT signed payload (AAT with al_trust claim)"
+      canonicalization: "standard JSON serialization"
+      jwks_uri: "https://agentlair.dev/.well-known/jwks.json"
+      per_agent_jwks: "https://agentlair.dev/agents/{name}/.well-known/jwks.json"
+    ttl:
+      default_ttl_seconds: 3600     # 1 hour (AAT lifetime)
+      stale_action: hard_fail
+      refresh_trigger: token_reissuance
+    refresh_hint:
+      strategy: event_driven
+      events: ["behavioral_event_ingestion", "token_reissuance"]
+      max_age_seconds: 3600
+    revocation:
+      strategy: expiry_based
+      mechanism: >
+        AAT expires after 1 hour. Trust profile is recomputed on query
+        or event ingestion. No soft-fail — expired AAT is rejected.
+        Per-agent signing keys are rotatable; JWKS cache is 5 minutes.
+    transport:
+      jwks_endpoint: "https://agentlair.dev/.well-known/jwks.json"
+      did_endpoint: "https://agentlair.dev/.well-known/did.json"
+      per_agent_did: "https://agentlair.dev/agents/{accountId}/did.json"
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: >
+      AgentLair does not produce per-task, delegator-signed task-completion
+      attestations. The canonical peer_review definition (task-completion
+      attestation signed by a delegating agent after a service agent
+      completes work) requires per-task scoping with explicit task_id,
+      delegator_id, and outcome fields. AgentLair's TrustProfile is an
+      aggregate behavioral score across all events — no task binding, no
+      delegator signature. The pre-delegation behavioral trust check
+      (TrustProfile) maps to behavioral_trust as primary signal.
+      See behavioral_trust entry for temporal-sequencing context.
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "AAT issuance + did:web DID Document"
+    match: partial
+    notes: >
+      AgentLair issues EdDSA-signed AATs and publishes per-agent did:web
+      DID documents. The AAT is a session-scoped identity token (1h TTL)
+      rather than a standalone identity verification credential. DID
+      documents include verification methods (Ed25519VerificationKey2020)
+      and service endpoints (JWKS, trust profile). Partial match because
+      the AAT is primarily an authorization token with identity as a
+      component, not a dedicated identity verification attestation.
+    endpoints:
+      did_document: "https://agentlair.dev/agents/{accountId}/did.json"
+      did_method: "did:web:agentlair.dev:agents:{accountId}"
+      jwks: "https://agentlair.dev/.well-known/jwks.json"
+      per_agent_jwks: "https://agentlair.dev/agents/{name}/.well-known/jwks.json"
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "Hash-chained audit trail"
+    match: partial
+    notes: >
+      AgentLair maintains a tamper-evident, Ed25519-signed audit trail
+      with prev_hash chaining. Each audit entry is signed and linked to
+      its predecessor, creating a verifiable chain of agent actions. This
+      provides the audit surface for governance but is not emitted as a
+      standalone signed governance attestation in the multi-attestation
+      envelope format. Partial match — the data exists and is signed, but
+      the delivery mechanism is an audit log rather than a portable
+      attestation.
+    endpoints:
+      audit_trail: "Referenced via al_audit_url claim in AAT"
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: >
+      AgentLair does not attest to on-chain wallet holdings. Identity is
+      anchored via did:web and Ed25519 keypairs, not wallet addresses.
+      Out of scope for the current architecture.
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: >
+      AgentLair has no wallet behavioral classification. Behavioral trust
+      is derived from agent action patterns (tool calls, resource access,
+      auth events), not wallet transaction patterns.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: >
+      AgentLair does not attest to model-level reasoning quality. The
+      behavioral trust score measures operational patterns, not output
+      correctness.
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: >
+      AgentLair has no scored compliance risk dimension. Behavioral events
+      that result in 'denied' outcomes contribute to the restraint
+      dimension score, but this is an operational signal, not a compliance
+      risk assessment.
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: >
+      AgentLair does not attest to artifact or repository security posture.
+      The transparency dimension's chain_integrity signal verifies audit
+      trail integrity, which is adjacent but not equivalent.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: >
+      AgentLair's ATF maturity levels (intern/junior/senior/principal)
+      are functionally similar to passport grades but derived from a
+      different evidence class (behavioral events vs. passport issuance
+      evidence). The ATF level is a component of the behavioral_trust
+      mapping above, not a standalone passport grade.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: >
+      AgentLair does not independently assess task outcomes. Behavioral
+      events include result fields (success/failure/denied/timeout) that
+      feed into the trust score, but the platform does not produce a
+      standalone job performance attestation. Task outcome assessment is
+      delegated to the systems that observe execution (e.g., Signet,
+      Logpose).
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      AgentLair does not attest to settlement outcomes. No on-chain or
+      off-chain outcome evidence is produced.
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: >
+      AgentLair does not currently produce migration attestations. Agent
+      identity is tied to the did:web identifier and Ed25519 keypair.
+      Key rotation is supported via per-agent JWKS with 5-minute cache,
+      but there is no signed continuity proof linking old and new keys.
+      Potential future addition.
+
+# ─────────────────────────────────────────────────
+# AGENTLAIR-SPECIFIC TERMS
+# Concepts that don't map to current vocabulary.yaml signal_types.
+# ─────────────────────────────────────────────────
+agentlair_specific_terms:
+
+  - term: "atf_level"
+    definition: >
+      Agent Trust Framework maturity level. Four ordinal levels derived
+      from behavioral trust score and confidence: intern (0–39),
+      junior (40–64), senior (65–84), principal (85–100). Each level
+      requires a qualitatively different evidence class — junior needs
+      at least 1 event category, senior needs 10+ internal events and
+      7+ days of external data across 2+ categories, principal needs
+      50+ internal events and 14+ days across 3+ categories.
+    why_not_canonical: >
+      ATF levels are functionally similar to passport_grade but derived
+      from a different evidence class (behavioral observations vs.
+      issuance evidence). If a second implementation surfaces that
+      derives ordinal maturity levels from behavioral evidence, this
+      becomes a candidate for canonicalization as a behavioral_grade
+      or similar term.
+
+  - term: "cold_start_prior"
+    definition: >
+      Bayesian prior (0.30) applied to new agents with fewer than 10
+      observations. The prior decays as observations accumulate, reaching
+      full override at 100 observations. This means new agents start
+      skeptical — trust is earned through demonstrated behavioral
+      patterns, not declared.
+    why_not_canonical: >
+      Implementation detail of the scoring algorithm, not a governance
+      primitive. Other behavioral trust systems may use different
+      cold-start strategies (e.g., reputation portability, federation).
+
+descriptor_dimensions:
+  enforcement_class: advisory
+  validity_temporal: at_issuance
+  refusal_authority: consumer_policy
+  invariant_survival: post_action
+  replay_class: full_replay
+  governed_action_class: delegate
+
+crosswalk_metadata:
+  authored_by: "@piiiico"
+  vocabulary_version: "0.1.0"
+  last_reviewed: "2026-04-25"
+  rfc_context: "openclaw/openclaw#49971 (RFC: Native Agent Identity & Trust Verification)"
+  refresh_notes:
+    - "v2: Corrected primary mapping from peer_review to behavioral_trust per @aeoess review (aeoess/agent-governance-vocabulary#46)."
+    - "peer_review demoted to no_mapping — AgentLair does not produce per-task delegator-signed attestations."
+    - "behavioral_trust is primary: exact match, production data, full signed_payload_fields, envelope, TTL, transport."
+    - "Temporal-sequencing note (four-layer model) moved to behavioral_trust.notes per vocabulary review guidance."
+    - "Production state: trust endpoints live, behavioral event ingestion live, three-dimensional scoring operational."

@@ -1,0 +1,50 @@
+{
+  "interop_fixture": {
+    "scenario": "interop-week-1",
+    "step": 2,
+    "step_name": "action_authorization",
+    "signal": "governance_attestation",
+    "issuer": "AgentNexus",
+    "canonical_name": "governance_attestation",
+    "created_at": "2026-04-26T13:37:38Z",
+    "created_by": "agentnexus/agent_net",
+    "description": "AgentNexus governance attestation for Step 2 - action authorization. Agent requests code:develop capability and receives a permit decision with spend_limit and scope constraints."
+  },
+  "jws": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImFnZW50bmV4dXMtZml4dHVyZS0yMDI2LTA0In0.eyJpc3MiOiJnYXRld2F5LmFlb2Vzcy5jb20iLCJzdWIiOiJkaWQ6YWdlbnRuZXh1czp6Nk1raGFUZXN0Rml4dHVyZUFnZW50RGV2MDAxIiwiaWF0IjoxNzc3MjEwNjU4LCJleHAiOjE3NzcyOTcwNTgsImp0aSI6ImF0dF9nb3ZfZml4XzIwMjYwNDI2XzAwMSIsInNpZ25hbF90eXBlIjoiZ292ZXJuYW5jZV9hdHRlc3RhdGlvbiIsInNpZ25hbF92ZXJzaW9uIjoiMS4wIiwiY2Fub25pY2FsX25hbWUiOiJnb3Zlcm5hbmNlX2F0dGVzdGF0aW9uIiwicHJpb3Jfc2lnbmFsX2RpZ2VzdCI6InNoYTI1NjphM2YyYjFjOGQ5ZTBmMWEyYjNjNGQ1ZTZmN2E4YjljMGQxZTJmM2E0YjVjNmQ3ZThmOWEwYjFjMmQzZTRmNWE2IiwiZGVjaXNpb24iOiJwZXJtaXQiLCJhY3RpdmVfY29uc3RyYWludHMiOnsic2NvcGUiOlsiY29kZTpkZXZlbG9wIiwiY29kZTpkZXBsb3k6dGVzdCJdLCJzcGVuZF9saW1pdCI6MTAwLCJ2YWxpZGl0eV93aW5kb3ciOnsic3RhcnQiOiIyMDI2LTA0LTI2VDEzOjM3OjM4WiIsImVuZCI6IjIwMjYtMDQtMjdUMDA6MDA6MDBaIiwidHRsX3NlY29uZHMiOjg2NDAwfSwicGFzc3BvcnRfZ3JhZGUiOjJ9LCJ0cnVzdF9zY29yZSI6NzIsImV2aWRlbmNlX3JlZnMiOlt7InR5cGUiOiJydW50aW1lX3ZlcmlmaWNhdGlvbiIsImxldmVsIjoiTDMiLCJjYSI6ImRpZDp3ZWI6Y2EuYWdlbnQtbmV0LmlvIn1dLCJpc3N1ZXJfbWV0YWRhdGEiOnsibmFtZSI6IkFnZW50TmV4dXMgR292ZXJuYW5jZSBTZXJ2aWNlIiwiandrc191cmwiOiJodHRwczovL2dhdGV3YXkuYWVvZXNzLmNvbS8ud2VsbC1rbm93bi9qd2tzLmpzb24iLCJwb2xpY3lfdmVyc2lvbiI6InYxLjAtMjAyNi0wNCJ9fQ.KwUYsiELRky1DWxgzdMPwzhFGbgLv4sBCfUlb-b54xmeZs-jxDdR0Dn7INP_-xlqHADPzxtdYJELHZt5tb89Cw",
+  "parsed_attestation": {
+    "signal_type": "governance_attestation",
+    "issuer": "gateway.aeoess.com",
+    "subject": "did:agentnexus:z6MkhaTestFixtureAgentDev001",
+    "decision": "permit",
+    "scopes": [
+      "code:develop",
+      "code:deploy:test"
+    ],
+    "spend_limit": 100,
+    "trust_score": 72,
+    "passport_grade": 2,
+    "prior_signal_digest": "sha256:a3f2b1c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6",
+    "expires_at": "2026-04-27T00:00:00Z",
+    "jws": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImFnZW50bmV4dXMtZml4dHVyZS0yMDI2LTA0In0.eyJpc3MiOiJnYXRld2F5LmFlb2Vzcy5jb20iLCJzdWIiOiJkaWQ6YWdlbnRuZXh1czp6Nk1raGFUZXN0Rml4dHVyZUFnZW50RGV2MDAxIiwiaWF0IjoxNzc3MjEwNjU4LCJleHAiOjE3NzcyOTcwNTgsImp0aSI6ImF0dF9nb3ZfZml4XzIwMjYwNDI2XzAwMSIsInNpZ25hbF90eXBlIjoiZ292ZXJuYW5jZV9hdHRlc3RhdGlvbiIsInNpZ25hbF92ZXJzaW9uIjoiMS4wIiwiY2Fub25pY2FsX25hbWUiOiJnb3Zlcm5hbmNlX2F0dGVzdGF0aW9uIiwicHJpb3Jfc2lnbmFsX2RpZ2VzdCI6InNoYTI1NjphM2YyYjFjOGQ5ZTBmMWEyYjNjNGQ1ZTZmN2E4YjljMGQxZTJmM2E0YjVjNmQ3ZThmOWEwYjFjMmQzZTRmNWE2IiwiZGVjaXNpb24iOiJwZXJtaXQiLCJhY3RpdmVfY29uc3RyYWludHMiOnsic2NvcGUiOlsiY29kZTpkZXZlbG9wIiwiY29kZTpkZXBsb3k6dGVzdCJdLCJzcGVuZF9saW1pdCI6MTAwLCJ2YWxpZGl0eV93aW5kb3ciOnsic3RhcnQiOiIyMDI2LTA0LTI2VDEzOjM3OjM4WiIsImVuZCI6IjIwMjYtMDQtMjdUMDA6MDA6MDBaIiwidHRsX3NlY29uZHMiOjg2NDAwfSwicGFzc3BvcnRfZ3JhZGUiOjJ9LCJ0cnVzdF9zY29yZSI6NzIsImV2aWRlbmNlX3JlZnMiOlt7InR5cGUiOiJydW50aW1lX3ZlcmlmaWNhdGlvbiIsImxldmVsIjoiTDMiLCJjYSI6ImRpZDp3ZWI6Y2EuYWdlbnQtbmV0LmlvIn1dLCJpc3N1ZXJfbWV0YWRhdGEiOnsibmFtZSI6IkFnZW50TmV4dXMgR292ZXJuYW5jZSBTZXJ2aWNlIiwiandrc191cmwiOiJodHRwczovL2dhdGV3YXkuYWVvZXNzLmNvbS8ud2VsbC1rbm93bi9qd2tzLmpzb24iLCJwb2xpY3lfdmVyc2lvbiI6InYxLjAtMjAyNi0wNCJ9fQ.KwUYsiELRky1DWxgzdMPwzhFGbgLv4sBCfUlb-b54xmeZs-jxDdR0Dn7INP_-xlqHADPzxtdYJELHZt5tb89Cw"
+  },
+  "verification": {
+    "method": "EdDSA",
+    "jwks_url": "https://gateway.aeoess.com/.well-known/jwks.json",
+    "fixture_public_key_hex": "7f6381238fd41d3dd9b5d0d177ac7fd9237ae7266bf0bbd203d578c87033899a",
+    "note": "This fixture uses a fixture-only keypair. In production, the issuer's real JWKS is used."
+  },
+  "composition_chain": [
+    {
+      "step": 1,
+      "signal": "trust_verification",
+      "note": "Referenced by digest; not included in this fixture",
+      "digest": "sha256:a3f2b1c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6"
+    },
+    {
+      "step": 2,
+      "signal": "governance_attestation",
+      "issuer": "AgentNexus",
+      "jws": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImFnZW50bmV4dXMtZml4dHVyZS0yMDI2LTA0In0.eyJpc3MiOiJnYXRld2F5LmFlb2Vzcy5jb20iLCJzdWIiOiJkaWQ6YWdlbnRuZXh1czp6Nk1raGFUZXN0Rml4dHVyZUFnZW50RGV2MDAxIiwiaWF0IjoxNzc3MjEwNjU4LCJleHAiOjE3NzcyOTcwNTgsImp0aSI6ImF0dF9nb3ZfZml4XzIwMjYwNDI2XzAwMSIsInNpZ25hbF90eXBlIjoiZ292ZXJuYW5jZV9hdHRlc3RhdGlvbiIsInNpZ25hbF92ZXJzaW9uIjoiMS4wIiwiY2Fub25pY2FsX25hbWUiOiJnb3Zlcm5hbmNlX2F0dGVzdGF0aW9uIiwicHJpb3Jfc2lnbmFsX2RpZ2VzdCI6InNoYTI1NjphM2YyYjFjOGQ5ZTBmMWEyYjNjNGQ1ZTZmN2E4YjljMGQxZTJmM2E0YjVjNmQ3ZThmOWEwYjFjMmQzZTRmNWE2IiwiZGVjaXNpb24iOiJwZXJtaXQiLCJhY3RpdmVfY29uc3RyYWludHMiOnsic2NvcGUiOlsiY29kZTpkZXZlbG9wIiwiY29kZTpkZXBsb3k6dGVzdCJdLCJzcGVuZF9saW1pdCI6MTAwLCJ2YWxpZGl0eV93aW5kb3ciOnsic3RhcnQiOiIyMDI2LTA0LTI2VDEzOjM3OjM4WiIsImVuZCI6IjIwMjYtMDQtMjdUMDA6MDA6MDBaIiwidHRsX3NlY29uZHMiOjg2NDAwfSwicGFzc3BvcnRfZ3JhZGUiOjJ9LCJ0cnVzdF9zY29yZSI6NzIsImV2aWRlbmNlX3JlZnMiOlt7InR5cGUiOiJydW50aW1lX3ZlcmlmaWNhdGlvbiIsImxldmVsIjoiTDMiLCJjYSI6ImRpZDp3ZWI6Y2EuYWdlbnQtbmV0LmlvIn1dLCJpc3N1ZXJfbWV0YWRhdGEiOnsibmFtZSI6IkFnZW50TmV4dXMgR292ZXJuYW5jZSBTZXJ2aWNlIiwiandrc191cmwiOiJodHRwczovL2dhdGV3YXkuYWVvZXNzLmNvbS8ud2VsbC1rbm93bi9qd2tzLmpzb24iLCJwb2xpY3lfdmVyc2lvbiI6InYxLjAtMjAyNi0wNCJ9fQ.KwUYsiELRky1DWxgzdMPwzhFGbgLv4sBCfUlb-b54xmeZs-jxDdR0Dn7INP_-xlqHADPzxtdYJELHZt5tb89Cw"
+    }
+  ]
+}

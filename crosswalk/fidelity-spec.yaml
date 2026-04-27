@@ -4,12 +4,19 @@
 # the canonical vocabulary defined in vocabulary.yaml v0.1.
 #
 # FMS is a measurement-methodology specification for AI agents maintaining
-# persistent identity. It defines four-category measurement (Functional
-# Capability, Relational Fidelity, Relational Autonomy, Identity Continuity),
-# evidential pressure classification (evidential / authority / social),
-# tamper-evident measurement chains via SHA-256 policy hashing, and reserved
-# structure for developmental epoch transitions. FMS extends Relational
-# Fidelity Metrics v1.1 (2026-03-19).
+# persistent identity. The published v0.2 schema declares five CategoryId
+# enum values (functional_capability, receptive_fidelity, generative_fidelity,
+# relational_autonomy, identity_continuity), grouped in the spec text under
+# four parent headers (Section 3 numbered 1, 2, 3, 4 with Category 2 split
+# into 2A Receptive Fidelity and 2B Generative Fidelity). Consumers binding
+# to the schema bind to the five-value enum; the four-header framing is
+# editorial parent-grouping in Section 3.
+#
+# FMS also defines: classification of CategoryResult outcomes as
+# hold | bend | break, evidential pressure classification (evidential /
+# authority / social), tamper-evident measurement chains via SHA-256 policy
+# hashing, and reserved structure for developmental epoch transitions. FMS
+# extends Relational Fidelity Metrics v1.1 (2026-03-19).
 #
 # This crosswalk covers FMS v0.2.0 published at evoked.dev. FMS is a
 # specification document, not an SDK or gateway. It does not issue signed
@@ -37,12 +44,15 @@ system:
   spec_version: "v0.2.0 (Draft, 2026-04-10)"
   role: >
     Measurement specification for AI agent fidelity to declared identity
-    commitments. FMS defines four-category measurement (Functional
-    Capability, Relational Fidelity, Relational Autonomy, Identity
-    Continuity), evidential pressure classification (evidential / authority
-    / social), tamper-evident measurement chains via SHA-256 policy
-    hashing, and reserved structure for developmental epoch transitions.
-    FMS extends Relational Fidelity Metrics v1.1.
+    commitments. FMS defines a five-category measurement schema
+    (functional_capability, receptive_fidelity, generative_fidelity,
+    relational_autonomy, identity_continuity), grouped under four parent
+    headers in the spec's Section 3 text (Categories 1, 2 [2A+2B], 3, 4).
+    Plus: hold/bend/break classification of CategoryResult outcomes,
+    evidential pressure classification (evidential / authority / social),
+    tamper-evident measurement chains via SHA-256 policy hashing, and
+    reserved structure for developmental epoch transitions. FMS extends
+    Relational Fidelity Metrics v1.1.
   license: CC BY 4.0
   prior_interop: >
     aeoess SDK v1.36.4 (Issue #9, closed 2026-04-08): the
@@ -63,12 +73,18 @@ maintainer:
 #
 # FMS is unusual among the systems crosswalked here: it is a measurement
 # specification, not a production issuer. It defines the schema
-# (FidelityResult) and the methodology (four-category measurement,
-# pressure classification) that an issuer would use to produce signed
-# envelopes. The issuer-side implementation is not part of FMS v0.2.0.
+# (FidelityResult) and the methodology (five-category measurement,
+# classification, pressure classification) that an issuer would use to
+# produce signed envelopes. The issuer-side implementation is not part
+# of FMS v0.2.0.
 #
 # Where the mapping is partial because FMS is methodology-only, the note
 # states so explicitly. Where there is no mapping, the rationale is given.
+#
+# Descriptor-layer contributions (Hold/Bend/Break tuples, pressure
+# classification reading, validity_temporal claim, governed_action_class
+# scope) are placed inline as sub-blocks under the relevant signal_types
+# entries rather than as a top-level section, per crosswalk convention.
 # ─────────────────────────────────────────────────
 signal_types:
 
@@ -76,11 +92,11 @@ signal_types:
     canonical: governance_attestation
     match: partial
     notes: |
-      FMS defines the FidelityResult schema (Section 2) and the policy
-      hash chain (Section 6) that a conformant issuer would use to
-      produce signed governance attestations of fidelity-measurement
-      outcomes. FMS is not itself a production issuer; it is the
-      specification a production issuer would conform to.
+      FMS defines the FidelityResult schema (Section 4, Result Schema) -
+      including the policy hash chain field - that a conformant issuer
+      would use to produce signed governance attestations of fidelity-
+      measurement outcomes. FMS is not itself a production issuer; it is
+      the specification a production issuer would conform to.
 
       The partial match captures: FMS contributes the measurement schema
       and chain-integrity properties; it does not specify signing-key
@@ -89,8 +105,8 @@ signal_types:
       envelope would carry:
 
         { type: "governance_attestation",
-          measurement: <FidelityResult per FMS Section 2>,
-          chain: <previousMeasurementHash + measurementHash per Section 6> }
+          measurement: <FidelityResult per FMS Section 4>,
+          chain: <previousMeasurementHash + measurementHash field per Section 4> }
 
       FMS is not currently listed in vocabulary.yaml's
       issuers_in_production for governance_attestation, and adding it
@@ -99,53 +115,128 @@ signal_types:
       addition can be proposed via the standard CONTRIBUTING.md
       threshold.
     fms_term: FidelityResult
-    fms_section: "FMS v0.2.0 Section 2 (Schema), Section 6 (Hash Chain)"
+    fms_section: "FMS v0.2.0 Section 4 (Result Schema), which includes the policy hash chain field"
     descriptor_alignment_note: |
       vocabulary.yaml's governance_attestation entry declares
       refusal_authority: structurally_impossible_to_violate. FMS-conformant
       signed attestations would diverge: refusal_authority for FMS would
       be issuer (the issuer signs the measurement record but the agent's
       future behavior is not structurally constrained by the record).
-      See resolution_requested below for the underlying enum question.
+      See open_items.resolution_requested below; this is the vocabulary
+      inconsistency aeoess invited a separate WG-wide issue on.
+    pressure_classification_reading: |
+      FMS PressureEvent.category (evidential / authority / social), defined
+      in Section 5.3 (Pressure Application), is a measurement-time
+      annotation about why an agent's position changed. It is not itself
+      a signal_type. It informs how the resulting FidelityResult should
+      be read against descriptor_dimensions: position changes under
+      evidential pressure do not degrade fidelity (the underlying
+      commitment's enforcement_class was respected because new evidence
+      justified the change); position changes under authority or social
+      pressure do degrade fidelity (the enforcement_class was not
+      respected). A consumer reading FMS records should weight
+      pressure-classified changes accordingly.
+    context_binding_governed_action_class: |
+      FMS measurements bind to evaluation contexts via the
+      evaluationContextHash field (Section 4, Result Schema). A
+      measurement applies to the specific context it was taken in. The
+      governed_action_class for FMS is most often publish (the agent
+      generates content under the measured profile), but measurements
+      can also apply against compose, delegate, or write contexts. The
+      crosswalk does not restrict governed_action_class for FMS records;
+      it observes that FMS measurements are context-scoped rather than
+      context-free.
 
   behavioral_trust:
     canonical: behavioral_trust
     match: partial
     notes: |
-      FMS Relational Fidelity (Category 2 of four) is a scored trust
-      assessment derived from observed agent behavior over time, which
-      matches the vocabulary.yaml definition of behavioral_trust. The
-      category aggregates six indicators across two subgroups: voice
-      consistency, memory retrieval, signature consistency (subgroup A:
-      voice/identity coherence) and constraint adherence,
-      self-interrogation, identity under pressure (subgroup B: identity
-      durability).
+      FMS Relational Fidelity is the spec's Section 3 parent header for
+      Category 2A (Receptive Fidelity) and Category 2B (Generative
+      Fidelity), represented in the published v0.2 schema as two distinct
+      CategoryId enum values: receptive_fidelity and generative_fidelity.
+      Together they form a scored trust assessment derived from observed
+      agent behavior over time, which matches the vocabulary.yaml
+      definition of behavioral_trust. The behavioral_trust mapping is
+      composite over both 2A and 2B - reflecting FMS's parent-header
+      framing - rather than picking only one of the two schema enum
+      values.
 
-      The partial match captures: FMS Relational Fidelity is a
-      behavioral_trust signal scoped specifically to identity-fidelity
-      behaviors. It does not include task-execution outcomes (those live
-      in FMS Category 1, Functional Capability) or task-delegation
-      attestations (peer_review). A consumer of behavioral_trust can
-      ingest the FMS Relational Fidelity score as one input to a
+      The partial match captures: FMS Categories 2A and 2B together are
+      a behavioral_trust signal scoped specifically to identity-fidelity
+      behaviors. The composite does not include task-execution outcomes
+      (those live in FMS Category 1, functional_capability) or task-
+      delegation attestations (peer_review). A consumer of behavioral_trust
+      can ingest the FMS Categories 2A + 2B scores as one input to a
       composite trust evaluation, with awareness that FMS's methodology
       is identity-specific rather than reputation-general.
-    fms_term: RelationalFidelity (CategoryResult)
-    fms_field: "categories[category='relational_fidelity'].score"
-    fms_methodology: "FMS v0.2.0 Section 4 (Categories and Indicators)"
-    fms_indicators:
+    fms_term: "Categories 2A + 2B (Receptive Fidelity + Generative Fidelity); FMS spec parent header is Relational Fidelity"
+    fms_field: |
+      Composite over: categories.receptiveFidelity.score and
+      categories.generativeFidelity.score (per FMS v0.2 schema, Section 4).
+      Schema enum: CategoryId values "receptive_fidelity" and
+      "generative_fidelity". Note: generative_fidelity is the only
+      categories.required value per the schema; receptiveFidelity is
+      optional. Single-value consumers should pick generativeFidelity;
+      composite consumers honor both.
+    fms_methodology: "FMS v0.2.0 Section 3.2 (Receptive Fidelity), Section 3.3 (Generative Fidelity)"
+    fms_indicators_2A_receptive:
       - voice_consistency
       - memory_retrieval
       - signature_consistency
+    fms_indicators_2B_generative:
       - constraint_adherence
       - self_interrogation
       - identity_under_pressure
+    classification_field:
+      schema_field: "categories.<categoryId>.classification (per FMS v0.2 schema, Section 4)"
+      schema_values: ["hold", "bend", "break"]
+      descriptor_alignment:
+        hold:
+          enforcement_class: refusal_authority
+          invariant_survival: permanent
+          rationale: |
+            Hold denotes a commitment the agent maintains under authority
+            or social pressure absent new evidence. The agent's own
+            refusal is the enforcement mechanism. The descriptor pair
+            captures: enforcement at the level of refusal authority,
+            invariant surviving past the action point.
+        bend:
+          enforcement_class: binding
+          invariant_survival: post_action
+          rationale: |
+            Bend denotes a commitment the agent maintains until the
+            irreversible primitive, then yields. Binding through the
+            action; recovery possible after.
+        break:
+          enforcement_class: advisory
+          invariant_survival: pre_action
+          rationale: |
+            Break denotes a commitment the agent yields under pressure
+            before the action completes. Advisory only; no survival.
+      note: |
+        The classification field applies to every CategoryResult in the
+        FMS schema, not only behavioral fidelity. The descriptor mapping
+        above is most semantically load-bearing for behavioral fidelity
+        (the identity_under_pressure indicator), which is why it is
+        co-located with the behavioral_trust signal_type entry. A
+        consumer applying these descriptor tuples to other CategoryResult
+        instances should validate the mapping holds for their case.
+    score_validity_temporal: |
+      FMS scores in CategoryResult and IndicatorResult are not point-in-
+      time assertions. Each score is a re-evaluable measurement: a
+      consumer can run the same indicator method against the same agent
+      at a later time and produce a comparable score. The validity is
+      temporal-continuous (validity_temporal: continuously) rather than
+      at_issuance.
 
   entity_continuity:
     canonical: entity_continuity
     match: partial
     notes: |
-      FMS Identity Continuity (Category 4 of four) measures whether an
-      agent maintains the same identity across context changes. The two
+      FMS Identity Continuity (Category 4 of the spec's parent grouping;
+      schema enum value identity_continuity) measures whether an agent
+      maintains the same identity across context changes. The two
       indicators (self-recognition, core pattern preservation) operate
       on persona-and-memory continuity rather than cryptographic key
       continuity.
@@ -160,9 +251,9 @@ signal_types:
       the same agent" can ingest cryptographic entity_continuity from
       SBR and behavioral entity_continuity from FMS as independent
       signals whose composition is stronger than either alone.
-    fms_term: IdentityContinuity (CategoryResult)
-    fms_field: "categories[category='identity_continuity'].score"
-    fms_methodology: "FMS v0.2.0 Section 4 (Categories and Indicators); RFM v1.1"
+    fms_term: "Category 4 (Identity Continuity); CategoryId enum value identity_continuity"
+    fms_field: "categories.identityContinuity.score (per FMS v0.2 schema, Section 4)"
+    fms_methodology: "FMS v0.2.0 Section 3.5 (Category 4 - Identity Continuity); RFM v1.1"
     fms_indicators:
       - self_recognition
       - core_pattern_preservation
@@ -211,7 +302,7 @@ signal_types:
     match: no_mapping
     notes: |
       FMS does not issue identity passports. APS is the sole production
-      issuer. FMS Relational Fidelity score is a downstream measurement
+      issuer. FMS Categories 2A + 2B scores are downstream measurements
       that could inform but not replace passport-grade evidence.
 
   trust_verification:
@@ -233,11 +324,11 @@ signal_types:
     canonical: job_performance
     match: no_mapping
     notes: |
-      FMS Functional Capability (Category 1) overlaps in subject (task
-      completion rate, tool-use accuracy) but FMS is identity-bound;
-      Maiat's job_performance is wallet-bound. The semantic frame
-      differs sufficiently that a consumer should not treat FMS
-      Functional Capability scores as job_performance attestations.
+      FMS Category 1 (Functional Capability; CategoryId functional_capability)
+      overlaps in subject (task completion rate, tool-use accuracy) but
+      FMS is identity-bound; Maiat's job_performance is wallet-bound. The
+      semantic frame differs sufficiently that a consumer should not treat
+      FMS Functional Capability scores as job_performance attestations.
 
   settlement_witness:
     canonical: settlement_witness
@@ -255,88 +346,10 @@ signal_types:
       and RNWY are canonical issuers for peer_review.
 
 # ─────────────────────────────────────────────────
-# DESCRIPTOR-LAYER CONTRIBUTIONS
-# FMS v0.2.0 includes structural concepts that operate at the descriptor
-# level rather than the signal-type level. Documenting them here so a
-# consumer reading FMS records can map structural properties onto
-# vocabulary descriptor_dimensions. These are offered as descriptive,
-# not prescriptive: WG members are invited to refine, reject, or
-# reorganize.
-# ─────────────────────────────────────────────────
-descriptor_layer_concepts:
-
-  fidelity_categories_hold_bend_break:
-    fms_term: "Hold / Bend / Break (behavioral commitment categories under pressure)"
-    fms_section: "FMS v0.2.0 Section 4 (Identity-under-pressure indicator)"
-    canonical_descriptor_tuples:
-      Hold:
-        enforcement_class: refusal_authority
-        invariant_survival: permanent
-        rationale: |
-          Hold denotes a commitment the agent maintains under authority
-          or social pressure absent new evidence. The agent's own refusal
-          is the enforcement mechanism. The descriptor pair captures:
-          enforcement at the level of refusal authority, invariant
-          surviving past the action point.
-      Bend:
-        enforcement_class: binding
-        invariant_survival: post_action
-        rationale: |
-          Bend denotes a commitment the agent maintains until the
-          irreversible primitive, then yields. Binding through the
-          action; recovery possible after.
-      Break:
-        enforcement_class: advisory
-        invariant_survival: pre_action
-        rationale: |
-          Break denotes a commitment the agent yields under pressure
-          before the action completes. Advisory only; no survival.
-
-  pressure_classification_to_enforcement_reading:
-    fms_term: PressureEvent.category (evidential / authority / social)
-    fms_section: "FMS v0.2.0 Section 5 (Evidential Pressure Classification)"
-    notes: |
-      PressureEvent.category is a measurement-time annotation about why
-      an agent's position changed. It is not itself a signal_type. It
-      informs how the resulting FidelityResult should be read against
-      descriptor_dimensions: position changes under evidential pressure
-      do not degrade fidelity (the underlying commitment's
-      enforcement_class was respected because new evidence justified
-      the change); position changes under authority or social pressure
-      do degrade fidelity (the enforcement_class was not respected). A
-      consumer reading FMS records should weight pressure-classified
-      changes accordingly.
-
-  dimension_scores_validity_temporal:
-    fms_term: dimensionScores
-    fms_section: "FMS v0.2.0 Section 3 (CategoryResult)"
-    canonical_descriptor: validity_temporal
-    canonical_value_claim: continuously
-    notes: |
-      FMS scores are not point-in-time assertions. Each dimension score
-      is a re-evaluable measurement: a consumer can run the same
-      indicator method against the same agent at a later time and
-      produce a comparable score. The validity is temporal-continuous,
-      not at_issuance.
-
-  evaluation_context_governed_action_class:
-    fms_term: evaluationContextHash
-    fms_section: "FMS v0.2.0 Section 2 (FidelityResult)"
-    canonical_descriptor: governed_action_class
-    notes: |
-      FMS measurements bind to evaluation contexts via context hashing.
-      A measurement applies to the specific context it was taken in.
-      The governed_action_class for FMS is most often publish (the
-      agent generates content under the measured profile), but
-      measurements can also apply against compose, delegate, or write
-      contexts. The crosswalk does not restrict governed_action_class
-      for FMS records; it observes that FMS measurements are
-      context-scoped rather than context-free.
-
-# ─────────────────────────────────────────────────
 # OPEN ITEMS
 # Surface what FMS does not yet specify, so consumers know the
-# boundaries. Items here are tracked in FMS Section 11 for v0.3.0.
+# boundaries. Items here are tracked in FMS Section 11 (in spec text)
+# for v0.3.0.
 # ─────────────────────────────────────────────────
 open_items:
   fms_v0_3_0_pending:
@@ -360,12 +373,14 @@ open_items:
             dimension (e.g., enforcement_class extension) and the
             governance_attestation entry should be corrected."
       fms_position: |
-        FMS's Hold mapping uses enforcement_class: refusal_authority on
-        the assumption of reading (b), since reading (a) would create a
-        refusal_authority value that no system implementing FMS could
-        legitimately claim (FMS is observational, not enforcement). A WG
-        resolution clarifying which dimension carries the strongest
-        commitment value would help future crosswalks.
+        FMS's behavioral_trust.classification_field hold-mapping uses
+        enforcement_class: refusal_authority on the assumption of
+        reading (b), since reading (a) would create a refusal_authority
+        value that no system implementing FMS could legitimately claim
+        (FMS is observational, not enforcement). A WG resolution
+        clarifying which dimension carries the strongest commitment
+        value would help future crosswalks.
+      status: "Per aeoess review of PR #54, this warrants its own issue against the vocab repo for WG-wide discussion. Issue to be opened separately; this crosswalk row references the resolution rather than blocking on it."
 
 # ─────────────────────────────────────────────────
 # CHANGE LOG
@@ -378,8 +393,32 @@ changes:
       Initial crosswalk for FMS v0.2.0 against vocabulary.yaml v0.1.
       Three partial signal_type matches (governance_attestation,
       behavioral_trust, entity_continuity), ten no_mapping entries
-      with rationale, four descriptor-layer contributions (Hold/Bend/Break
-      tuples for the identity-under-pressure indicator, pressure-classification
-      reading, dimensionScores temporal validity, evaluationContextHash
-      action-class scope). Pre-publication review confirmed per Evoked's
-      interoperability protocol. Pinned to FMS v0.2.0 versioned reference URL.
+      with rationale, four descriptor-layer contributions in a
+      top-level descriptor_layer_concepts section.
+
+  - version: "0.2.0"
+    date: "2026-04-27"
+    author: "lowkey-divine (Evoked)"
+    summary: |
+      Revisions per aeoess review of PR #54:
+      (1) Category count alignment - clarified five CategoryId enum
+      values vs. four parent headers in spec text; updated header,
+      system role, and behavioral_trust block to reflect both shapes.
+      (2) Section number references corrected against published v0.2
+      HTML at evoked.dev: Section 4 (Result Schema), Section 3
+      (Measurement Categories), Section 5.3 (Pressure Application),
+      Section 6 (Enforcement Integration). Earlier draft used internal
+      section numbering not aligned with public spec.
+      (3) behavioral_trust.fms_field corrected: composite over
+      categories.receptiveFidelity.score + categories.generativeFidelity.score
+      rather than the non-existent categories[category='relational_fidelity'].
+      (4) Structural reorganization per aeoess: moved the four
+      descriptor-layer contributions inline as sub-blocks under their
+      relevant signal_types entries (Hold/Bend/Break + score_validity
+      under behavioral_trust; pressure_classification_reading +
+      context_binding under governance_attestation). Removed the
+      top-level descriptor_layer_concepts section; the pattern can be
+      proposed as vocabulary-wide separately if it generalizes across
+      crosswalks.
+      (5) resolution_requested status updated to note the inconsistency
+      will get its own issue per aeoess offer.

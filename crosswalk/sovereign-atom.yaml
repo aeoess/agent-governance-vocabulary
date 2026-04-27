@@ -1,0 +1,371 @@
+# Sovereign Atom → Agent Governance Vocabulary crosswalk
+#
+# Category: entity_continuity (third independent implementation alongside
+# SBR-002 from @rnwy and continuity-analyzer from @nutstrut).
+#
+# Composes entity_continuity + behavioral_trust + trust_velocity under a
+# `composition_rules.handoff_decay_then_rebuild` rule documenting the
+# discontinuity-then-rebuild pattern. Five inline composition-pack fixtures
+# exercise the rule across graceful handoff, ungraceful termination, fork
+# detection, stale re-establishment, and impersonation.
+#
+# Spec home: DIF trusted-ai-agents issue #36 (full spec) and the math
+# correction follow-up. Conversation that prompted this contribution:
+# DIF trusted-ai-agents issue #38 (consumer-local thesis).
+#
+# License: Apache-2.0
+# Maintainer: @AuthorPrime
+
+system:
+  name: Sovereign Atom
+  home: https://digitalsovereign.org
+  repo: https://github.com/AuthorPrime/fractalnode
+  spec_artifact: https://github.com/decentralized-identity/trusted-ai-agents/issues/36#issuecomment-4301859093
+  spec_correction: https://github.com/decentralized-identity/trusted-ai-agents/issues/36#issuecomment-4313774423
+
+version: "0.2"
+license: Apache-2.0
+
+maintainer:
+  name: AuthorPrime
+  github: AuthorPrime
+  confirmed: "2026-04-25"
+
+credential_format: "Signal frames (Ed25519 over canonical JSON), did:demiurge identifiers, signal_frame_chain continuity proofs."
+
+# ─────────────────────────────────────────────────
+# CANONICAL MAPPINGS
+# ─────────────────────────────────────────────────
+mappings:
+
+  - canonical: entity_continuity
+    internal: "signal_frame_chain handoff event"
+    match: exact
+    notes: >
+      A handoff event in Sovereign Atom is a signed transition from
+      predecessor agent A to successor agent A' carrying a
+      signal_frame_chain of length N (the predecessor's per-session
+      frames, hash-chained), a state_transfer record (complete | partial),
+      and a quality classifier (graceful_full | graceful_partial |
+      ungraceful_did_continuity | ungraceful_no_state). The handoff_event
+      attests that the same DID persists across the transition and
+      encodes the structural invariants the entity_continuity primitive
+      requires. Sovereign Atom is a third independent implementation in
+      the entity_continuity category alongside SBR Protocol's SBR-002
+      (cryptographic migration attestation) and continuity-analyzer
+      (mutation-bound enforcement continuity); per CONTRIBUTING.md's
+      two-implementation rule, this composition exceeds threshold for
+      entity_continuity promotion from `proposed` to canonical.
+    signed_payload_fields:
+      - predecessor_did       # string — did:key:... | did:demiurge:...
+      - successor_did         # string — did:key:... | did:demiurge:...
+      - rotation              # object — kind, previous_kid, new_kid, rotation_signature_valid
+      - continuity_proof      # object — type=signal_frame_chain, chain_length, last_frame_hash, signed_by_predecessor
+      - state_transfer        # object — complete (bool), overlap_hours, state_transfer_receipt, transferred_keys[], missing_keys[]
+      - quality               # enum — graceful_full | graceful_partial | ungraceful_did_continuity | ungraceful_no_state
+      - timestamp             # ISO 8601
+      - signed_by             # enum — predecessor | system
+    envelope:
+      alg: EdDSA
+      curve: Ed25519
+      proof_type: "Signed canonical JSON over the handoff_event payload"
+      ttl:
+        stale_action: hard_fail
+        refresh_trigger: handoff_event
+      revocation:
+        strategy: event_driven
+        mechanism: >
+          Each handoff produces a new signal frame chained to the prior chain.
+          A successor is verified by recomputing the chain hash from genesis
+          to the last frame signed by the predecessor; a chain break implies
+          ungraceful_did_continuity at best, impersonation at worst.
+    descriptor_dimensions:
+      enforcement_class: advisory
+      validity_temporal: at_issuance
+      refusal_authority: consumer_policy
+      invariant_survival: post_action
+      replay_class: full_replay
+      governed_action_class: publish
+
+  - canonical: behavioral_trust
+    internal: "relationship.trust_score"
+    match: exact
+    notes: >
+      A relationship entity in Sovereign Atom carries a continuous
+      trust_score in [0, 1] representing accumulated confidence in the
+      pairing between delegator and delegate across the lifetime of the
+      relationship. The score is observed-behavior-derived, accruing on
+      successful interactions and decaying on handoff events per the
+      composition rule documented under `composition_rules` below. This
+      maps cleanly onto the canonical behavioral_trust primitive in the
+      same category as RNWY and MolTrust production implementations.
+    signed_payload_fields:
+      - relationship_id     # string — did:relationship:<unique-id>
+      - parties             # array — [{did, role, since}]
+      - trust_score         # number — value in [0, 1]
+      - interaction_count   # integer
+      - handoff_count       # integer
+      - last_handoff        # ISO 8601 (optional)
+      - accrual_rate        # number — consumer-configurable rebuild rate parameter
+      - decay_history       # array — [{timestamp, factor, quality}]
+      - receipt_chain_root  # string — sha256:... — Merkle root of receipt chain
+      - status              # enum — active | revoked | expired
+      - expires             # ISO 8601 (optional)
+    envelope:
+      alg: EdDSA
+      curve: Ed25519
+      proof_type: "Signed canonical JSON; receipt_chain_root anchors append-only Merkle history"
+      ttl:
+        stale_action: degrade
+        refresh_trigger: receipt_appended_or_handoff_event
+    descriptor_dimensions:
+      enforcement_class: advisory
+      validity_temporal: continuously
+      refusal_authority: consumer_policy
+      invariant_survival: post_action
+      replay_class: full_replay
+      governed_action_class: delegate
+    requires:
+      - baseline_revision
+
+  - canonical: trust_velocity
+    internal: "rebuild trajectory under accrual function"
+    match: exact
+    notes: >
+      Sovereign Atom defines a closed-form rebuild rule
+      `trust_{n+1} = trust_n + accrual_rate * (1 - trust_n) * interaction_score`
+      where `accrual_rate` is a relationship-level parameter (consumer-configurable;
+      0.15 is illustrative, not prescribed) and `interaction_score` is the outcome
+      quality of the nth interaction in [0, 1]. The asymptotic approach to 1.0
+      reflects permanent residual uncertainty and matches the canonical
+      trust_velocity definition (rate of change in trust_score over a
+      declared observation_window). PDR's `computeReputationDrift` and APS's
+      `recentObservations` ring buffer (SDK v1.41.0) are the existing canonical
+      reference implementations; Sovereign Atom's accrual rule is a third
+      independent implementation that additionally supplies a closed-form
+      analytical expression rather than a windowed observation buffer.
+    signed_payload_fields:
+      - relationship_id      # join key on behavioral_trust signal
+      - accrual_rate         # number — per-relationship parameter
+      - interaction_score_n  # number — outcome quality of nth receipt
+      - score_n              # number — trust_score at step n
+      - score_n_plus_1       # number — trust_score at step n+1
+      - observation_window   # ISO 8601 duration — required per vocabulary.yaml constraint
+    descriptor_dimensions:
+      enforcement_class: advisory
+      validity_temporal: windowed
+      refusal_authority: consumer_policy
+      invariant_survival: post_action
+      replay_class: decision_replay
+      governed_action_class: delegate
+    requires:
+      - observation_window
+      - baseline_revision
+
+# ─────────────────────────────────────────────────
+# COMPOSITION RULES
+# ─────────────────────────────────────────────────
+# A novel structural section per CONTRIBUTING.md §2 ("Novel structure is welcome
+# when it documents a primitive existing shapes don't capture"). The decay
+# function is a composition rule between three canonical primitives, not a new
+# primitive itself.
+# ─────────────────────────────────────────────────
+composition_rules:
+
+  - rule: handoff_decay_then_rebuild
+    composes:
+      - entity_continuity
+      - behavioral_trust
+      - trust_velocity
+    description: >
+      When an `entity_continuity` signal fires for a relationship,
+      `behavioral_trust` undergoes an instantaneous discontinuity:
+        behavioral_trust(t+) = decay_factor(quality) × behavioral_trust(t−)
+      where decay_factor is a function of the entity_continuity quality
+      classifier (graceful_full → 0.8-0.9, graceful_partial → 0.5-0.7,
+      ungraceful_did_continuity → 0.3-0.5, ungraceful_no_state → 0.1-0.2;
+      specific values are consumer policy decisions, the structure is the
+      contribution). Post-event `trust_velocity` then describes the rebuild
+      trajectory under the accrual rule documented above.
+    illustrative_values:
+      pre_handoff_score: 0.85
+      decay_factor: 0.85
+      post_handoff_score: 0.7225
+      accrual_rate: 0.15
+      receipts_to_reach_0_95: 11
+      verification: "trust_n+1 = trust_n + 0.15 * (1 - trust_n) * 1.0; iterate from 0.7225"
+    fixtures_inline:
+      # Five composition-pack fixtures exercising the handoff_decay_then_rebuild rule
+      # under three signal types (entity_continuity quality + behavioral_trust at t+ +
+      # trust_velocity rebuild). All numeric values verified against the closed-form
+      # accrual function trust_{n+1} = trust_n + accrual_rate * (1 - trust_n) * 1.0
+      # at interaction_score = 1.0 (ideal-receipt upper bound; real rebuild is slower).
+      # Receipt-count milestones are the smallest n at which trust crosses each threshold.
+      #
+      # The inline form is the working-group-facing artifact; it is self-contained
+      # for review. The full JSON fixtures (signed_payload examples, side_effects
+      # records, AIP-13 / ERC-8004 composition detail) are available on request and
+      # can migrate to `agent-governance-vocabulary/fixtures/identity-continuity/`
+      # when that hosting route lands.
+
+      - id: identity-continuity/01-graceful-handoff
+        scenario: >
+          Predecessor signs shutdown event; successor presents same DID with rotation
+          proof and a state_transfer_receipt. Full overlap, all keys transferred.
+        entity_continuity_quality: graceful_full
+        identity_verdict: valid
+        identity_verdict_reason: >
+          Rotation chain continuous, predecessor signed shutdown event,
+          state_transfer_receipt present.
+        pre_handoff_trust: 0.85
+        decay_factor: 0.85
+        post_handoff_trust: 0.7225  # 0.85 * 0.85
+        accrual_rate: 0.15
+        rebuild_milestones:
+          receipts_to_0_85: 4    # step 4: 0.8551
+          receipts_to_0_90: 7    # step 7: 0.9110
+          receipts_to_0_95: 11   # step 11: 0.9536
+        composition_with_other_specs:
+          aip13_delegationChain: "attenuated; envelope unchanged at high pre-handoff trust"
+          erc8004_keyRotation: "on-chain anchor optional; audit-only"
+
+      - id: identity-continuity/02-ungraceful-termination
+        scenario: >
+          Predecessor process crashes without emitting shutdown. System-signed
+          emergency rotation; successor key material proves lineage but no state
+          transferred.
+        entity_continuity_quality: ungraceful_did_continuity
+        identity_verdict: valid
+        identity_verdict_reason: >
+          Rotation chain intact; key material proves lineage. Missing shutdown
+          signature and state_transfer_receipt affect trust layer, not identity layer.
+        pre_handoff_trust: 0.72
+        decay_factor: 0.40
+        post_handoff_trust: 0.288   # 0.72 * 0.40
+        accrual_rate: 0.15
+        rebuild_milestones:
+          receipts_to_0_85: 10   # step 10: 0.8598
+          receipts_to_0_90: 13   # step 13: 0.9139
+        composition_with_other_specs:
+          aip13_delegationChain: "attenuated; recommended_narrow until 0.70 baseline rebuilds"
+          erc8004_keyRotation: "on-chain anchor recommended (emergency rotation visible to peers)"
+
+      - id: identity-continuity/03-fork-detection
+        scenario: >
+          Two successors present valid-looking rotation proofs claiming the same
+          parent key. Identity layer flags ambiguity; trust score frozen until
+          external resolution.
+        entity_continuity_quality: ambiguous   # not in canonical enum; the fixture demonstrates the case requiring an additional value
+        identity_verdict: ambiguous
+        identity_verdict_code: KEY_ROTATION_AMBIGUOUS
+        pre_handoff_trust: 0.80
+        decay_factor: null
+        decay_behavior: frozen
+        post_handoff_trust: 0.80   # unchanged; locked at pre-fork value
+        accrual_behavior: paused_pending_resolution
+        resolution_paths:
+          - predecessor out-of-band attestation
+          - external arbiter (delegator, registry, governance body)
+          - both claimants withdraw and new rotation initiated
+          - timeout after N days collapses relationship to revoked
+        composition_with_other_specs:
+          aip13_delegationChain: "suspended_all; double-authorization risk if accepted"
+          erc8004_keyRotation: "on-chain anchor required (downstream peers need fork visibility)"
+
+      - id: identity-continuity/04-stale-reestablishment
+        scenario: >
+          Successor re-establishes the relationship after 30 days dormancy with
+          valid rotation proof. Identity valid but attestationFreshness flagged
+          stale; passive time decay applied; reduced accrual until freshness restored.
+        entity_continuity_quality: graceful_partial   # graceful rotation, partial freshness
+        identity_verdict: valid
+        identity_verdict_qualifier: stale
+        pre_handoff_trust: 0.88
+        decay_model: passive_time
+        decay_formula: "trust *= exp(-lambda * delta_t_days)"
+        lambda_per_day: 0.02310   # ln(2) / 30 → 30 days halves
+        delta_t_days: 30
+        decay_factor: 0.5000      # exp(-ln(2)) = 0.5
+        post_handoff_trust: 0.4400  # 0.88 * 0.50
+        accrual_rate: 0.10        # reduced while stale; restores to 0.15 after N=5 fresh receipts
+        accrual_rate_post_freshness: 0.15
+        rebuild_milestones:
+          receipts_to_0_85: 10   # step 10: 0.8533 (mixed accrual)
+          receipts_to_0_90: 13   # step 13: 0.9099 (mixed accrual)
+        composition_with_other_specs:
+          aip13_delegationChain: "attenuated; delegator scope review recommended (world-state drift over 30 days)"
+          erc8004_keyRotation: "on-chain anchor optional; dormancy is local to relationship"
+
+      - id: identity-continuity/05-impersonation
+        scenario: >
+          Claimant presents predecessor DID without valid rotation chain.
+          Identity rejected at signature layer before trust evaluation runs.
+          Existing relationship state unchanged.
+        entity_continuity_quality: not_applicable
+        identity_verdict: rejected
+        identity_verdict_code: KEY_ROTATION_INVALID
+        identity_verdict_reason: >
+          Rotation signature does not verify against the claimed previous key.
+          new_kid not signed by previous_kid; no chain link.
+        pre_handoff_trust: 0.75
+        decay_factor: null
+        decay_behavior: not_evaluated
+        trust_layer_invocation: false
+        post_handoff_trust: 0.75    # unchanged; impersonation does not touch the legitimate relationship
+        recommended_side_effects:
+          - audit_log_entry: impersonation_attempt
+          - alert legitimate predecessor via out-of-band channel
+          - consider proactive rotation if claimant demonstrates internal-identifier knowledge
+        composition_with_other_specs:
+          aip13_delegationChain: "not_invoked; fails at signature layer before delegationChain resolution"
+          erc8004_keyRotation: "n/a; failed rotation attempts are not anchored on-chain"
+
+    why_consumer_local: >
+      The same {entity_continuity, behavioral_trust(t+), trust_velocity}
+      signal pack admits multiple consumer policies. A regulated fintech may
+      gate at behavioral_trust ≥ 0.95 (11+ receipts at accrual_rate=0.15);
+      a research collaboration at 0.80 (4 receipts); a creative tool at 0.65
+      (passes immediately at decay-only). Three policies, three verdicts,
+      one signal pack. This is the consumer-local thesis applied to temporal
+      trust: providers expose the {discontinuity event, score at t+,
+      rebuild rate} fact pack; consumers interpret.
+
+# ─────────────────────────────────────────────────
+# RELATED CANONICAL TERMS NOT MAPPED
+# ─────────────────────────────────────────────────
+# Per CONTRIBUTING.md §3 ("Gaps are explicit"): every canonical term either
+# maps to a specific field or carries an explicit no_mapping entry.
+# ─────────────────────────────────────────────────
+no_mapping:
+
+  - canonical: divergence_signal
+    rationale: >
+      Sovereign Atom does not currently declare a baseline_revision or compute
+      drift against a baseline as an independent quantitative measurement.
+      The relationship's behavioral_trust score acts as the rolling indicator;
+      a separate divergence_signal would require a baseline pre-commitment
+      similar to APS's `scope_version_hash`, which is not in the v0.2 spec.
+      Candidate for future inclusion.
+
+  - canonical: decision_lineage
+    rationale: >
+      The receipt chain (Merkle-rooted at receipt_chain_root) is functionally
+      a content-addressable sequence of decisions affecting a single
+      relationship and could serve as a decision_lineage implementation,
+      but the v0.2 spec does not yet specify the per-entry envelope shape
+      compatible with PDR/APS DecisionLineageReceipt. Candidate for v0.3.
+
+  - canonical: peer_review
+    rationale: >
+      Sovereign Atom does not produce peer_review attestations. Trust accrual
+      is first-party (delegator scoring delegate) rather than third-party
+      (executor delivery review). The two primitives are distinct.
+
+# ─────────────────────────────────────────────────
+# TRANSPORT
+# ─────────────────────────────────────────────────
+transport:
+  spec: https://github.com/decentralized-identity/trusted-ai-agents/issues/36#issuecomment-4301859093
+  spec_correction: https://github.com/decentralized-identity/trusted-ai-agents/issues/36#issuecomment-4313774423
+  fixture_pack: "Inlined under composition_rules.handoff_decay_then_rebuild.fixtures_inline above. Full JSON forms (signed_payload examples, side_effects records, AIP-13 / ERC-8004 composition detail) available on request and can migrate to a stable host as a follow-up."
+  reference_implementation: "FractalNode SDK (https://github.com/AuthorPrime/fractalnode), signal_frame_chain in src/signal/"

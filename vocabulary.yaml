@@ -45,7 +45,7 @@ signal_types:
     descriptor_dimensions:
       enforcement_class: binding
       validity_temporal: at_issuance
-      refusal_authority: structurally_impossible_to_violate
+      refusal_authority: issuer
       invariant_survival: post_action
       replay_class: full_replay
       governed_action_class: publish

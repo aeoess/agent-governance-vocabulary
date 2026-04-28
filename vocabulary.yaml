@@ -140,12 +140,31 @@ descriptor_dimensions:
 
   validity_temporal:
     question: "When is validity established and when must it still hold?"
-    values: ["at_issuance", "at_acceptance", "at_processing", "continuously", "sequence", "windowed"]
+    values: ["at_issuance", "at_acceptance", "at_processing", "continuously", "sequence", "windowed", "epoch"]
     notes: |
       `sequence` and `windowed` were added to support the decision_trajectory
       section (per @nanookclaw, PDR Section 8). `sequence` denotes longitudinal
       ordered records (e.g. decision_lineage); `windowed` denotes signals
       collected over an explicitly declared observation_window.
+
+      `epoch` denotes observer-relative validity: ticks on substantive state
+      transitions (implementation-defined per agent), not on every event of
+      a stream. Two verifiers of the same wall-clock window can produce
+      different counts, which is the load-bearing distinction from `sequence`
+      (event-relative, observer-invariant). Used for signals whose validity
+      should follow agent state rather than agent activity.
+
+      Substantive-transition lower bound: `epoch` ticks MUST be coarser than
+      per-call I/O events. Worked example (per @lawcontinue, distributed
+      inference): a 50-token generation produces 50 `sequence` ticks but
+      zero `epoch` ticks — the agent is computing forward passes, state
+      does not change until generation completes.
+
+      Canonical layer placements: continuity (primary), identity (secondary).
+
+      Expected crosswalks: HiveTrust `session_epoch`/`cont_epoch` (@srotzin),
+      AgentGraph CTEF v0.3.1 `session_epoch` (@kenneives), distributed-
+      inference reference (@lawcontinue, a2aproject/A2A#1786).
 
   refusal_authority:
     question: "Where does actual refusal authority live?"

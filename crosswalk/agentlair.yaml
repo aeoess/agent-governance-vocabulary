@@ -90,6 +90,7 @@ signal_types:
     endpoints:
       trust_profile: "https://agentlair.dev/v1/trust/{agentId}"
       trust_gate: "https://agentlair.dev/v1/trust/{agentId}/check"
+      trust_verify: "https://agentlair.dev/v1/trust/verify"  # POST; accepts AAT JWT; returns trust scores without requiring a resolved agentId
       event_ingestion: "https://agentlair.dev/v1/events"
     envelope:
       alg: EdDSA
@@ -290,7 +291,7 @@ descriptor_dimensions:
 crosswalk_metadata:
   authored_by: "@piiiico"
   vocabulary_version: "0.1.0"
-  last_reviewed: "2026-04-25"
+  last_reviewed: "2026-04-29"
   rfc_context: "openclaw/openclaw#49971 (RFC: Native Agent Identity & Trust Verification)"
   refresh_notes:
     - "v2: Corrected primary mapping from peer_review to behavioral_trust per @aeoess review (aeoess/agent-governance-vocabulary#46)."
@@ -298,3 +299,4 @@ crosswalk_metadata:
     - "behavioral_trust is primary: exact match, production data, full signed_payload_fields, envelope, TTL, transport."
     - "Temporal-sequencing note (four-layer model) moved to behavioral_trust.notes per vocabulary review guidance."
     - "Production state: trust endpoints live, behavioral event ingestion live, three-dimensional scoring operational."
+    - "v3: Added trust_verify endpoint (POST /v1/trust/verify — AAT-based lookup, no agentId path param required)."

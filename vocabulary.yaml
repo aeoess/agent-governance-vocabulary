@@ -121,6 +121,7 @@ signal_types:
       EAS schema: 0xbc21ace81780fe7c494fd985b4b220698d23a79ca4f92db349209b75908519ce
       Five migration types: owner_upgrade, maintenance_swap, emergency_evacuation,
       employment_transfer, hot_swap. Snapshot evidence only.
+
     descriptor_dimensions:
       enforcement_class: advisory
       validity_temporal: at_issuance
@@ -128,6 +129,7 @@ signal_types:
       invariant_survival: post_action
       replay_class: full_replay
       governed_action_class: publish
+      measurement_point: mutation_boundary
 
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS (per @QueBallSharken)
@@ -162,6 +164,14 @@ descriptor_dimensions:
   governed_action_class:
     question: "What class of action is being governed?"
     values: ["read", "write", "transfer", "delegate", "publish", "compose"]
+
+  measurement_point:
+    question: "At which lifecycle boundary is this signal evaluated?"
+    values: ["session_boundary", "mutation_boundary"]
+    notes: |
+      session_boundary: cross-session behavioral continuity (e.g. rolling-window drift)
+      mutation_boundary: invariant survival at the execution boundary, the Final
+      Refusal-Capable Boundary Event (FRCBE) framing from BBIS (Hensley, qntm#7)
 
 # ─────────────────────────────────────────────────
 # CONTEXT DIMENSIONS (per @pshkv + @tomjwxf + #26 convergence)

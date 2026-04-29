@@ -54,8 +54,8 @@ mappings:
       the entity_continuity category alongside SBR Protocol's SBR-002
       (cryptographic migration attestation) and continuity-analyzer
       (mutation-bound enforcement continuity); per CONTRIBUTING.md's
-      two-implementation rule, this composition exceeds threshold for
-      entity_continuity promotion from `proposed` to canonical.
+      two-implementation rule, this satisfies the two-implementation threshold
+      for entity_continuity promotion review when raised separately.
     signed_payload_fields:
       - predecessor_did       # string — did:key:... | did:demiurge:...
       - successor_did         # string — did:key:... | did:demiurge:...
@@ -99,6 +99,12 @@ mappings:
       composition rule documented under `composition_rules` below. This
       maps cleanly onto the canonical behavioral_trust primitive in the
       same category as RNWY and MolTrust production implementations.
+      `accrual_rate` appears as a signed payload field both here and on
+      `trust_velocity`; per CONTRIBUTING.md's join-key exemption it functions
+      as the per-relationship parameter both signals must agree on, so that
+      `trust_velocity`'s computed score difference is independently verifiable
+      against the same rate any consumer composing both signals reads from
+      `behavioral_trust`.
     signed_payload_fields:
       - relationship_id     # string — did:relationship:<unique-id>
       - parties             # array — [{did, role, since}]
@@ -130,7 +136,7 @@ mappings:
 
   - canonical: trust_velocity
     internal: "rebuild trajectory under accrual function"
-    match: exact
+    match: structural
     notes: >
       Sovereign Atom defines a closed-form rebuild rule
       `trust_{n+1} = trust_n + accrual_rate * (1 - trust_n) * interaction_score`
@@ -144,6 +150,13 @@ mappings:
       reference implementations; Sovereign Atom's accrual rule is a third
       independent implementation that additionally supplies a closed-form
       analytical expression rather than a windowed observation buffer.
+      Per CONTRIBUTING.md's `structural` definition (same question, different
+      surface), the match is `structural` rather than `exact` because the
+      canonical references compute velocity from a windowed observation buffer
+      of recent scores, while Sovereign Atom computes it from a closed-form
+      analytical expression parameterized by `accrual_rate`. Same question
+      (rate of change in trust_score over a declared observation_window),
+      different surface (analytical formula given accrual_rate vs buffer-derived).
     signed_payload_fields:
       - relationship_id      # join key on behavioral_trust signal
       - accrual_rate         # number — per-relationship parameter
@@ -255,7 +268,7 @@ composition_rules:
           Two successors present valid-looking rotation proofs claiming the same
           parent key. Identity layer flags ambiguity; trust score frozen until
           external resolution.
-        entity_continuity_quality: ambiguous   # not in canonical enum; the fixture demonstrates the case requiring an additional value
+        entity_continuity_quality: ambiguous   # fork detection requires a fifth value beyond the four shown in fixtures 01/02/04; recommend a separate vocab issue once a second implementation surfaces
         identity_verdict: ambiguous
         identity_verdict_code: KEY_ROTATION_AMBIGUOUS
         pre_handoff_trust: 0.80

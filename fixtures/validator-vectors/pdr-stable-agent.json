@@ -1,0 +1,17 @@
+{
+  "_comment": "PDR vector — perfectly stable agent across 10-session window. Every fingerprint identical. Expected score: 1.0.",
+  "_co_authored_by": "@nanookclaw",
+  "window_size": 10,
+  "fingerprints": [
+    {"tool_call_distribution": 0.5, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.5, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.5, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.5, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.5, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.5, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.5, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.5, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.5, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31},
+    {"tool_call_distribution": 0.5, "error_rate": 0.02, "task_completion_rate": 0.96, "response_token_variance": 0.31}
+  ]
+}

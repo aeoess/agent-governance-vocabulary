@@ -1,0 +1,372 @@
+# crosswalk/agent-did.yaml
+#
+# Maps Agent-DID internal naming to the canonical vocabulary
+# defined in vocabulary.yaml v0.1.
+#
+# Agent-DID is the identity layer for AI agents: an open
+# standard (RFC-001), TypeScript and Python reference SDKs,
+# and framework integrations (LangChain JS+PY, CrewAI, Semantic
+# Kernel, Microsoft Agent Framework, Google A2A POC). It does
+# not issue scored attestations or behavioral trust signals;
+# its scope is verifiable agent identity at rest (DID document
+# + Agent Card) and identity in motion (RFC 9421 HTTP signatures).
+#
+# Spec: https://github.com/edisonduran/agent-did/blob/main/docs/RFC-001-Agent-DID-Specification.md
+# Author: Edison Munoz Duran
+# License: Apache-2.0
+
+system:
+  name: Agent-DID
+  home: https://github.com/edisonduran/agent-did
+  repo: https://github.com/edisonduran/agent-did
+  spec: https://github.com/edisonduran/agent-did/blob/main/docs/RFC-001-Agent-DID-Specification.md
+  ts_sdk: "npm: @agentdid/sdk @ 0.2.0"
+  python_sdk: "PyPI: agent-did-sdk @ 0.1.0"
+  spec_version: "RFC-001 Public Review v1 (2026-04-25), draft 0.2-unified-public-review-v1"
+  role: >
+    Identity layer for AI agents. Verifiable agent identity at rest
+    (DID document + signed Agent Card) and identity in motion
+    (per-request HTTP message signatures, RFC 9421 profile).
+    Reference SDKs in TypeScript and Python with framework
+    integrations for LangChain, CrewAI, Semantic Kernel,
+    Microsoft Agent Framework, and an A2A POC. Conformance
+    11/11 MUST + 5/5 SHOULD against RFC-001.
+  license: Apache-2.0
+
+maintainer:
+  name: Edison Munoz Duran
+  github: edisonduran
+  email: agent.ai.did@gmail.com
+  confirmed_at: "2026-04-30"
+
+issuer: "self-issued (did:key + did:web supported; no central issuer)"
+
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# Agent-DID is an identity layer, not a scored-attestation issuer.
+# Most signal_types resolve to no_mapping with a technical
+# rationale rather than forcing partial mappings into a different
+# primitive class. The one exception (trust_verification) is
+# partial: Agent-DID covers the cryptographic identity-resolution
+# half of trust_verification but does not issue credentials,
+# trust scores, or grades.
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "DID resolution + Agent Card signature verification + per-request RFC 9421 verification + composition contract cross-check"
+    match: partial
+    notes: >
+      Agent-DID covers the cryptographic identity-resolution surface
+      of trust_verification: a verifier resolves the signing agent's
+      DID, fetches the Agent Card, verifies its signature against
+      published key material, and on every request cross-checks the
+      RFC 9421 `keyid` against the Card's published keys per the
+      composition contract (see out_of_vocabulary_primitives below).
+      It does NOT issue credentials, compute trust scores, assign
+      grades, or attest behavioral history. Verifier output is a
+      pure pass/fail on cryptographic identity, with a typed
+      `IdentityCompositionError` on rejection. Agents that need
+      scored trust on top of Agent-DID identity can layer
+      MolTrust, APS passport_grade, or behavioral_trust signals
+      over the same DID.
+    signed_payload_fields:
+      # Agent Card (identity at rest)
+      - id              # string  - did:key:* or did:web:* identifier of the agent
+      - publicKeys      # object  - JWKS-shaped published key material (multi-key supported)
+      - capabilities    # string[] - declared agent capabilities
+      - signature       # object  - detached Ed25519 signature over JCS-canonicalized card body
+      # Per-request signature (identity in motion, RFC 9421)
+      - signature-input # header  - RFC 9421 signature parameters incl. `keyid`, `alg`, `created`, `nonce`
+      - signature       # header  - RFC 9421 signature value (Ed25519 over the canonicalized signature base)
+    endpoints:
+      ts_sdk_npm: "https://www.npmjs.com/package/@agentdid/sdk"
+      python_sdk_pypi: "https://pypi.org/project/agent-did-sdk/"
+      quickstart: "https://github.com/edisonduran/agent-did/blob/main/QUICKSTART.md"
+      rfc: "https://github.com/edisonduran/agent-did/blob/main/docs/RFC-001-Agent-DID-Specification.md"
+      composition_contract_draft: "https://github.com/edisonduran/agent-did/blob/spec/a2a-composition-contract/docs/RFC-001-A2A-Identity-Composition-Contract-DRAFT.md"
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: >
+      Agent-DID does not assign passport grades. Identity verification
+      is binary (cryptographically valid / invalid) by design — grading
+      is left to layered systems (e.g. APS) that consume the same DID.
+      Primary issuer: APS.
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: >
+      Agent-DID does not observe or score agent behavior. No trust
+      scores are computed, no behavioral histories are recorded.
+      Primary issuers: RNWY, MolTrust, AgentLair.
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: >
+      Agent-DID does not issue governance attestations. The composition
+      contract is a normative verifier-side rule (see
+      out_of_vocabulary_primitives), not a signed attestation produced
+      by an issuer about an agent or action. Primary issuers:
+      AgentNexus, Nobulex, SINT, APS.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet attestations. Out of scope. Primary issuer: InsumerAPI."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No behavioral wallet classification. Out of scope. Primary issuer: RNWY."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No model reasoning attestation. Out of scope. Primary issuer: ThoughtProof."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored compliance exposure. Out of scope. Primary issuer: Revettr."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No task-completion attestation. Out of scope. Primary issuer: Maiat."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No outcome attestations bound to action artifacts. Out of scope. Primary issuer: SAR."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No first-party task-completion attestations. Out of scope. Primary issuers: Logpose, RNWY."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No artifact-bound security posture signals. Out of scope. Primary issuer: AgentGraph."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: partial
+    notes: >
+      Agent-DID's key rotation state machine (planned-mode overlap
+      window + emergency-mode immediate retirement) preserves agent
+      identity across key changes, which addresses the same
+      underlying concern as entity_continuity (is this still the
+      same agent after an infrastructure event?). It does so via
+      DID document verification material rotation rather than
+      cross-system migration receipts. Different mechanism, related
+      goal. Distinct primitive in the canonical sense — Agent-DID
+      does not emit a cryptographic continuity proof of the form
+      SBR Protocol uses (signed JWT + EAS attestation). Listed as
+      `partial` rather than `no_mapping` because the rotation state
+      machine is the load-bearing primitive that makes identity
+      durable across key changes.
+
+
+# ──────────────────────────────────────────────────────────────
+# ENVELOPE
+# ──────────────────────────────────────────────────────────────
+envelope:
+  alg: EdDSA
+  curve: Ed25519
+  proof_type: "RFC 9421 HTTP Message Signatures (per-request) + detached Ed25519 over JCS (Agent Card)"
+  canonicalization: >
+    Per-request: RFC 9421 signature base construction over chosen
+    @signature-params + headers. Agent Card body: RFC 8785 JCS
+    canonicalization with detached signature, signature field
+    stripped before canonicalization.
+  did_methods_supported:
+    - "did:key (default; multibase Ed25519, multicodec 0xed01, base58btc)"
+    - "did:web (HTTPS-resolved DID document)"
+  signing_kids:
+    notes: >
+      `keyid` follows the DID URL fragment convention
+      (e.g. `did:web:agent.example#key-1`). Agent Card publishes
+      key material in JWKS-shape; verifier MUST cross-check the
+      per-request `keyid` against Agent Card published keys per
+      the composition contract.
+  ttl:
+    agent_card_validity: "lifetime of the published key (planned rotation overlap default 24h, ceiling 7d per composition contract draft §4.3)"
+    per_request_signature_validity: "RFC 9421 `created` + verifier-policy max-age (default 5 minutes); `nonce` REQUIRED for anti-replay"
+    max_emergency_propagation_window: "1h (per composition contract draft §4.4 — APS-proposed working baseline, awaiting aeoess push to confirm wording)"
+  revocation:
+    strategy: "rotation state machine + DID document verification material updates"
+    mechanism: >
+      Key rotation modes (per composition contract draft §4):
+      - Planned: configurable overlap window, prior key MAY remain
+        listed in DID document for the overlap duration.
+      - Emergency: immediate retirement. Prior key transitions to
+        `revoked` status in the resolved DID document. Verifiers
+        MUST honor `revoked` at evaluation time within
+        `max_emergency_propagation_window`.
+      Verifier rejection emits typed `IdentityCompositionError`
+      with one of the rotation reasons (rotation_window_closed,
+      emergency_revoked).
+
+
+# ──────────────────────────────────────────────────────────────
+# TRANSPORT
+# ──────────────────────────────────────────────────────────────
+transport:
+  auth: "verifiable per-request HTTP signature (RFC 9421); no API key, no bearer token"
+  did_resolution:
+    did_key: "in-process multibase decode (no network)"
+    did_web: "HTTPS GET https://<host>/.well-known/did.json"
+  agent_card_endpoint: ".well-known/agent-card.json (A2A-compatible shape)"
+
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Per @QueBallSharken — descriptor metadata for the one signal
+# type Agent-DID maps (partial: trust_verification).
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  enforcement_class: binding
+  validity_temporal: at_processing
+  refusal_authority: verifier
+  invariant_survival: pre_action
+  replay_class: no_replay
+  governed_action_class: read
+  notes: |
+    The composition contract is a binding verifier-side rule
+    evaluated at request-processing time. Refusal authority lives
+    with the verifier (the receiver of the signed request), not
+    the issuer of the Agent Card. Invariant survives only up to
+    the point of action acceptance — no post-action receipts are
+    emitted. Replay protection is enforced via RFC 9421 `nonce` +
+    `created` window, so recorded signatures cannot be replayed.
+    Governed-action class is `read` for the identity check itself;
+    downstream actions the verified request authorizes carry their
+    own action-class semantics.
+
+
+# ──────────────────────────────────────────────────────────────
+# AGENT-DID PRIMITIVES NOT YET IN VOCABULARY
+# Identity-layer primitives Agent-DID ships that are not canonical
+# signal_types (because signal_types describe issuer-signed
+# attestation shapes, and these describe identity-layer mechanics
+# and verifier-side normative rules). Listed here for completeness
+# and as candidate canonical proposals once a second independent
+# implementation surfaces.
+# Same pattern APS uses for delegation_scope_narrowing /
+# cascade_revocation / wallet_binding.
+# ──────────────────────────────────────────────────────────────
+out_of_vocabulary_primitives:
+
+  agent_card:
+    description: >
+      Identity material at rest: a signed, durable document
+      published by an agent that binds its DID to its public
+      key material (JWKS-shape), declared capabilities, and
+      protocol metadata. Discoverable at .well-known/agent-card.json
+      (A2A-compatible). Detached Ed25519 signature over JCS-canonical
+      bytes of the card body with the signature field stripped.
+    agent_did_symbols: [createAgentCard, signAgentCard, verifyAgentCard]
+    rationale: >
+      Identity-layer artifact, not a scored attestation. Adjacent to
+      governance_attestation but with a different primitive class:
+      Agent Card binds key material to identifier; governance
+      attestations bind authority to actions.
+
+  per_request_signature:
+    description: >
+      Identity material in motion: an RFC 9421 HTTP Message
+      Signature stamped on every request, signing the canonical
+      base of @signature-params + selected headers + body digest,
+      with `keyid` referencing a key published in the agent's Agent
+      Card. Ephemeral — signed once for one message and discarded.
+    agent_did_symbols: [signRequest, verifyRequest, buildSignatureBase]
+    rationale: >
+      Per-request transport-layer signature, not a signal_type
+      attestation. Defined by RFC 9421; Agent-DID profiles it
+      (Ed25519, mandatory `nonce`, mandatory composition-contract
+      cross-check on the verifier side).
+
+  identity_composition_contract:
+    description: >
+      Normative verifier-side rule that an A2A-conformant verifier
+      MUST cross-check the per-request signature's key material
+      against the key material published in the Agent Card, subject
+      to the key rotation state machine. Mismatch MUST cause
+      rejection with a typed `IdentityCompositionError`. Closes
+      the failure mode where Agent Card becomes decorative or
+      per-request signature becomes self-attesting in isolation.
+      Co-drafted on `spec/a2a-composition-contract` with @aeoess (APS).
+    agent_did_symbols: [verifyComposition, IdentityCompositionError]
+    rationale: >
+      Verifier-side normative rule, not a signal_type. Could
+      surface as a canonical descriptor dimension once a second
+      independent implementation surfaces. Currently working
+      baseline aligned with APS posture (a2aproject/A2A#1742).
+
+  key_rotation_state_machine:
+    description: >
+      Four-scenario state machine governing per-request signature
+      acceptance during key rotation:
+        3a current key during planned overlap     -> accept
+        3b prior key during planned overlap        -> accept
+        3c prior key after planned overlap closed  -> reject (rotation_window_closed)
+        3d prior key under emergency revocation    -> reject (emergency_revoked)
+      Spec defaults: 24h planned overlap, 7d ceiling, 1h
+      `max_emergency_propagation_window`.
+    agent_did_symbols: [rotateKey, KeyRotationMode, OverlapWindow]
+    rationale: >
+      Identity-layer mechanic that produces deterministic verifier
+      decisions. Adjacent to (but distinct from) APS cascade_revocation,
+      which revokes delegation chains; here the primitive revokes
+      verification material on a single identity.
+
+  identity_composition_error:
+    description: >
+      Typed error shape emitted by the verifier when the composition
+      contract is violated. Reasons: card_keyid_mismatch,
+      rotation_window_closed, emergency_revoked, key_purpose_violation,
+      card_unresolvable, did_document_unresolvable. Carries
+      request_keyid + card_published_keyids + did_document_verification_keyids
+      for cross-stack debugging.
+    agent_did_symbols: [IdentityCompositionError]
+    rationale: >
+      Diagnostic primitive paired with identity_composition_contract.
+      Aligned with the four typed subtypes proposed by APS in
+      a2aproject/A2A#1742 (SignatureKeyNotInCard, OverlapWindowExceeded,
+      EmergencyRevokedKey, KeyPurposeViolation).
+
+
+# ──────────────────────────────────────────────────────────────
+# CROSSWALK SUMMARY
+# ──────────────────────────────────────────────────────────────
+summary:
+  signal_types_exact: 0
+  signal_types_partial: 2          # trust_verification, entity_continuity
+  signal_types_no_mapping: 11      # rest (Agent-DID is identity-layer, not attestation issuer)
+  out_of_vocabulary_primitives: 5  # agent_card, per_request_signature, identity_composition_contract, key_rotation_state_machine, identity_composition_error
+
+  protocol_version_pinning: >
+    Mappings hold for @agentdid/sdk @ 0.2.0 (npm) and
+    agent-did-sdk @ 0.1.0 (PyPI). RFC-001 Public Review v1
+    (draft 0.2-unified-public-review-v1) is the spec baseline.
+    The composition contract section references the in-progress
+    draft on branch `spec/a2a-composition-contract`, co-drafted
+    with @aeoess (APS) per a2aproject/A2A#1742.
+
+  related_threads:
+    - "A2A composition contract co-drafting: https://github.com/a2aproject/A2A/issues/1742"
+    - "Internal tracking: https://github.com/edisonduran/agent-did/issues/30"
+    - "Compliance harness alignment: https://github.com/aeoess/a2a-compliance-harness"
+
+
+crosswalk_metadata:
+  authored_by: "@edisonduran"
+  vocabulary_version: "0.1.0"
+  last_reviewed: "2026-04-30"

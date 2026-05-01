@@ -1,0 +1,77 @@
+analyzer_input:
+  schema_version: "0.1"
+  description: "Execution-bound continuity evaluation input envelope"
+
+  subject:
+    subject_id: string
+    subject_type: agent | workflow | delegation | action
+
+  receipts:
+    - receipt_id: string
+      issuer: string
+      signal_type: string
+      digest: string
+      prior_signal_digest: string | null
+      canonicalization_profile: string
+      signed_payload: object
+      signature: object
+
+  execution_path:
+    action_id: string
+    requested_action: object
+    admitted_action: object
+    executed_action: object
+    mutation_boundary_ts: string
+    executor_id: string
+    execution_environment: object | null
+
+  mutation_events:
+    - event_id: string
+      event_type: object_changed | constraint_changed | temporal_expired | authority_changed | executor_changed | refusal_unavailable
+      before: object
+      after: object
+      timestamp: string
+      evidence_ref: string | null
+
+  evaluation_context:
+    evaluated_at: string
+    policy_ref: string | null
+    expected_verifier_id: string | null
+
+analyzer_output:
+  schema_version: "0.1"
+  description: "Continuity classification output envelope"
+
+  evaluated_at: string
+  classification: mutation_strong | mutation_partial | mutation_unknown
+
+  predicates:
+    object_continuity:
+      status: pass | fail | unknown
+      evidence_refs: []
+
+    constraint_continuity:
+      status: pass | fail | unknown
+      evidence_refs: []
+
+    temporal_continuity:
+      status: pass | fail | unknown
+      evidence_refs: []
+
+    authority_continuity:
+      status: pass | fail | unknown
+      evidence_refs: []
+
+    executor_continuity:
+      status: pass | fail | unknown
+      evidence_refs: []
+      mechanical_refusal_at_mutation_time: true | false | unknown
+
+  rationale: string
+  this_signal_digest: string
+
+  verifier:
+    verifier_id: string
+    verifier_kid: string
+    canonicalization_profile: string
+    signature: object

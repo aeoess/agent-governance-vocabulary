@@ -1,0 +1,91 @@
+schema_version: "0.1"
+
+predicates:
+
+  object_continuity:
+    description: "The same governing object that was evaluated is the object that reaches mutation."
+    required_inputs:
+      - execution_path.requested_action
+      - execution_path.executed_action
+      - mutation_events
+    evaluation_rule: >
+      Compare object identity between evaluated and executed forms.
+      Fail if objects differ without a verifiable alias-preserving mapping.
+    failure_condition: >
+      Object substitution or divergence between evaluated and executed object.
+    unknown_condition: >
+      Insufficient information or aliasing without verifiable identity preservation.
+    aps_mapping:
+      primitive: parent_receipt_hash
+      status: covered
+
+  constraint_continuity:
+    description: "Constraints applied at decision time remain intact at execution."
+    required_inputs:
+      - execution_path.admitted_action
+      - execution_path.executed_action
+      - mutation_events
+    evaluation_rule: >
+      Compare constraint sets between admitted and executed action.
+      Fail if constraints are widened, removed, or modified.
+    failure_condition: >
+      Parameter widening, constraint removal, or transformation post-decision.
+    unknown_condition: >
+      Constraint preservation cannot be determined from available data.
+    aps_mapping:
+      primitive: scoped_delegation_narrowing
+      status: covered
+
+  temporal_continuity:
+    description: "The governing condition remains valid at the moment of execution."
+    required_inputs:
+      - execution_path.mutation_boundary_ts
+      - mutation_events
+      - receipts
+    evaluation_rule: >
+      Evaluate whether temporal validity windows were still active at execution.
+      Fail if execution occurs after expiry or outside valid window.
+    failure_condition: >
+      Execution occurs after expiration or during invalid temporal state.
+    unknown_condition: >
+      No explicit temporal boundary or insufficient timing data.
+    aps_mapping:
+      primitive: valid_from_valid_until
+      status: covered
+
+  authority_continuity:
+    description: "Authority conditions remain valid at execution and are not bypassed."
+    required_inputs:
+      - receipts
+      - mutation_events
+      - execution_path.admitted_action
+      - execution_path.executor_id
+    evaluation_rule: >
+      Verify delegation chain remains valid and unchanged at execution.
+      Fail if authority is revoked, changed, or not revalidated.
+    failure_condition: >
+      Authority drift or revocation without revalidation before execution.
+    unknown_condition: >
+      Authority chain state at execution cannot be determined.
+    aps_mapping:
+      primitive: endorsement_chain
+      status: covered
+
+  executor_continuity:
+    description: "The final mutation-capable component enforces the governing condition."
+    required_inputs:
+      - execution_path.executor_id
+      - execution_path.executed_action
+      - mutation_events
+    evaluation_rule: >
+      Determine whether the mutation-capable executor enforced the same constraints
+      at execution. This requires mechanical refusal capability at mutation boundary.
+    failure_condition: >
+      Execution proceeds despite violation of governing condition.
+      Upstream validation exists but final executor does not enforce.
+    unknown_condition: >
+      Executor behavior at mutation boundary cannot be determined.
+    aps_mapping:
+      primitive: none
+      status: partial
+      gap: mechanical_refusal_at_mutation_time

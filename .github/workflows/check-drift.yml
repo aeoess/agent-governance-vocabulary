@@ -42,8 +42,10 @@ jobs:
           )
 
           # Files we deliberately allow these patterns in (the workflow itself,
-          # any scripts that intentionally enumerate the patterns to check for).
-          EXCLUDE_PATHS='(\.github/workflows/check-drift\.yml|scripts/check-drift\.sh)'
+          # the gitignore block listing the same patterns to keep files out,
+          # the propagate.mjs final-scan source, any other script that
+          # intentionally enumerates the patterns to check for them).
+          EXCLUDE_PATHS='(\.github/workflows/check-drift\.yml|\.gitignore|scripts/check-drift\.sh|scripts/propagate\.mjs)'
 
           violations=0
           for pat in "${PATTERNS[@]}"; do

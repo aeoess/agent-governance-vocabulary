@@ -1,0 +1,42 @@
+# Legacy descriptor overrides — known-stale values pending maintainer cleanup.
+#
+# Each entry tells validate-crosswalks.js to emit WARNING (not ERROR) when a
+# specific (file, path, value) combination matches. When a maintainer updates
+# their file to use the canonical value, remove the entry here.
+#
+# Do not add new entries without a tracked WG issue establishing the canonical
+# resolution. The whitelist is for FORWARD compatibility on already-merged
+# files, not a backdoor for new non-conformant content.
+
+overrides:
+  - file: crosswalk/dcp-ai.yaml
+    path: signal_types.governance_attestation.descriptor_dimensions.refusal_authority
+    deprecated_value: structurally_impossible_to_violate
+    canonical_value: issuer
+    resolution_issue: 57
+    note: "Per #57 resolution — refusal_authority is location, not strength. Maintainer (@lktron00) cleanup pending."
+
+  # jep.yaml currently uses an alt-format flat mappings: array shape, so it
+  # is skipped at the file level by the validator (no signal_types block to
+  # walk). The override path here is the nested form that will exist if/when
+  # the maintainer reformats jep.yaml to the canonical signal_types-nested
+  # shape during cleanup; the warning fires from that point forward.
+  - file: crosswalk/jep.yaml
+    path: signal_types.governance_attestation.descriptor_dimensions.refusal_authority
+    deprecated_value: structurally_impossible_to_violate
+    canonical_value: issuer
+    resolution_issue: 57
+    note: "Per #57 resolution. jep.yaml uses flat mappings: array shape; the deprecated value appears at the top-level refusal_authority field rather than nested under signal_types — currently skipped at file level. Override path reflects the nested form expected after cleanup. Maintainer (@schchit) cleanup pending."
+
+  # fidelity-spec.yaml currently mentions structurally_impossible_to_violate only
+  # inside prose block scalars (descriptor_alignment_note, resolution_requested,
+  # readings) which the validator does not treat as descriptor values. The
+  # override is preemptive: if the maintainer adds a real signal_types nested
+  # descriptor block during cleanup, the deprecated value would be warned
+  # rather than errored. Per prompt note, do not flag prose blocks.
+  - file: crosswalk/fidelity-spec.yaml
+    path: signal_types.governance_attestation.descriptor_dimensions.refusal_authority
+    deprecated_value: structurally_impossible_to_violate
+    canonical_value: issuer
+    resolution_issue: 57
+    note: "Per #57 resolution. fidelity-spec.yaml has multiple references including a resolution_requested: block (lines 358-378) that pre-dates the resolution and remains as documentation; only flag actual descriptor values, not prose blocks. Maintainer (@lowkey-divine) cleanup pending."

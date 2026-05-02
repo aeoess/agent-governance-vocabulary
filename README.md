@@ -64,6 +64,12 @@ Committed contributors so far:
 - `crosswalk/sovereign-atom.yaml` - @AuthorPrime
 - `crosswalk/veritasacta.yaml` - @tomjwxf
 
+## Legacy descriptor overrides
+
+`scripts/legacy-descriptor-overrides.yaml` lists known-stale `(file, path, value)` combinations from crosswalks that pre-date a vocabulary resolution. The validator emits warnings (not errors) for these so contributor CI doesn't break on unrelated PRs to those files. As maintainers update their crosswalks, entries are removed.
+
+Do not add new entries without a tracked WG issue establishing the canonical resolution.
+
 ## License
 
 Apache-2.0.

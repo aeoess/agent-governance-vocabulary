@@ -24,6 +24,25 @@ for (const [dim, def] of Object.entries(vocab.descriptor_dimensions || {})) {
   if (def && Array.isArray(def.values)) descriptorEnums[dim] = new Set(def.values)
 }
 
+// Legacy descriptor overrides — known-stale (file, path, value) tuples that
+// pre-date a vocabulary resolution. The validator emits WARNING (not ERROR)
+// for these so contributor CI doesn't break on PRs to other parts of those
+// files. New non-conformant content does not get an override; the
+// whitelist is for forward compatibility on already-merged files only.
+const overridesPath = path.join(__dirname, 'legacy-descriptor-overrides.yaml')
+const legacyOverrides = fs.existsSync(overridesPath)
+  ? (yaml.load(fs.readFileSync(overridesPath, 'utf8'))?.overrides || [])
+  : []
+
+function isLegacyOverride(file, dotPath, value) {
+  const relFile = path.relative(ROOT, file)
+  return legacyOverrides.find(o =>
+    o.file === relFile &&
+    o.path === dotPath &&
+    o.deprecated_value === value,
+  )
+}
+
 function walkYaml(dir) {
   const out = []
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -96,7 +115,12 @@ function validateDescriptorBlock(block, file, dotPathPrefix) {
       if (typeof v !== 'string') continue
       if (allowed.has(v)) continue
       const dotPath = `${dotPathPrefix}.${dimName}`
-      err(file, `${dotPath}: "${v}" not in vocabulary (allowed: ${[...allowed].join(', ')})`)
+      const override = isLegacyOverride(file, dotPath, v)
+      if (override) {
+        warn(file, `${dotPath}: deprecated value "${v}" — ${override.note} See https://github.com/aeoess/agent-governance-vocabulary/issues/${override.resolution_issue}.`)
+      } else {
+        err(file, `${dotPath}: "${v}" not in vocabulary (allowed: ${[...allowed].join(', ')})`)
+      }
     }
   }
 }

@@ -122,15 +122,13 @@ signal_types:
     requires:
       - observation_window
       - completion_ratio_method
-    issuers_in_production: ["AgentID", "APS", "RNWY"]
+    issuers_in_production: ["AgentID", "APS"]
     notes: |
-      Three independent implementations as of 2026-04-30:
+      Two independent implementations as of 2026-04-30:
       - AgentID: `interaction_pattern.completion_ratio`, rolling 180d,
         strict completed/total at task level
       - APS: `completion_ratio`, configurable observation_window
         (default rolling 90d), strict
-      - RNWY: derived from peer_review sybil analysis, rolling 24h per
-        JWKS envelope, quality_weighted
 
       Cross-issuer comparability: consumers comparing completion_ratio
       across issuers MUST verify both `completion_ratio_method` and
@@ -142,7 +140,7 @@ signal_types:
       finished work good?" Different questions, different signals,
       consumer composes at evaluation time.
 
-      WG resolution thread: #64. Three-issuer convergence with
+      WG resolution thread: #64. Two-issuer convergence with
       @haroldmalikfrimpong-ops on AgentID's strict surface and
       @douglasborthwick-crypto on the descriptor + comparability shape.
 

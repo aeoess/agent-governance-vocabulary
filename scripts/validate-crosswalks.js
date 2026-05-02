@@ -80,21 +80,55 @@ function validateSignalTypes(doc, file) {
   }
 }
 
+// Validate a single descriptor block of shape { dim_name: value | [values] }.
+// dotPathPrefix is the dotted path used in diagnostic messages — keeps the
+// existing message format on the top-level nested-per-signal path while
+// extending coverage to nested signal_types.<key>.descriptor_dimensions and
+// to flat top-level shapes (jep / agentlair).
+function validateDescriptorBlock(block, file, dotPathPrefix) {
+  if (!block || typeof block !== 'object') return
+  for (const [dimName, value] of Object.entries(block)) {
+    if (dimName.endsWith('_notes')) continue
+    const allowed = descriptorEnums[dimName]
+    if (!allowed) continue
+    const values = Array.isArray(value) ? value : [value]
+    for (const v of values) {
+      if (typeof v !== 'string') continue
+      if (allowed.has(v)) continue
+      const dotPath = `${dotPathPrefix}.${dimName}`
+      err(file, `${dotPath}: "${v}" not in vocabulary (allowed: ${[...allowed].join(', ')})`)
+    }
+  }
+}
+
 function validateDescriptors(doc, file) {
+  // Top-level descriptor_dimensions, nested-per-signal shape:
+  //   { sigKey: { dim_name: value } }
+  // Existing behavior preserved: flat top-level shapes (e.g. agentlair,
+  // jep) are not validated here. Pre-resolution v0.1 crosswalks that use
+  // a flat top-level shape are out of scope for this hardening pass.
   const dims = doc.descriptor_dimensions
-  if (!dims || typeof dims !== 'object') return
-  for (const [sigKey, dimBlock] of Object.entries(dims)) {
-    if (!dimBlock || typeof dimBlock !== 'object') continue
-    for (const [dimName, value] of Object.entries(dimBlock)) {
-      if (dimName.endsWith('_notes')) continue
-      const allowed = descriptorEnums[dimName]
-      if (!allowed) continue
-      const values = Array.isArray(value) ? value : [value]
-      for (const v of values) {
-        if (typeof v === 'string' && !allowed.has(v)) {
-          err(file, `descriptor_dimensions.${sigKey}.${dimName}: "${v}" not in vocabulary (allowed: ${[...allowed].join(', ')})`)
-        }
-      }
+  if (dims && typeof dims === 'object') {
+    for (const [sigKey, dimBlock] of Object.entries(dims)) {
+      if (!dimBlock || typeof dimBlock !== 'object') continue
+      validateDescriptorBlock(dimBlock, file, `descriptor_dimensions.${sigKey}`)
+    }
+  }
+
+  // Per-signal nested: signal_types.<key>.descriptor_dimensions
+  // Pre-resolution v0.1 crosswalks declared descriptors INSIDE a signal_types
+  // entry rather than at the top level (dcp-ai.yaml is the live example).
+  // The top-level walk never visited these; this loop closes that gap.
+  const sigs = doc.signal_types
+  if (sigs && typeof sigs === 'object') {
+    for (const [sigKey, entry] of Object.entries(sigs)) {
+      if (!entry || typeof entry !== 'object') continue
+      if (!entry.descriptor_dimensions) continue
+      validateDescriptorBlock(
+        entry.descriptor_dimensions,
+        file,
+        `signal_types.${sigKey}.descriptor_dimensions`,
+      )
     }
   }
 }

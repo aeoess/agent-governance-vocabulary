@@ -52,8 +52,10 @@ signal_types:
       governed_action_class: publish
 
   passport_grade:
+    status: proposed
     definition: "Composite trust grade from agent passport issuance evidence."
     issuers_in_production: ["APS"]
+    notes: "Single-issuer (APS) as of 2026-05-02. Status downgraded from canonical to proposed per CONTRIBUTING.md 2-implementation threshold; will be canonicalized when a second independent implementation surfaces. APS implementation: passport-grade primitive in agent-passport-system v2 with grade levels 1-3."
 
   trust_verification:
     definition: "Identity layer verification status (Grade 1-3, KYC presence, principal endorsement)."

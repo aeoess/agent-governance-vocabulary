@@ -103,6 +103,49 @@ signal_types:
       will propose narrowing peer_review and introducing a separate
       canonical term (e.g. reviewer_credibility) per the CONTRIBUTING.md
       "two independent implementations" threshold applied per-primitive.
+
+  completion_ratio:
+    definition: >
+      Issuer-computed ratio of completed task delegations over a declared
+      observation window. Answers: does this agent finish what it starts?
+      Distinct from peer_review (per-task delegator-signed attestation),
+      behavioral_trust (multi-dimensional composite), and settlement_witness
+      (outcome receipts) — completion_ratio is a single aggregate metric
+      over a window, not per-task signed.
+    descriptor_dimensions:
+      enforcement_class: advisory
+      validity_temporal: windowed
+      refusal_authority: consumer_policy
+      invariant_survival: post_action
+      replay_class: fingerprint_only
+      governed_action_class: delegate
+    requires:
+      - observation_window
+      - completion_ratio_method
+    issuers_in_production: ["AgentID", "APS", "RNWY"]
+    notes: |
+      Three independent implementations as of 2026-04-30:
+      - AgentID: `interaction_pattern.completion_ratio`, rolling 180d,
+        strict completed/total at task level
+      - APS: `completion_ratio`, configurable observation_window
+        (default rolling 90d), strict
+      - RNWY: derived from peer_review sybil analysis, rolling 24h per
+        JWKS envelope, quality_weighted
+
+      Cross-issuer comparability: consumers comparing completion_ratio
+      across issuers MUST verify both `completion_ratio_method` and
+      `observation_window` match before composing. A `quality_weighted`
+      ratio is not directly comparable to a `strict` ratio.
+
+      Independent of peer_review: completion_ratio answers "does this
+      agent finish what it starts?" while peer_review answers "was the
+      finished work good?" Different questions, different signals,
+      consumer composes at evaluation time.
+
+      WG resolution thread: #64. Three-issuer convergence with
+      @haroldmalikfrimpong-ops on AgentID's strict surface and
+      @douglasborthwick-crypto on the descriptor + comparability shape.
+
   entity_continuity:
     status: proposed
     proposed_by: ["SBR Protocol (crosswalk/soulboundrobots.yaml)"]
@@ -486,6 +529,24 @@ constraints:
       signals (trust_velocity, divergence_signal). Without an explicit
       window declaration, two issuers reporting the same divergence value
       are not actually saying the same thing.
+
+  completion_ratio_method:
+    type: signal_extension
+    values: [strict, quality_weighted]
+    default: strict
+    description: |
+      Distinguishes how an issuer computes completion_ratio. Required for
+      cross-issuer comparability — a `strict` 0.85 and a `quality_weighted`
+      0.85 are different signals.
+
+      - `strict`: completed / total at task level, no quality gate
+      - `quality_weighted`: factors in sybil signals, peer_review outcomes,
+        or other quality assessments
+
+      Issuers MAY publish completion_ratio under the strict baseline by
+      default. Issuers extending with quality_weighted MUST declare so
+      explicitly. Mixing definitions under one name is how signals lose
+      meaning across issuers.
 
 # ─────────────────────────────────────────────────
 # OUT OF SCOPE FOR v0.1

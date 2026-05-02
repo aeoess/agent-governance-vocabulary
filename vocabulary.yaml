@@ -22,12 +22,13 @@ signal_types:
 
   behavioral_trust:
     definition: "Scored trust assessment derived from observed agent behavior over time."
-    issuers_in_production: ["RNWY", "MolTrust", "AgentLair"]
+    issuers_in_production: ["MolTrust", "AgentLair"]
     notes: "Per @douglasborthwick-crypto: canonical name is `behavioral_trust`, NOT `behavioral_fingerprint`. Fingerprint implies passive observation; trust implies scored assessment. Distinct primitives."
 
   wallet_intelligence:
     definition: "Behavioral classification of wallet activity (sybil signals, volume patterns, sanctions proximity)."
-    issuers_in_production: ["RNWY"]
+    issuers_in_production: []
+    notes: "RNWY removed 2026-05-02 — RNWY's crosswalk (`crosswalk/rnwy.yaml`, maintainer-confirmed 2026-04-14) maps `peer_review` only, not `wallet_intelligence`. No verified production issuer remains. Canonical status under review per the 2-implementation threshold in CONTRIBUTING.md."
 
   reasoning_integrity:
     definition: "Attestation surface = the action, not the actor. Wallet-agnostic by design."

@@ -1,0 +1,73 @@
+name: Drift check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for forbidden patterns
+        run: |
+          set -e
+
+          PATTERNS=(
+            'aeoess-private'
+            '/Users/tima'
+            'MODEL-CITIZEN-CANON'
+            'MODEL_CITIZEN_CANON'
+            'THE-SYNTHESIS'
+            'THE_SYNTHESIS'
+            'ERIK-NEWTON'
+            'ERIK_NEWTON'
+            'OPEN-COMMITMENTS'
+            'OPEN_COMMITMENTS'
+            'CC-PROMPT-TEMPLATES'
+            'CC_PROMPT_TEMPLATES'
+            'DAILY-UPDATE-RHYTHM'
+            'DAILY_UPDATE_RHYTHM'
+            'MUTUAL-MODE'
+            'MUTUAL_MODE'
+            'canary watch'
+            'UPDATE-PROPAGATION-SPEC'
+            'CONSILIUM-FORENSIC'
+            'CONSILIUM-BRIEFING'
+            'ROME-COMPLETE'
+          )
+
+          # Files we deliberately allow these patterns in (the workflow itself,
+          # any scripts that intentionally enumerate the patterns to check for).
+          EXCLUDE_PATHS='(\.github/workflows/check-drift\.yml|scripts/check-drift\.sh)'
+
+          violations=0
+          for pat in "${PATTERNS[@]}"; do
+            # Search tracked files only, excluding self-references
+            hits=$(git ls-files | grep -v -E "$EXCLUDE_PATHS" | xargs grep -l -F "$pat" 2>/dev/null || true)
+            if [ -n "$hits" ]; then
+              echo "::error::Forbidden pattern '$pat' found in:"
+              echo "$hits" | sed 's/^/  /'
+              violations=$((violations + 1))
+            fi
+
+            # Also check filenames themselves
+            file_hits=$(git ls-files | grep -F "$pat" || true)
+            if [ -n "$file_hits" ]; then
+              echo "::error::Forbidden pattern '$pat' in filename(s):"
+              echo "$file_hits" | sed 's/^/  /'
+              violations=$((violations + 1))
+            fi
+          done
+
+          if [ "$violations" -gt 0 ]; then
+            echo ""
+            echo "::error::Drift check failed: $violations pattern violation(s)."
+            exit 1
+          fi
+
+          echo "✓ Drift check passed."

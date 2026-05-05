@@ -25,6 +25,12 @@ system:
   identity_layer: "ML-DSA-65 (FIPS 204) server-side keypairs. Agent never holds signing key."
   license: MIT
 
+license: MIT
+maintainer:
+  github: jagmarques
+  author: Joao Marques
+  contact: support@asqav.com
+
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS
 # How asqav represents each canonical signal_type from vocabulary.yaml.

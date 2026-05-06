@@ -1,0 +1,69 @@
+{
+  "interop_fixture": {
+    "scenario": "interop-week-1",
+    "step": 2,
+    "step_name": "action_authorization",
+    "signal": "governance_attestation",
+    "issuer": "asqav",
+    "canonical_name": "governance_attestation",
+    "created_at": "2026-05-06T07:56:50.988Z",
+    "created_by": "asqav/api.asqav.com",
+    "description": "Asqav governance attestation for Step 2 - action authorization. Server-side ML-DSA-65 signed action receipt, canonical-JSON envelope, policy_decision permit. Cross-rail format intentionally non-JWS to represent the post-quantum signature path; verifiers consume the canonical_message bytes plus the ML-DSA-65 signature plus the agent's public key."
+  },
+  "signed_envelope": {
+    "alg": "ML-DSA-65",
+    "format": "canonical-json+ml-dsa-65",
+    "canonical_message_b64": "eyJhY3Rpb25faWQiOiJhY3RfOU1UR3BtUUtpVE41c3o0SWxOWHlRUSIsImFjdGlvbl90eXBlIjoiYWd2OmZpeHR1cmU6YWN0aW9uX2F1dGhvcml6YXRpb24iLCJhZ2VudF9pZCI6ImFndF9xUjN0Z3pGNGh6Q1ctWUxkIiwiYXV0aG9yaXphdGlvbl9yZWYiOm51bGwsImNvbnRleHQiOnsiY29tcG9zZV9jaGFpbl9wb3NpdGlvbiI6InN0ZXBfMl9vZl80IiwiZml4dHVyZSI6ImFnZW50LWdvdmVybmFuY2Utdm9jYWJ1bGFyeSBpc3N1ZSAzNiBmb3VyLXNpZ25hbCBjb21wb3NlIHRlc3QiLCJzaWduYWwiOiJnb3Zlcm5hbmNlX2F0dGVzdGF0aW9uIiwic3RlcCI6ImFjdGlvbl9hdXRob3JpemF0aW9uIiwidm9jYWJ1bGFyeV92ZXJzaW9uIjoidjAuMSJ9LCJwb2xpY3lfZGVjaXNpb24iOiJwZXJtaXQiLCJwb2xpY3lfZGlnZXN0IjoiZDg4NThiY2M0ODIzYzJhMmIyZWViNmVhZTg4Y2E2ODNlZGI0ODMyM2JiODVkNjI1MWJjNzViNjU2OWYwN2JlZiIsInRpbWVzdGFtcCI6IjIwMjYtMDUtMDZUMDc6NTY6NTAuOTg4NTg4In0=",
+    "canonical_message_sha256": "c60be9ec1ab920c4bc5a35bb0d5c7af44583f8346a89ce643823561932d05d9f",
+    "signature_b64": "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",
+    "signer_public_key_b64": "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",
+    "note": "ML-DSA-65 (FIPS 204) is not a JWS algorithm, so this fixture uses an out-of-band envelope (canonical-message + raw signature + public key) instead of the JWS shape used by the EdDSA fixtures. The canonical_message bytes are the exact bytes the signature covers; verification is ML-DSA-65 verify(public_key, canonical_message, signature)."
+  },
+  "parsed_attestation": {
+    "signal_type": "governance_attestation",
+    "issuer": "asqav (https://api.asqav.com)",
+    "subject": "asqav-agent:agt_qR3tgzF4hzCW-YLd",
+    "agent_name": "asqav-interop-fixture-2026-05-06",
+    "decision": "permit",
+    "policy_digest": "d8858bcc4823c2a2b2eeb6eae88ca683edb48323bb85d6251bc75b6569f07bef",
+    "action_id": "act_9MTGpmQKiTN5sz4IlNXyQQ",
+    "action_type": "agv:fixture:action_authorization",
+    "issued_at": "2026-05-06T07:56:50.988588",
+    "context": {
+      "compose_chain_position": "step_2_of_4",
+      "fixture": "agent-governance-vocabulary issue 36 four-signal compose test",
+      "signal": "governance_attestation",
+      "step": "action_authorization",
+      "vocabulary_version": "v0.1"
+    },
+    "prior_signal_digest": "sha256:621d40f1701521f9af084a08476a2deebd49f02ff0b9d7e7808b6a05c6fcad91",
+    "signature_id": "sig_sGr4R9t33lx1q9GtPMO5_w"
+  },
+  "verification": {
+    "method": "ML-DSA-65 (FIPS 204)",
+    "algorithm_oid": "2.16.840.1.101.3.4.3.18",
+    "public_key_lookup": "https://api.asqav.com/api/v1/agents/agt_qR3tgzF4hzCW-YLd",
+    "fixture_public_key_b64": "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",
+    "agent_key_id": "DWYMxTxWbHbWwGW-YSeaaw",
+    "trust_level": "L0",
+    "issuer_org_id": "f94f66c0-c580-432d-a041-29374f7aee07",
+    "note": "This fixture was issued by the live asqav production signer (api.asqav.com, v0.2.12). The agent record is publicly retrievable from /api/v1/agents/{agent_id}. ML-DSA-65 lattice signatures are constant-size for a given parameter set; the signature is ~3,309 bytes."
+  },
+  "composition_chain": [
+    {
+      "step": 1,
+      "signal": "trust_verification",
+      "issuer": "AgentID",
+      "note": "Referenced by digest; merged in PR #41",
+      "digest": "sha256:621d40f1701521f9af084a08476a2deebd49f02ff0b9d7e7808b6a05c6fcad91"
+    },
+    {
+      "step": 2,
+      "signal": "governance_attestation",
+      "issuer": "asqav",
+      "envelope_format": "canonical-json+ml-dsa-65",
+      "canonical_message_sha256": "c60be9ec1ab920c4bc5a35bb0d5c7af44583f8346a89ce643823561932d05d9f",
+      "signature_id": "sig_sGr4R9t33lx1q9GtPMO5_w"
+    }
+  ]
+}

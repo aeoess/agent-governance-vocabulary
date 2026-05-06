@@ -2,6 +2,9 @@ system:
   name: AgentNexus
   repo: https://github.com/kevinkaylie/AgentNexus
 license: Apache-2.0
+maintainer:
+  github: kevinkaylie
+  confirmed_at: "2026-04-14"
 version: "0.9.6"
 spec: https://github.com/kevinkaylie/AgentNexus
 did_method: "did:agentnexus"

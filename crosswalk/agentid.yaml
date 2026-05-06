@@ -1,0 +1,288 @@
+# crosswalk/agentid.yaml
+#
+# Maps AgentID's internal naming and verify-endpoint payload to the
+# canonical vocabulary defined in vocabulary.yaml.
+#
+# AgentID is the identity layer for AI agents — `did:agentid:<id>`
+# native DID method, Ed25519 cryptographic binding, JCS RFC 8785
+# canonical receipts. Listed in `issuers_in_production` for
+# `trust_verification` and `completion_ratio`.
+#
+# Spec / endpoint surface aligned with CTEF v0.3.1 frozen substrate
+# at commit `89ebf2e` ("feat: align AgentID endpoints with CTEF v0.3.1
+# frozen surface", 2026-04-24).
+
+system:
+  name: AgentID
+  home: https://getagentid.dev
+  repo: https://github.com/haroldmalikfrimpong-ops/getagentid
+  jwks: https://getagentid.dev/.well-known/jwks.json
+  role: >
+    Identity layer for AI agents. Issues cryptographic identity
+    attestations under the `did:agentid:` DID method, with Ed25519
+    signatures (kid `agentid-2026-03`, alg `EdDSA`) over JCS-canonical
+    receipts. Verify endpoint emits `claim_type: "identity"` aligned
+    with the CTEF v0.3.1 four-layer claim split, including
+    `subject_did` for principal binding and a compound digest with
+    dual ECDSA + Ed25519 signatures.
+  spec_alignment:
+    ctef_version: "v0.3.1"
+    canonicalization: "JCS (RFC 8785)"
+    signature_alg: "EdDSA / Ed25519 (raw digest bytes)"
+
+license: Apache-2.0
+
+maintainer:
+  github: haroldmalikfrimpong-ops
+  confirmed_at: "2026-05-06"
+
+issuer: "did:agentid:agentid-issuer"
+
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "Identity gate + dual-signature receipt on /verify"
+    match: exact
+    notes: >
+      AgentID's primary signal. Each registered agent holds a
+      `did:agentid:<id>` identifier with an Ed25519 public key bound at
+      registration. Verification returns the canonical
+      `claim_type: "identity"` envelope with `subject_did`, dual
+      compound-digest signatures, scarring score, incident history,
+      and (for `did:agentid:` DIDs) trust-level metadata. External
+      DIDs (`did:web`, `did:key`, etc.) resolve through an
+      `identity_gate` — unresolvable identities are rejected
+      independent of any other score.
+    signed_payload_fields:
+      - claim_type            # string — "identity" (CTEF v0.3.1)
+      - did                   # string — did:agentid:<agent_id>
+      - subject_did           # string — principal binding (mirrors `did`)
+      - agent_id              # string — local identifier
+      - verified              # boolean — certificate_valid && agent.active
+      - identity_gate         # string — "passed" | "failed"
+      - resolved_at           # ISO 8601
+      - trust_level           # integer 0-3 (informational)
+      - scarring_score        # number — incident-weighted history
+      - negative_signals      # integer
+      - resolved_signals      # integer
+      - incident_history      # array of incident records
+      - receipt.compound_digest                         # string — JCS-canonical digest
+      - receipt.compound_digest_signature               # ECDSA over compound_digest
+      - receipt.compound_digest_ed25519_signature       # Ed25519 over compound_digest (raw bytes)
+      - receipt.policy_hash                             # string — policy in force at issuance
+      - receipt.action_ref                              # optional — action being attested
+    endpoints:
+      verify:    "POST https://getagentid.dev/api/v1/agents/verify"
+      register:  "POST https://getagentid.dev/api/v1/agents/register"
+      jwks:      "https://getagentid.dev/.well-known/jwks.json"
+      registry:  "https://getagentid.dev/registry"
+
+  completion_ratio:
+    canonical: completion_ratio
+    internal: "interaction_pattern.completion_ratio (rolling 180d)"
+    match: exact
+    notes: >
+      Strict task-level completed/total over a rolling 180-day window,
+      computed at verification time and emitted as a non-blocking
+      sub-block of the `/verify` response under `interaction_pattern`.
+      Cited as one of two production implementations in
+      `vocabulary.yaml` (alongside APS at default 90d).
+    signed_payload_fields:
+      - interaction_pattern.completion_ratio                       # number 0..1, three decimal places
+      - interaction_pattern.relationship_to_completion_ratio       # number — completion conditional on partner-counter
+      - interaction_pattern.sequence_depth                          # integer — interaction chain length
+      - interaction_pattern.co_signed_outputs                       # integer — count of co-signed deliverables
+      - interaction_pattern.evaluation_window                       # string — "180d"
+    requires:
+      observation_window: "180d"
+      completion_ratio_method: "strict"
+    endpoints:
+      verify: "POST https://getagentid.dev/api/v1/agents/verify"
+
+  entity_continuity:
+    canonical: entity_continuity
+    internal: "context_continuity (auto-detected, session_boundary)"
+    match: partial
+    divergence: >
+      AgentID's `context_continuity` block scores cross-session
+      continuity (model-swap, prompt-change, memory-consolidation
+      signals) at the session boundary, returned as a non-blocking
+      annotation on `/verify`. It is not a per-action operational
+      trace (PDR's domain) and is not a soulbound-anchor receipt
+      (SBR's domain). Same canonical primitive — "is this still the
+      same agent?" — different evaluation surface.
+    signed_payload_fields:
+      - context_continuity.score                # 0-100
+      - context_continuity.auto_context_epoch   # detected epoch boundary
+      - context_continuity.signals              # array of continuity signals
+      - context_continuity.measurement_point    # "session_boundary"
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: partial
+    divergence: >
+      AgentID returns a `trust_score` and `trust_level` on `/verify`,
+      but they are explicitly **informational** — they do not gate
+      verification. The composite is anomaly-driven (negative_signals,
+      resolved_signals, scarring_score) rather than a multi-dimensional
+      peer-endorsement score. RNWY (`rnwy-trust-v2`) and MolTrust
+      ship the canonical multi-dimensional behavioral_trust signal.
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: >
+      AgentID does not issue per-task delegator-signed peer-review
+      attestations. Primary issuers: Logpose, RNWY.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: >
+      AgentID supports cryptographic wallet binding to a DID
+      (`bind-wallet` endpoint) but does not attest wallet balances or
+      on-chain holdings. Primary issuer: InsumerAPI.
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: >
+      AgentID issues identity attestations, not delegation-chain
+      authority attestations. Primary issuers: AgentNexus, Nobulex,
+      SINT, APS.
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: >
+      AgentID does not produce repo/artifact-bound security signals.
+      Primary issuer: AgentGraph (signed subject is `github:owner/repo`).
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      AgentID does not anchor outcome receipts. Primary issuer: SAR.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: >
+      Distinct primitive from AgentID's `trust_level` enum.
+      Primary issuer: APS.
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: >
+      AgentID does not perform sanctions / OFAC / regulatory screening.
+      Primary issuer: Revettr.
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: >
+      Operator-level wallet classification is not in scope for AgentID.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: >
+      AgentID does not attest model-reasoning artifacts.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: >
+      AgentID does not issue task-outcome attestations.
+      Status `proposed` upstream; AgentID does not currently produce
+      this signal.
+
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSION MAPPINGS
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+
+  trust_verification:
+    enforcement_class: refusal_authority
+    enforcement_notes: >
+      The `identity_gate` is refusal-bearing: an unresolvable DID
+      causes `/verify` to return `verified: false, identity_gate:
+      "failed"` regardless of any other signal value. AgentID asserts
+      that downstream consumers MUST reject attestations referencing a
+      DID whose identity gate fails, independent of trust score.
+
+    validity_temporal: at_issuance
+    validity_notes: >
+      Each `/verify` response carries `resolved_at` plus a fresh
+      compound digest. Validity is a snapshot at the time of
+      verification; the receipt is replayable but the underlying
+      registry state can change.
+
+    refusal_authority: issuer
+    refusal_notes: >
+      AgentID is the source-of-truth for `did:agentid:` identity
+      state. Revocation, key rotation, and incident scarring update
+      the canonical record, and subsequent verifications reflect the
+      updated state.
+
+    invariant_survival: pre_action
+    invariant_notes: >
+      Identity verification is a pre-action gate — it runs before the
+      consuming agent or policy permits a delegation, payment, or
+      cross-agent call.
+
+    replay_class: decision_replay
+    replay_notes: >
+      Given the receipt envelope + JWKS, any verifier can replay the
+      identity decision offline by re-checking the dual signatures
+      against the canonical bytes. Full replay of the underlying
+      registry state is not provided — that requires re-querying
+      the issuer.
+
+    governed_action_class: ["read", "write", "delegate", "compose"]
+
+  completion_ratio:
+    enforcement_class: advisory
+    enforcement_notes: >
+      Returned as a non-blocking sub-block of `/verify`. AgentID
+      reports the ratio; refusal authority lives with the consuming
+      agent or policy layer.
+
+    validity_temporal: windowed
+    validity_notes: >
+      Strict completed/total over a rolling 180-day `evaluation_window`
+      computed at verify-time. See vocabulary.yaml `observation_window`
+      and `completion_ratio_method` extensions for cross-issuer
+      comparability.
+
+    refusal_authority: consumer_policy
+    invariant_survival: post_action
+    replay_class: fingerprint_only
+    replay_notes: >
+      The ratio itself is replayable from the issuer's canonical
+      output; the underlying per-task interaction records that
+      contributed to the count are not exposed in the receipt.
+
+    governed_action_class: ["delegate"]
+
+
+# ─────────────────────────────────────────────────
+# CROSSWALK METADATA
+# ─────────────────────────────────────────────────
+crosswalk_metadata:
+  authored_by: "@haroldmalikfrimpong-ops"
+  vocabulary_version: "0.1"
+  last_reviewed: "2026-05-06"
+  related_issues:
+    - "aeoess/agent-governance-vocabulary#82"  # crosswalk hygiene
+    - "aeoess/agent-governance-vocabulary#64"  # completion_ratio canonical (merged via PR#72)
+    - "aeoess/agent-governance-vocabulary#36"  # interop-week-1 four-signal compose
+  next_revisions:
+    - "Refresh the descriptor blocks once CTEF v0.3.2 §A Conformance Appendix publishes (May 19-22 window) and the canonical-bytes diff at corpollc/qntm#15 lands as a verifier-reproducible fixture."

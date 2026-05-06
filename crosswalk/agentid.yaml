@@ -23,8 +23,8 @@ system:
     signatures (kid `agentid-2026-03`, alg `EdDSA`) over JCS-canonical
     receipts. Verify endpoint emits `claim_type: "identity"` aligned
     with the CTEF v0.3.1 four-layer claim split, including
-    `subject_did` for principal binding and a compound digest with
-    dual ECDSA + Ed25519 signatures.
+    `subject_did` for principal binding and a compound digest signed
+    over the publicly verifiable surface.
   spec_alignment:
     ctef_version: "v0.3.1"
     canonicalization: "JCS (RFC 8785)"
@@ -38,6 +38,11 @@ maintainer:
 
 issuer: "did:agentid:agentid-issuer"
 
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
+
 
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS
@@ -46,18 +51,22 @@ signal_types:
 
   trust_verification:
     canonical: trust_verification
-    internal: "Identity gate + dual-signature receipt on /verify"
+    internal: "Identity gate + Ed25519-signed compound digest on /verify"
     match: exact
     notes: >
       AgentID's primary signal. Each registered agent holds a
       `did:agentid:<id>` identifier with an Ed25519 public key bound at
       registration. Verification returns the canonical
-      `claim_type: "identity"` envelope with `subject_did`, dual
-      compound-digest signatures, scarring score, incident history,
-      and (for `did:agentid:` DIDs) trust-level metadata. External
-      DIDs (`did:web`, `did:key`, etc.) resolve through an
-      `identity_gate` — unresolvable identities are rejected
-      independent of any other score.
+      `claim_type: "identity"` envelope with `subject_did`, an
+      Ed25519 signature over the JCS-canonical compound digest,
+      scarring score, incident history, and (for `did:agentid:` DIDs)
+      trust-level metadata. The `compound_digest_signature` field is
+      an internal HMAC-SHA256 tamper-evidence artifact and is not
+      part of the publicly verifiable surface — public verification
+      uses `compound_digest_ed25519_signature` against the JWKS at
+      `/.well-known/jwks.json`. External DIDs (`did:web`, `did:key`,
+      etc.) resolve through an `identity_gate` — unresolvable
+      identities are rejected independent of any other score.
     signed_payload_fields:
       - claim_type            # string — "identity" (CTEF v0.3.1)
       - did                   # string — did:agentid:<agent_id>
@@ -72,8 +81,7 @@ signal_types:
       - resolved_signals      # integer
       - incident_history      # array of incident records
       - receipt.compound_digest                         # string — JCS-canonical digest
-      - receipt.compound_digest_signature               # ECDSA over compound_digest
-      - receipt.compound_digest_ed25519_signature       # Ed25519 over compound_digest (raw bytes)
+      - receipt.compound_digest_ed25519_signature       # Ed25519 over compound_digest (raw bytes), public-verifiable via JWKS
       - receipt.policy_hash                             # string — policy in force at issuance
       - receipt.action_ref                              # optional — action being attested
     endpoints:

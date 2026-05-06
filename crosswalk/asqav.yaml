@@ -27,9 +27,10 @@ system:
 
 license: MIT
 maintainer:
+  name: João Marques
   github: jagmarques
-  author: Joao Marques
-  contact: support@asqav.com
+  email: support@asqav.com
+  confirmed_at: "2026-05-06"
 
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS

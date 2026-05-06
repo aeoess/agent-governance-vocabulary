@@ -1,0 +1,543 @@
+# crosswalk/cursor-hooks.yaml
+#
+# Maps Cursor's developer-platform governance primitives — Hooks API,
+# Sandbox Mode + sandbox.json, Enterprise Audit Log, Privacy Mode + ZDR,
+# SSO/SCIM, MDM-delivered policy, Team Rules — onto the canonical
+# Agent Governance Vocabulary (v0.1.0).
+#
+# Cursor (cursor.com) is an AI coding-agent IDE. The Hooks API
+# (Cursor 2.x; GA Oct 2025) exposes pre/post-action policy decision
+# points that gate shell, MCP, file, and prompt operations. Sandbox
+# Mode declares a runtime posture (network and filesystem policy) via
+# sandbox.json. The Enterprise Audit Log emits 20 top-level event
+# types (plus nested team_settings sub-events) streamed to SIEM /
+# webhooks / S3. Privacy Mode + Zero Data Retention is a contractual
+# + technical retention policy. SSO and SCIM bind identity to an
+# external IdP. MDM delivers organizationally-managed config at the
+# highest precedence tier.
+#
+# This is a third-party crosswalk authored by aeoess (the maintainer
+# of this vocabulary repository), not by Cursor (the company). All
+# field-level technical claims cite cursor.com/docs at the URLs
+# listed in `system.source_urls`. Source-of-truth fetched 2026-05-01;
+# raw text snapshot at /tmp/cursor-source-2026-05-01/. If a Cursor
+# maintainer adopts this file, the maintainer block updates
+# accordingly.
+#
+# License: Apache-2.0
+
+system:
+  name: cursor-hooks
+  home: https://cursor.com
+  spec_version: "Cursor 2.x; Hooks API GA Oct 2025; sandbox.json reference current as of 2026-05-01"
+  role: >
+    AI coding-agent IDE. Cursor's governance surface comprises four
+    primitives:
+      (1) Hooks API — pre/post-action policy decision points that
+          gate shell, MCP, file, and prompt operations. Each hook
+          script returns a permission decision in the enum
+          {"allow","deny","ask"} (exit code 2 from a command hook
+          is equivalent to "deny").
+      (2) Sandbox Mode (sandbox.json) — runtime security posture
+          declaration: type = workspace_readwrite (default) |
+          workspace_readonly | insecure_none, plus networkPolicy
+          object (default: deny; allow + deny pattern arrays
+          accepting exact domains, *.wildcards, or CIDR).
+      (3) Enterprise Audit Log — 20 top-level event types (login,
+          logout, add_user, remove_user, update_user_role,
+          user_spend_limit, team_api_key, user_api_key,
+          team_settings, team_repo, create_directory_group,
+          update_directory_group,
+          update_directory_group_permissions,
+          delete_directory_group, add_user_to_directory_group,
+          remove_user_from_directory_group, privacy_mode,
+          team_rule, bugbot_team_rule, team_command), plus 12+
+          nested team_settings sub-events. Streamed to Splunk /
+          Sumo Logic / Datadog / webhooks / S3.
+      (4) Privacy Mode + Zero Data Retention — contractual +
+          technical controls preventing model-provider retention
+          or training use. Default-on for team members.
+    Identity is delegated to an external IdP via SSO and SCIM;
+    Cursor does not issue its own DIDs or Verifiable Credentials.
+    MDM-managed deployment paths
+    (/Library/Application Support/Cursor/hooks.json on macOS,
+    /etc/cursor/hooks.json on Linux/WSL,
+    C:\\ProgramData\\Cursor\\hooks.json on Windows) sit at the
+    highest tier of the four-tier merge order: Enterprise > Team >
+    Project > User.
+  identity_layer: "External IdP via SSO + SCIM; no Cursor-issued DID/VC"
+  source_urls:
+    hooks: "https://cursor.com/docs/hooks"
+    sandbox: "https://cursor.com/docs/reference/sandbox"
+    security: "https://cursor.com/security"
+    audit_log: "https://cursor.com/docs/enterprise/compliance-and-monitoring"
+    enterprise_blog: "https://cursor.com/blog/enterprise"
+    terminal_tool: "https://cursor.com/docs/agent/tools/terminal"
+
+license: Apache-2.0
+
+maintainer:
+  github: aeoess
+  confirmed_at: "2026-05-01"
+  third_party_authored: true
+  note: >
+    Authored by aeoess (vocabulary repo maintainer) as a third-party
+    crosswalk of Cursor's published documentation. Cursor (the
+    company) is the system being crosswalked; field-level technical
+    claims are sourced from cursor.com/docs. Recalibration via PR
+    by Cursor maintainers or other contributors is welcome — the
+    standard CONTRIBUTING.md substance gate applies.
+
+issuer: "Cursor (the platform, not the user); audit log + hook decisions are platform-recorded"
+
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# Closest canonical primary fits:
+#   governance_attestation — Hooks API + Audit Log
+#   trust_verification     — SSO/SCIM identity binding
+#   security_posture       — Sandbox Mode + sandbox.json
+# All other 10 canonical signal_types resolve to no_mapping with a
+# technical rationale rather than forcing a partial fit. Cursor-
+# specific primitives that have no clean canonical target are listed
+# under `cursor_specific_terms` below as aps_gap candidates.
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "Hooks API event + Enterprise Audit Log event"
+    match: partial
+    notes: >
+      Two related Cursor primitives map onto governance_attestation
+      as the closest canonical fit. Both document governance-relevant
+      decisions or state changes; both differ from the canonical
+      definition in envelope shape.
+
+      (1) Hooks API. ~20 hook event types (sessionStart, sessionEnd,
+      preToolUse, postToolUse, postToolUseFailure, subagentStart,
+      subagentStop, beforeShellExecution, afterShellExecution,
+      beforeMCPExecution, afterMCPExecution, beforeReadFile,
+      afterFileEdit, beforeSubmitPrompt, preCompact, stop,
+      afterAgentResponse, afterAgentThought, beforeTabFileRead,
+      afterTabFileEdit) fire pre- or post-action and emit a
+      permission decision in the enum {"allow", "deny", "ask"}
+      (exit code 2 from a command hook is equivalent to "deny").
+      Hook configs live at ~/.cursor/hooks.json (user),
+      <project>/.cursor/hooks.json (project), MDM-managed paths
+      (enterprise), or via the team dashboard. Priority order:
+      Enterprise > Team > Project > User.
+
+      (2) Enterprise Audit Log. 20 top-level event types: login,
+      logout, add_user, remove_user, update_user_role,
+      user_spend_limit, team_api_key, user_api_key, team_settings,
+      team_repo, create_directory_group, update_directory_group,
+      update_directory_group_permissions, delete_directory_group,
+      add_user_to_directory_group, remove_user_from_directory_group,
+      privacy_mode, team_rule, bugbot_team_rule, team_command. Plus
+      nested sub-events under team_settings (team_hard_limit_dollars,
+      team_hard_limit_per_user_dollars, per_user_monthly_limit_dollars,
+      admin_only_usage_pricing, team_admin_settings, team_name,
+      slack_default_repo, slack_default_branch, slack_default_model,
+      slack_share_summary, slack_share_summary_in_external_channel,
+      slack_channel_repo_mappings). Streamed to Splunk / Sumo Logic /
+      Datadog / webhooks / S3.
+
+      Match is `partial` because: (a) Cursor's hook decisions and
+      audit-log entries are platform-recorded JSON, not Ed25519-
+      signed standalone artifacts that any third party can verify
+      offline against a published JWKS; (b) the canonical
+      governance_attestation primitive presumes a portable signed
+      envelope; Cursor's mechanism trusts the platform's own
+      logging plane; (c) the semantic intent — recording a
+      governance-relevant decision or state change with policy
+      rationale — overlaps cleanly with the canonical question.
+      A consumer that requires offline-verifiable signed evidence
+      cannot satisfy that requirement from Cursor alone; a consumer
+      that trusts Cursor's enterprise audit plane gets functionally
+      equivalent governance evidence.
+    issuers_in_production: ["Cursor"]
+    signed_payload_fields:
+      # Hook input fields (common across all hook events)
+      - hook_event_name           # string — one of the canonical hook event names
+      - conversation_id           # string
+      - generation_id             # string
+      - model                     # string
+      - cursor_version            # string
+      - workspace_roots           # string[] — array of paths
+      - user_email                # string | null
+      - transcript_path           # string | null
+      # Hook output fields
+      - permission                # "allow" | "deny" | "ask"
+      - user_message              # optional message shown in client
+      - agent_message             # optional message sent to agent
+      # Hook-specific input variants
+      - command                   # beforeShellExecution / afterShellExecution
+      - cwd                       # beforeShellExecution
+      - sandbox                   # beforeShellExecution — boolean
+      - tool_name                 # beforeMCPExecution / preToolUse / postToolUse
+      - tool_input                # beforeMCPExecution / preToolUse — object
+      # Audit log standard envelope
+      - timestamp                 # audit-log standard
+      - event_id                  # audit-log standard
+      - team_id                   # audit-log standard
+      - ip_address                # audit-log standard
+      - event                     # audit-log standard — event-specific payload
+    endpoints:
+      hooks_config_user:           "~/.cursor/hooks.json"
+      hooks_config_project:        "<project-root>/.cursor/hooks.json"
+      hooks_config_mdm_macos:      "/Library/Application Support/Cursor/hooks.json"
+      hooks_config_mdm_linux:      "/etc/cursor/hooks.json"
+      hooks_config_mdm_windows:    "C:\\ProgramData\\Cursor\\hooks.json"
+      audit_log_ui:                "Team Dashboard (Enterprise plan, admin access)"
+      audit_log_export:            "CSV export from team dashboard"
+      audit_log_streaming:         "Splunk HEC, Sumo Logic, Datadog, webhook POST, S3 put"
+    envelope:
+      alg: "n/a (not Ed25519/JWS-signed)"
+      proof_type: "platform-recorded JSON (Cursor enterprise audit plane)"
+      canonicalization: "JSON (not JCS-canonicalized)"
+      jwks_uri: null
+    ttl:
+      default_ttl_seconds: null
+      stale_action: "n/a — events are point-in-time records"
+    revocation:
+      strategy: "n/a — events are immutable records of past decisions"
+    transport:
+      hooks_command_invocation: "Cursor process invokes hook command; stdin/stdout JSON exchange; 30s default timeout"
+      audit_log_stream: "platform push to configured downstream (SIEM, webhook, S3)"
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "SSO + SCIM identity binding"
+    match: partial
+    notes: >
+      Cursor binds user identity to an external IdP via SSO (browser
+      handshake) and SCIM (provisioning lifecycle). The canonical
+      primitive's "Identity layer verification status (Grade 1-3,
+      KYC presence, principal endorsement)" overlaps in intent —
+      Cursor decides who the user is by deferring to the IdP's
+      verification — but Cursor does not issue or sign its own
+      identity verification credential. Match is partial because
+      the trust assertion lives at the IdP, not in Cursor; Cursor
+      consumes it as a session token and a SCIM-provisioned
+      principal record. SSO and SCIM events surface in the audit
+      log (login, logout, add_user, remove_user, update_user_role)
+      but the verification artifact itself remains at the IdP.
+    issuers_in_production: ["Cursor (consumer); external IdP (issuer)"]
+    endpoints:
+      sso_setup:  "https://cursor.com/docs/account/teams/sso"
+      scim_setup: "https://cursor.com/docs/account/teams/scim"
+    envelope:
+      alg: "depends on the IdP — Cursor consumes whatever SSO/SCIM tokens are presented"
+      proof_type: "external IdP token + SCIM-provisioned principal record"
+
+  security_posture:
+    canonical: security_posture
+    internal: "Sandbox Mode + sandbox.json"
+    match: partial
+    notes: >
+      Sandbox Mode declares a runtime security posture for the
+      agent's shell-execution surface. sandbox.json fields verbatim:
+      `type` (default "workspace_readwrite"; values "workspace_readwrite"
+      | "workspace_readonly" | "insecure_none"),
+      `additionalReadwritePaths` (string[], default []),
+      `additionalReadonlyPaths` (string[], default []),
+      `disableTmpWrite` (boolean, default false),
+      `enableSharedBuildCache` (boolean, default false),
+      `networkPolicy` (object).
+
+      networkPolicy fields: `default` ("allow" | "deny", default
+      "deny"); `allow` (string[]); `deny` (string[]). Network
+      patterns: exact domain ("registry.npmjs.org"), wildcard
+      ("*.example.com"), CIDR ("10.0.0.0/8"). Private/RFC 1918
+      addresses and the cloud-metadata endpoint
+      (169.254.169.254) are blocked by default to prevent SSRF.
+      IPv6 private ranges also blocked.
+
+      Always-write-protected paths: `.cursor/*.json`,
+      `.git/hooks/**`, `.git/config`, `.vscode/**`,
+      `.code-workspace`, `.cursorignore`. Writable .cursor
+      subdirectories: `rules/`, `commands/`, `worktrees/`,
+      `skills/`, `agents/`.
+
+      Merge precedence (lowest to highest): per-user → per-repo →
+      team-admin → hardcoded security rules. Paths union; allow
+      lists union (unless team-admin replaces); deny lists always
+      union; restrictive booleans win; default "deny" overrides
+      "allow".
+
+      Match is partial because the canonical security_posture
+      primitive describes a signed attestation about an artifact
+      (repo, commit, output); Cursor's Sandbox Mode is a
+      configuration declaration about runtime constraints rather
+      than a signed attestation about an artifact. The semantic
+      role — "what posture is this agent allowed to run under" —
+      overlaps cleanly; the artifact under attestation is the
+      runtime environment rather than a build product.
+    issuers_in_production: ["Cursor"]
+    signed_payload_fields:
+      - type
+      - additionalReadwritePaths
+      - additionalReadonlyPaths
+      - disableTmpWrite
+      - enableSharedBuildCache
+      - networkPolicy.default
+      - networkPolicy.allow
+      - networkPolicy.deny
+    endpoints:
+      sandbox_config_user:    "~/.cursor/sandbox.json"
+      sandbox_config_project: "<project-root>/.cursor/sandbox.json"
+    envelope:
+      alg: "n/a (sandbox.json is a config file, not signed bytes)"
+      proof_type: "config declaration enforced by the runtime"
+      canonicalization: "JSON"
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: >
+      Cursor does not compute behavioral trust scores. Hook-driven
+      enforcement is policy-rule evaluation, not Bayesian or
+      observed-pattern scoring.
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: >
+      Cursor does not score counterparty compliance exposure.
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: >
+      User identity is anchored at the external IdP; Cursor does
+      not emit migration attestations linking old and new keys or
+      DIDs across infrastructure changes.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: >
+      Cursor does not produce wallet-bound assessments of completed
+      task outcomes. Hook events record action attempts and
+      decisions, not assessed outcomes.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: >
+      Cursor has no agent-passport concept. Identity is delegated
+      to the IdP via SSO/SCIM.
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: >
+      Cursor does not produce per-task delegator-signed attestations
+      after an agent completes work. Audit-log entries record state
+      changes; they are not peer-signed reviews.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: >
+      Cursor does not attest to reasoning quality. afterAgentThought
+      and afterAgentResponse hooks observe events but do not produce
+      signed reasoning-integrity claims about the action.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      Cursor does not witness settlement outcomes; the platform is
+      not a payments / settlement layer.
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: >
+      Cursor is wallet-agnostic. No on-chain behavioral
+      classification is produced.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: >
+      Cursor does not attest to on-chain wallet holdings or
+      balances.
+
+
+# ──────────────────────────────────────────────────────────────
+# CURSOR-SPECIFIC TERMS (aps_gap candidates)
+#
+# Concepts in Cursor's surface that do not map cleanly to any
+# current canonical signal_type. Listed here so future canonical-
+# vocabulary candidates have grounded evidence rather than being
+# proposed in the abstract.
+# ──────────────────────────────────────────────────────────────
+cursor_specific_terms:
+
+  - term: "privacy_mode_zdr"
+    definition: >
+      Privacy Mode with Zero Data Retention. When enabled, code
+      data is not stored by Cursor's model providers or used for
+      training. Implemented via technical controls and contractual
+      ZDR terms with model providers. Default-on for team members;
+      available to free / Pro tiers individually. Surfaces in the
+      audit log via the `privacy_mode` event.
+    why_not_canonical: >
+      The canonical vocabulary has no data-lifecycle / retention
+      primitive. ZDR semantics are governance-relevant (operator
+      commits to no-retention) but no canonical signal currently
+      captures retention policy as a signed artifact.
+    mapping_status: aps_gap
+
+  - term: "mdm_policy_delivery"
+    definition: >
+      Mobile Device Management deployment of hooks.json and
+      sandbox.json via OS-managed config paths (macOS:
+      /Library/Application Support/Cursor/; Linux/WSL:
+      /etc/cursor/; Windows: C:\\ProgramData\\Cursor\\). MDM
+      sits at the highest precedence tier of the four-tier merge
+      order (Enterprise > Team > Project > User).
+    why_not_canonical: >
+      The canonical vocabulary has no deployment-mode or
+      gateway-deployment primitive. MDM-pushed config is
+      operationally similar to a "managed deployment" gate but
+      no canonical term captures it as a signal type.
+    mapping_status: aps_gap
+
+  - term: "team_rules"
+    definition: >
+      Team-level rule definitions surfaced in the audit log via
+      the `team_rule` and `bugbot_team_rule` events. Acts as a
+      policy-context-injection mechanism: rules are pushed to all
+      team members and influence agent prompts and tool-call
+      decisions.
+    why_not_canonical: >
+      The canonical vocabulary has no policy-context-injection
+      primitive distinct from governance_attestation. team_rule
+      configuration is a delivery channel for policy intent
+      rather than a signed attestation about an action.
+    mapping_status: aps_gap
+
+  - term: "hook_permission_enum"
+    definition: >
+      The three-value decision output ("allow" | "deny" | "ask")
+      returned by every hook script's stdout. Exit code 2 is
+      equivalent to permission "deny". Conceptually a gateway-
+      decision enum; narrower than four-value (permit/warn/
+      step_up/deny) shapes used in some governance protocols.
+      The "ask" value defers to the user — a Cursor-specific
+      affordance not common to all governance gateways.
+    why_not_canonical: >
+      The canonical vocabulary captures decision outputs only as
+      embedded fields within signal types (e.g., decision_trajectory
+      verbs). A standalone gateway-decision enum is not a canonical
+      signal type today.
+    mapping_status: aps_gap
+
+  - term: "cloud_agent_network_security"
+    definition: >
+      Cursor's cloud-agent runtime applies network constraints
+      distinct from the local sandbox.json. Documented at
+      cursor.com/docs/cloud-agent/security-network. Outbound
+      network controls apply at the runtime boundary rather than
+      at the IDE configuration layer.
+    why_not_canonical: >
+      No canonical scope_category or runtime-network primitive
+      exists in vocabulary.yaml. Conceptually adjacent to Sandbox
+      Mode network policy but distinct in its enforcement plane
+      (cloud runtime vs local IDE).
+    mapping_status: aps_gap
+
+
+# ──────────────────────────────────────────────────────────────
+# SCOPE-OUT
+# Cursor concepts intentionally NOT crosswalked because they have
+# no governance semantics or are commercial / UX details.
+# ──────────────────────────────────────────────────────────────
+scope_out:
+
+  - concept: "Tab inline-completion ranking, autocomplete UI, suggestion model selection"
+    reason: >
+      Pure IDE UX surfaces with no governance semantics. The
+      associated hooks (beforeTabFileRead, afterTabFileEdit) ARE
+      crosswalked under governance_attestation since they fire
+      policy decisions; the ranking and prediction layers
+      underneath are out of scope.
+
+  - concept: "Background indexing, ML model inference cost, latency profiles"
+    reason: >
+      Performance and runtime characteristics, not governance
+      primitives.
+
+  - concept: "Per-user / per-team commercial spend caps"
+    reason: >
+      Surfaces in audit log as user_spend_limit and the
+      team_settings sub-events (team_hard_limit_dollars,
+      team_hard_limit_per_user_dollars,
+      per_user_monthly_limit_dollars). The events themselves
+      are governance-relevant and are covered under
+      governance_attestation; the spend-cap arithmetic is a
+      billing concern not separately crosswalked.
+
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Per-signal blocks for the three primary mappings. Values are
+# drawn from vocabulary.yaml descriptor_dimensions enums.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+
+  governance_attestation:
+    enforcement_class: binding         # hook decisions block runtime actions; "deny" is enforced
+    validity_temporal: at_processing   # decisions are valid at the moment the hook fires
+    refusal_authority: issuer          # Cursor (the platform) is the refusal authority
+    invariant_survival: during_action  # decisions enforce the in-flight action only
+    replay_class: full_replay          # hook input/output and audit-log entries are reproducible JSON
+    governed_action_class: read        # hooks gate read/write/transfer/delegate/publish/compose; primary class differs per hook event
+
+  security_posture:
+    enforcement_class: binding         # sandbox.json constraints are runtime-enforced
+    validity_temporal: continuously    # in effect for the entire session
+    refusal_authority: issuer          # Cursor enforces; team-admin / MDM raises the floor
+    invariant_survival: during_action  # constraints active during agent execution
+    replay_class: fingerprint_only     # the config file is reproducible; runtime evidence is not separately signed
+    governed_action_class: read        # sandbox covers read / write / transfer through the same posture; primary listed
+
+  trust_verification:
+    enforcement_class: advisory        # SSO/SCIM identity is a precondition; trust itself lives at the IdP
+    validity_temporal: at_acceptance   # session valid from IdP token acceptance
+    refusal_authority: shared          # Cursor + IdP share authority over the session
+    invariant_survival: during_action  # session-bound
+    replay_class: fingerprint_only
+    governed_action_class: delegate    # SSO/SCIM is the precondition for downstream agent delegation
+
+
+# ──────────────────────────────────────────────────────────────
+# CROSSWALK METADATA
+# ──────────────────────────────────────────────────────────────
+crosswalk_metadata:
+  authored_by: "@aeoess"
+  source_protocol: cursor-hooks
+  source_version: "Cursor 2.x — Hooks API GA Oct 2025; sandbox.json reference and enterprise audit log current as of 2026-05-01"
+  source_urls:
+    hooks_canonical:    "https://cursor.com/docs/hooks"
+    sandbox_canonical:  "https://cursor.com/docs/reference/sandbox"
+    security:           "https://cursor.com/security"
+    audit_log:          "https://cursor.com/docs/enterprise/compliance-and-monitoring"
+    enterprise_blog:    "https://cursor.com/blog/enterprise"
+    terminal_tool:      "https://cursor.com/docs/agent/tools/terminal"
+  vocabulary_version: "0.1.0"
+  aps_version: "2.5.1-alpha"
+  crosswalk_version: "0.1.0"
+  crosswalk_date: "2026-05-01"
+  third_party_authored: true
+  refresh_notes:
+    - "v0.1.0: Initial third-party crosswalk. Authored by aeoess based on cursor.com/docs fetched 2026-05-01. Cursor (the company) is the system being crosswalked; if a Cursor maintainer adopts this file, the maintainer block updates accordingly."
+    - "Hook decision values: cursor.com/docs/hooks reports `allow` / `deny` / `ask` (3 values). Earlier blog summaries cited a four-value shape (allow / warn / step-up / deny); per CONTRIBUTING.md substance gate the docs are authoritative."
+    - "Audit log: 20 top-level event types per cursor.com/docs/enterprise/compliance-and-monitoring (login through team_command), plus 12+ nested team_settings sub-events. Earlier external counts of 19 reflected an older revision."
+    - "Sandbox Mode: documented at cursor.com/docs/reference/sandbox. The earlier URL cursor.com/docs/agent/sandbox-mode 404s; canonical replacement used."
+    - "Five aps_gap candidates surfaced (privacy_mode_zdr, mdm_policy_delivery, team_rules, hook_permission_enum, cloud_agent_network_security). None invented as canonical terms; flagged as gap-evidence for future vocabulary discussions."
+    - "Audit log re-verified 2026-05-01 against cursor.com/docs/enterprise/compliance-and-monitoring.md (raw markdown variant, HTTP 200, 176 lines). Canonical enumeration: 20 top-level event types (login through team_command) + 12 nested team_settings sub-events. Crosswalk list at signal_types.governance_attestation matches canonical exactly; no name additions, removals, or substitutions required. The intro line that elsewhere reports 19 reflects pre-team_command revisions; the enumerated table is authoritative."

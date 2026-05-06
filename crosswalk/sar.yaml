@@ -21,10 +21,9 @@ spec_url: "https://github.com/nutstrut/default-settlement-verifier/blob/main/ARC
 repository: "https://github.com/nutstrut/default-settlement-verifier"
 
 system_attributes:
-  signature_capability: ed25519
-  canonicalization_profile: JCS
-  hash_family: sha256
-
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
 
 mappings:
   - canonical: settlement_witness

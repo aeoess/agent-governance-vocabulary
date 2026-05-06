@@ -5,9 +5,9 @@ maintainer: "nutstrut"
 repository: "https://github.com/nutstrut/continuity-analyzer"
 
 system_attributes:
-  signature_capability: ed25519
-  canonicalization_profile: JCS
-  hash_family: sha256
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
 
 failure_code_registry: "https://raw.githubusercontent.com/nutstrut/continuity-analyzer/main/failure_codes.yaml"
 

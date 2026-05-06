@@ -31,13 +31,16 @@ signal_types:
     notes: "RNWY removed 2026-05-02 — RNWY's crosswalk (`crosswalk/rnwy.yaml`, maintainer-confirmed 2026-04-14) maps `peer_review` only, not `wallet_intelligence`. No verified production issuer remains. Canonical status under review per the 2-implementation threshold in CONTRIBUTING.md."
 
   reasoning_integrity:
+    status: proposed
     definition: "Attestation surface = the action, not the actor. Wallet-agnostic by design."
-    issuers_in_production: ["ThoughtProof"]
+    issuers_in_production: []
+    notes: "Day 79 audit (2026-05-05): ThoughtProof removed from issuers_in_production. No GitHub issue, PR, or thread engagement on this repo. No crosswalk file. Status downgraded from canonical to proposed per CONTRIBUTING.md 2-implementation threshold; will be canonicalized when verifiable production issuers surface."
 
   compliance_risk:
+    status: proposed
     definition: "Scored exposure assessment (counterparty flagged or clean). NOT a positive credential."
-    issuers_in_production: ["Revettr"]
-    notes: "Per @douglasborthwick-crypto: distinct from `compliance_credential`. Credential = holder possesses X. Risk = scored exposure. Keep both as distinct terms; do not collapse."
+    issuers_in_production: []
+    notes: "Per @douglasborthwick-crypto: distinct from `compliance_credential`. Credential = holder possesses X. Risk = scored exposure. Keep both as distinct terms; do not collapse. Day 79 audit (2026-05-05): Revettr removed from issuers_in_production. PR #4 explicitly descoped Revettr from wallet_state earlier; no engagement on compliance_risk after that. No crosswalk file. Status downgraded to proposed per CONTRIBUTING.md 2-implementation threshold."
 
   governance_attestation:
     definition: "Signed attestation that an agent or action satisfied a declared governance requirement (policy, delegation scope, compliance check, etc.). Distinct from compliance_risk (scored exposure) and trust_verification (identity layer status)."
@@ -66,8 +69,10 @@ signal_types:
     issuers_in_production: ["AgentGraph"]
 
   job_performance:
+    status: proposed
     definition: "Wallet-bound assessment of completed task outcomes."
-    issuers_in_production: ["Maiat"]
+    issuers_in_production: []
+    notes: "Day 79 audit (2026-05-05): Maiat removed from issuers_in_production. PR #3 (issuer attribution swap) referenced Maiat in passing but no direct engagement, no crosswalk file, no issues or PRs filed by them. Status downgraded to proposed per CONTRIBUTING.md 2-implementation threshold."
 
   settlement_witness:
     definition: "Wallet-discoverable: outcome attestations bound to action artifacts. Wallet-bound for post-upgrade receipts under kid `sar-prod-ed25519-03` (counterparty now inside signed bytes)."

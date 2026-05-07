@@ -1,0 +1,18 @@
+# Gitleaks ignore file — fingerprints classified as false positives during the
+# 2026-05-06 audit. All hits below are legitimate fixture content, public keys,
+# or doc examples (verified by spot-check). Adding new fingerprints requires
+# manual review against the local audit log to prevent the ignore file
+# becoming a silent leak surface.
+#
+# Format: one fingerprint per line, # for comments.
+
+0995e34f3da707f86440393604b4f49b70343288:crosswalk/sar.yaml:generic-api-key:110
+2ba3646c58515df08083893f406400044f875754:fixtures/interop-week-1/step-2-agentnexus.json:jwt:13
+2ba3646c58515df08083893f406400044f875754:fixtures/interop-week-1/step-2-agentnexus.json:jwt:28
+2ba3646c58515df08083893f406400044f875754:fixtures/interop-week-1/step-2-agentnexus.json:jwt:48
+574c3c1a4d5135d3bb866f569864d3d6f56474f1:fixtures/interop-week-1/step-2-agentnexus.json:jwt:13
+574c3c1a4d5135d3bb866f569864d3d6f56474f1:fixtures/interop-week-1/step-2-agentnexus.json:jwt:28
+574c3c1a4d5135d3bb866f569864d3d6f56474f1:fixtures/interop-week-1/step-2-agentnexus.json:jwt:47
+8dcb8a72bb3db925ad6c869a2fc3e639300527f9:fixtures/interop-week-1/step-2-agentnexus.json:jwt:13
+8dcb8a72bb3db925ad6c869a2fc3e639300527f9:fixtures/interop-week-1/step-2-agentnexus.json:jwt:28
+8dcb8a72bb3db925ad6c869a2fc3e639300527f9:fixtures/interop-week-1/step-2-agentnexus.json:jwt:48

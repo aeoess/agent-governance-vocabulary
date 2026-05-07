@@ -23,6 +23,10 @@ const descriptorEnums = {}
 for (const [dim, def] of Object.entries(vocab.descriptor_dimensions || {})) {
   if (def && Array.isArray(def.values)) descriptorEnums[dim] = new Set(def.values)
 }
+const systemAttributeEnums = {}
+for (const [attr, def] of Object.entries(vocab.system_attributes || {})) {
+  if (def && Array.isArray(def.values)) systemAttributeEnums[attr] = new Set(def.values)
+}
 
 // Legacy descriptor overrides — known-stale (file, path, value) tuples that
 // pre-date a vocabulary resolution. The validator emits WARNING (not ERROR)
@@ -68,6 +72,21 @@ function warn(file, msg) {
 
 function isStandardCrosswalk(doc) {
   return doc && typeof doc === 'object' && doc.signal_types && typeof doc.signal_types === 'object'
+}
+
+// system_attributes is a top-level crosscutting block defined in vocabulary.yaml
+// (signature_capability, canonicalization_profile, hash_family). Each field has
+// an explicit enum. Applies to standard AND alternative crosswalk formats.
+function validateSystemAttributes(doc, file) {
+  const attrs = doc.system_attributes
+  if (!attrs || typeof attrs !== 'object') return
+  for (const [attrName, value] of Object.entries(attrs)) {
+    const allowed = systemAttributeEnums[attrName]
+    if (!allowed) continue
+    if (typeof value !== 'string') continue
+    if (allowed.has(value)) continue
+    err(file, `system_attributes.${attrName}: "${value}" not in vocabulary (allowed: ${[...allowed].join(', ')})`)
+  }
 }
 
 function validateSystem(doc, file) {
@@ -174,6 +193,12 @@ function validateFile(file) {
     if (verbose) console.log(`  skip  ${path.relative(ROOT, file)} (reverse crosswalk)`)
     return
   }
+
+  // system_attributes is a crosscutting block that applies to all crosswalk
+  // formats (standard + alternative). Validate before the alternative-format
+  // early return.
+  validateSystemAttributes(doc, file)
+
   if (!isStandardCrosswalk(doc)) {
     warn(file, 'no `signal_types` section found; skipping validation (alternative crosswalk format)')
     return
@@ -194,6 +219,7 @@ console.log(`validate-crosswalks: checking ${files.length} file(s) against vocab
 console.log(`  signal types: ${[...canonicalSignalTypes].join(', ')}`)
 console.log(`  match types:  ${[...canonicalMatchTypes].join(', ')}`)
 console.log(`  dimensions:   ${Object.keys(descriptorEnums).join(', ')}`)
+console.log(`  system attrs: ${Object.keys(systemAttributeEnums).join(', ')}`)
 console.log('')
 
 for (const file of files) {

@@ -3,6 +3,12 @@ version: "0.1"
 license: "Apache-2.0"
 maintainer: "nutstrut"
 repository: "https://github.com/nutstrut/continuity-analyzer"
+
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
+
 failure_code_registry: "https://raw.githubusercontent.com/nutstrut/continuity-analyzer/main/failure_codes.yaml"
 
 summary: >

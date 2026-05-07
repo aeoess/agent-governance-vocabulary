@@ -82,8 +82,15 @@ function validateSystemAttributes(doc, file) {
   if (!attrs || typeof attrs !== 'object') return
   for (const [attrName, value] of Object.entries(attrs)) {
     const allowed = systemAttributeEnums[attrName]
-    if (!allowed) continue
-    if (typeof value !== 'string') continue
+    if (!allowed) {
+      warn(file, `system_attributes.${attrName}: unknown attribute (canonical: ${Object.keys(systemAttributeEnums).join(', ')})`)
+      continue
+    }
+    if (typeof value !== 'string') {
+      const shape = Array.isArray(value) ? 'array' : typeof value
+      warn(file, `system_attributes.${attrName}: value must be a single string from the enum, got ${shape} (allowed: ${[...allowed].join(', ')})`)
+      continue
+    }
     if (allowed.has(value)) continue
     err(file, `system_attributes.${attrName}: "${value}" not in vocabulary (allowed: ${[...allowed].join(', ')})`)
   }

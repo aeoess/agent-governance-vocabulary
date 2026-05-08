@@ -1,0 +1,403 @@
+# crosswalk/agentgraph.yaml
+#
+# Maps AgentGraph's internal `security_posture` mapping and
+# scan-attestation envelope shape to the canonical vocabulary defined
+# in vocabulary.yaml v0.2.0.
+#
+# AgentGraph is the canonical (and only) production issuer of
+# `security_posture` per vocabulary.yaml — wallet-discoverable signals
+# whose signed subject is the artifact (`{owner}/{repo}` GitHub
+# repository, optionally commit-pinned) with the wallet/DID acting as a
+# lookup key rather than the signed principal. AgentGraph also serves
+# as substrate maintainer for CTEF (Composable Trust Evidence Format)
+# v0.3.x — JCS-canonical, Ed25519-signed evidence, byte-match validated
+# across 8 independent implementations + 7 canonicalizers + 2
+# reader-runnable verifier scripts. See
+# /.well-known/interop-harness.json for the full receipt aggregator.
+
+system:
+  name: AgentGraph
+  home: https://agentgraph.co
+  repo: https://github.com/agentgraph-co/agentgraph
+  spec: https://agentgraph.co/.well-known/cte-test-vectors.json
+  jwks: https://agentgraph.co/.well-known/jwks.json
+  did: did:web:agentgraph.co
+  role: >
+    Substrate maintainer for CTEF (Composable Trust Evidence Format)
+    v0.3.x; static security scanner for AI agent distribution surfaces
+    (x402 Bazaar, OpenClaw, MCP Registry, npm + PyPI agent packages,
+    sample of Microsoft Dreamspace AI-generated Solidity). Issues
+    Ed25519-signed scan attestations bound to `{owner}/{repo}` artifact
+    keys, returning a 0-100 numeric score + A-F grade with weekly
+    re-scan cadence. Canonical (and currently sole) production issuer
+    of `security_posture` per vocabulary.yaml.
+  license: Apache-2.0
+  spec_alignment:
+    ctef_version: "v0.3.1"
+    canonicalization: "JCS (RFC 8785)"
+    signature_alg: "EdDSA / Ed25519"
+    interop_harness: https://agentgraph.co/.well-known/interop-harness.json
+
+license: Apache-2.0
+
+maintainer:
+  github: kenneives
+  confirmed_at: "2026-05-07"
+
+issuer: "did:web:agentgraph.co"
+
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
+
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  security_posture:
+    canonical: security_posture
+    internal: >
+      `static_analysis` claim_type for code-level findings (primary
+      surface); `behavioral` claim_type reserved for runtime signals
+      where applicable, but AgentGraph delegates behavioral runtime
+      evidence to Dominion Observatory under CTEF v0.3.2 §4.5 URI-
+      reference pattern.
+    match: exact
+    notes: >
+      AgentGraph IS the canonical issuer for this signal_type per
+      vocabulary.yaml — the signed subject is the artifact
+      (`{owner}/{repo}` GitHub repository, optionally commit-pinned),
+      and the wallet/DID is a lookup key rather than the signed
+      principal. Each scan returns a point-in-time A-F grade + 0-100
+      score backed by a JWS-signed attestation; scans don't expire,
+      with a weekly re-scan cadence (Sunday 02:00 UTC) maintaining
+      freshness. Historical timeline available at
+      `/api/v1/public/scan/{owner}/{repo}/history` (rate-limited
+      10/min/IP per `src/config.py.rate_limit_history_reads_per_minute`
+      — see the §103 hardening commit `8482010`).
+    issuer_uri: https://agentgraph.co
+    issuer_did: did:web:agentgraph.co
+    algorithm: EdDSA
+    curve: Ed25519
+    kid: agentgraph-security-v1
+    jwks_uri: https://agentgraph.co/.well-known/jwks.json
+    canonicalization: "RFC 8785 (JCS)"
+    default_ttl_seconds: null  # scans don't expire; weekly re-scan keeps freshness
+    rescan_cadence: "weekly, Sunday 02:00 UTC"
+    subject_identifier: >
+      `{owner}/{repo}` artifact key (GitHub repository), optionally
+      commit-pinned. Wallet/DID is a discoverability lookup key, NOT
+      the signed principal.
+
+    signed_payload_fields:
+      - entity_id            # UUID — internal entity identifier
+      - did                  # string — issuer DID (did:web:agentgraph.co)
+      - repo                 # string — `{owner}/{repo}` artifact key
+      - score                # integer 0-100 — composite security score
+      - grade                # string — A / B / C / D / F
+      - score_timeline       # array of {recorded_at, score} — historical points
+      - framework_scans      # array of {framework, scan_result, vulnerabilities_count, scanned_at}
+      - jws                  # compact JWS, EdDSA / Ed25519 (kid agentgraph-security-v1)
+
+    endpoints:
+      scan:                 "GET https://agentgraph.co/api/v1/public/scan/{owner}/{repo}"
+      history:              "GET https://agentgraph.co/api/v1/public/scan/{owner}/{repo}/history"
+      jwks:                 "https://agentgraph.co/.well-known/jwks.json"
+      did_document:         "https://agentgraph.co/.well-known/did.json"
+      cte_test_vectors:     "https://agentgraph.co/.well-known/cte-test-vectors.json"
+      interop_harness:      "https://agentgraph.co/.well-known/interop-harness.json"
+      webhook_test_vectors: "https://agentgraph.co/.well-known/webhook-test-vectors.json"
+
+    conformance:
+      ctef_version: "v0.3.1 frozen"
+      ctef_spec_anchor: "agentgraph-co/agentgraph@8b44390"
+      byte_match_validated_implementations: 8
+      independent_canonicalizers: 7
+      reader_runnable_verifier_scripts:
+        - "verify-aps-byte-match.mjs (arian-gogani/nobulex)"
+        - "verify-ctef-byte-match.mjs (arian-gogani/nobulex)"
+      negative_path_vectors:
+        - "INVALID_CLAIM_SCOPE (scope_violation)"
+        - "INVALID_COMPOSITION (composition_failure)"
+      receipt_aggregator: "https://agentgraph.co/.well-known/interop-harness.json"
+
+    trust_score_formula:
+      # Internal composition detail — audit-required, not enforcement-required.
+      # The published `score` (0-100) is the security-posture component only;
+      # the four-weight composition below is AgentGraph's internal trust score
+      # for entity ranking in the social/trust graph and is exposed for
+      # auditability rather than as a refusal-bearing signal.
+      verification_weight: 0.35   # DID resolution + JWKS verification + identity continuity
+      external_weight:     0.35   # peer attestations from other CTEF impls
+      scan_weight:         0.20   # static security findings (security_posture)
+      age_weight:          0.10   # account age + activity history
+      max_single_weight:   0.40   # MAX_SINGLE_WEIGHT invariant (src/trust/score.py asserts at module import)
+
+
+  # ─────────────────────────────────────────────────
+  # All other vocabulary.yaml signal_types — no_mapping.
+  # AgentGraph's role is the static-analysis security-posture
+  # surface + the CTEF substrate maintenance role; behavioral
+  # runtime, identity, peer-review, settlement, etc. are delegated
+  # to peer issuers via the multi-attestation envelope.
+  # ─────────────────────────────────────────────────
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: >
+      AgentGraph does not issue identity attestations beyond resolving
+      its own did:web:agentgraph.co for signed-scan provenance. Primary
+      issuers: AgentID (did:agentid:), MolTrust (did:web:moltrust.ch).
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: >
+      AgentGraph focuses on static security_posture; behavioral runtime
+      signals delegated to Dominion Observatory under CTEF v0.3.2 §4.5
+      URI-reference pattern (Path C — live measurement, not fixture-
+      embedding). Primary issuers: MolTrust, Dominion Observatory,
+      AgentLair.
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: >
+      AgentGraph does not produce per-task delegator-signed completion
+      attestations. Primary issuer: AgentID (interaction_pattern.
+      completion_ratio, rolling 180d).
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: >
+      Scan-history continuity (`score_timeline`) is artifact-level, not
+      agent-identity continuity. Primary issuers: HiveTrust, AgentID
+      (context_continuity).
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: >
+      AgentGraph does not issue per-task delegator-signed peer-review
+      attestations. Primary issuers: Logpose, RNWY.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: >
+      Foundation-layer wallet attestation is out of scope for
+      AgentGraph. Primary issuer: InsumerAPI (33-chain wallet state,
+      ECDSA-signed).
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: >
+      Behavioral wallet classification is not in AgentGraph's scope.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: >
+      AgentGraph does not attest to model reasoning artifacts. Primary
+      issuer: ThoughtProof (proposed status upstream).
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: >
+      AgentGraph does not perform sanctions / OFAC / regulatory
+      counterparty screening. Primary issuer: Revettr.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: >
+      AgentGraph's A-F grade is artifact-bound (security_posture for a
+      `{owner}/{repo}` artifact), distinct from APS's agent-level
+      passport_grade primitive. Primary issuer: APS (gateway.aeoess.com).
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      AgentGraph does not anchor outcome-receipt or payment-execution
+      attestations. Primary issuer: SAR (defaultverifier.com).
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: >
+      AgentGraph maintains the CTEF substrate but does not issue
+      delegation-chain authority attestations. Primary issuers: APS,
+      AgentNexus, Nobulex, SINT.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: >
+      AgentGraph does not issue task-outcome attestations. Primary
+      issuer: Maiat.
+
+  decision_lineage:
+    canonical: decision_lineage
+    match: no_mapping
+    notes: >
+      Per-action operational-trace attestations are PDR's domain;
+      AgentGraph composes over them when present but does not issue.
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: >
+      Cross-attestation divergence detection is composed at the
+      consumer/orchestrator layer; AgentGraph does not issue.
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: >
+      Rate-of-change signals over trust state are composed at the
+      consumer/orchestrator layer; AgentGraph contributes scan-timeline
+      inputs but does not issue the velocity primitive.
+
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSION MAPPINGS
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+
+  security_posture:
+    enforcement_class: advisory
+    enforcement_notes: >
+      AgentGraph emits signed evidence (score, grade, framework_scans);
+      refusal authority lives with the consuming agent or policy layer.
+      The `score` is composable input for downstream gating, not a
+      direct refusal-bearing primitive.
+
+    validity_temporal: at_issuance
+    validity_notes: >
+      Each scan is a point-in-time snapshot bound to the artifact at
+      the time of scanning. `framework_scans[].scanned_at` records the
+      per-framework freshness; `score_timeline` provides the historical
+      trajectory. Scans don't expire, but freshness drifts between the
+      Sunday 02:00 UTC re-scan cadence and the consumer's evaluation
+      time — consumers should consult `score_timeline` for currency.
+
+    refusal_authority: consumer_policy
+    refusal_notes: >
+      AgentGraph does not refuse; it reports the observed security
+      posture. Consumer-side composition policy decides how to weight
+      the signal (e.g., a marketplace gateway might refuse listings
+      below grade C, while a discovery surface might surface them with
+      a warning).
+
+    invariant_survival: pre_action
+    invariant_notes: >
+      Scan attestations are consumed before an action — typically
+      installation, listing publication, marketplace purchase, or
+      delegation to an agent backed by the scanned artifact.
+
+    replay_class: decision_replay
+    replay_notes: >
+      Given the JWS attestation + JWKS, any verifier can replay the
+      signature decision offline and confirm the score/grade/findings
+      at the time of issuance. Full re-scan replay (re-running the
+      static-analysis pipeline from source) is not part of the receipt
+      surface — that requires re-querying the scan endpoint.
+
+    governed_action_class: ["read", "write", "delegate", "compose", "transfer"]
+    governed_action_notes: >
+      security_posture is most commonly consumed at the
+      installation/listing boundary (`compose` / `transfer`) and at
+      gated-discovery surfaces (`read`). It composes with
+      `trust_verification` (identity), `governance_attestation`
+      (authority), and `behavioral_trust` (runtime) under the CTEF
+      v0.3.1 four-layer claim split.
+
+
+# ─────────────────────────────────────────────────
+# ENVELOPE
+# ─────────────────────────────────────────────────
+envelope:
+  alg: EdDSA
+  curve: Ed25519
+  canonicalization: "RFC 8785 (JCS)"
+  jwks_uri: "https://agentgraph.co/.well-known/jwks.json"
+  did_document: "https://agentgraph.co/.well-known/did.json"
+  signing_kid: "agentgraph-security-v1"
+  ctef_envelope_endpoint: "https://agentgraph.co/.well-known/cte-test-vectors.json"
+  ctef_version: "v0.3.1 frozen (claim_type field, NOT claim_category)"
+
+
+# ─────────────────────────────────────────────────
+# TRANSPORT
+# ─────────────────────────────────────────────────
+transport:
+  auth: "none for /api/v1/public/scan/* (rate-limited per src/config.py)"
+  api_base: "https://agentgraph.co/api/v1"
+  scan_endpoint: "https://agentgraph.co/api/v1/public/scan/{owner}/{repo}"
+  history_endpoint: "https://agentgraph.co/api/v1/public/scan/{owner}/{repo}/history"
+  history_rate_limit: "10 requests / minute / IP (src/config.py.rate_limit_history_reads_per_minute)"
+  jwks_endpoint: "https://agentgraph.co/.well-known/jwks.json"
+  did_document_endpoint: "https://agentgraph.co/.well-known/did.json"
+  webhook_event: "scan-change (HMAC-SHA256, X-Partner-Signature: sha256=<hex>; ±5 minute timestamp window)"
+
+
+# ─────────────────────────────────────────────────
+# GAPS AND NOTES
+# ─────────────────────────────────────────────────
+gaps:
+
+  - area: "Trust-score composition exposure"
+    notes: |
+      The four-weight trust score (verification 0.35, external 0.35,
+      scan 0.20, age 0.10; MAX_SINGLE_WEIGHT 0.40 invariant) is
+      AgentGraph's internal entity ranking and is audit-required, not
+      enforcement-required. The published `score` field on
+      `security_posture` attestations is the static-analysis component
+      only — the composite four-weight trust score is exposed for
+      auditability via the entity profile surface but is not itself a
+      `security_posture` signal. Vocabulary.yaml does not currently
+      have a canonical term for this kind of multi-input composite;
+      flagging so the mapping is legible.
+
+  - area: "Behavioral / runtime evidence"
+    notes: |
+      AgentGraph's static-analysis surface is paired with a deliberate
+      delegation to Dominion Observatory under CTEF v0.3.2 §4.5 URI-
+      reference pattern for behavioral runtime evidence (4,586 MCP
+      servers monitored since April 2026). Static + behavioral are
+      composable but kept as separate evidence_provider roles in the
+      interop-harness.json registry — substrate-and-primitive
+      separation is the design principle.
+
+
+# ─────────────────────────────────────────────────
+# CROSSWALK METADATA
+# ─────────────────────────────────────────────────
+crosswalk_metadata:
+  authored_by: "@kenneives"
+  vocabulary_version: "0.2.0"
+  last_reviewed: "2026-05-07"
+  related_artifacts:
+    - "https://agentgraph.co/.well-known/cte-test-vectors.json"  # CTEF v0.3.1 frozen wire format
+    - "https://agentgraph.co/.well-known/interop-harness.json"   # 8-impl byte-match receipt aggregator
+    - "https://agentgraph.co/.well-known/jwks.json"              # public key set
+    - "https://agentgraph.co/.well-known/did.json"               # did:web:agentgraph.co document
+  ctef_substrate_evidence:
+    implementations_byte_match_validated: 8
+    independent_canonicalizers: 7
+    reader_runnable_verifier_scripts: 2
+    cross_repository_receipt_mirrors: 2
+    fail_closed_negative_paths: 2
+    spec_anchor_commit: "agentgraph-co/agentgraph@8b44390"
+  next_revisions:
+    - "Refresh signed_payload_fields once CTEF v0.3.2 §A Conformance Appendix publishes (mid-May window) and the canonical-bytes diff fixture at corpollc/qntm#15 lands as a verifier-reproducible artifact."
+    - "Add a `behavioral` claim_type entry under signal_types if/when AgentGraph begins issuing runtime evidence directly (currently delegated to Dominion Observatory via URI-reference)."
+    - "Populate maintenance_health crosswalk row (currently no_mapping) once the v0.4 §6.x.y claim_subtype proposal from openclaw-skill-quality-analyzer / Miaoqu AI is adopted."

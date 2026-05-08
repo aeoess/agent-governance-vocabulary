@@ -75,7 +75,7 @@ signal_types:
       - verified              # boolean — certificate_valid && agent.active
       - identity_gate         # string — "passed" | "failed"
       - resolved_at           # ISO 8601
-      - trust_level           # integer 0-3 (informational)
+      - trust_level           # integer 1-4 (informational; legacy 0 normalizes to 1)
       - scarring_score        # number — incident-weighted history
       - negative_signals      # integer
       - resolved_signals      # integer

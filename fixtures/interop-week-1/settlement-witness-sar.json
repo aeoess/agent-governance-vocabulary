@@ -1,0 +1,46 @@
+{
+  "fixture_version": "0.1",
+  "signal_type": "settlement_witness",
+  "issuer": {
+    "system": "SAR",
+    "name": "Settlement Attestation Receipt",
+    "repository": "https://github.com/nutstrut/default-settlement-verifier",
+    "public_key_registry": "https://defaultverifier.com/.well-known/sar-keys.json"
+  },
+  "composition": {
+    "prior_signal_digest": "sha256:96942da3ad2ce8283d0a9c890f281fd5e0d82c9c7e6d796c26b980893cfeeeb6",
+    "this_signal_digest": "sha256:3083f50882af0b78afabc4230736eca14f2ee66ba3578b20495951150580e1e4"
+  },
+  "scenario_binding": {
+    "step": 5,
+    "prior_signal_type": "entity_continuity",
+    "prior_signal_path": "fixtures/interop-week-1/entity-continuity-continuity-analyzer.json",
+    "chain_note": "SAR after Step 3 continuity"
+  },
+  "task": {
+    "scenario": "interop-week-1",
+    "step": 5,
+    "signal_type": "settlement_witness",
+    "issuer": "sar",
+    "prior_signal_digest": "sha256:96942da3ad2ce8283d0a9c890f281fd5e0d82c9c7e6d796c26b980893cfeeeb6",
+    "prior_signal_path": "fixtures/interop-week-1/entity-continuity-continuity-analyzer.json",
+    "task_id_hash": "sha256:8b38881cd70495e539509d805ad61595483768167e38fb6e640b1a9859024de4"
+  },
+  "sar_receipt": {
+    "task_id_hash": "sha256:8b38881cd70495e539509d805ad61595483768167e38fb6e640b1a9859024de4",
+    "verdict": "PASS",
+    "confidence": 1.0,
+    "reason_code": "SPEC_MATCH",
+    "ts": "2026-05-09T14:09:21.865851Z",
+    "verifier_kid": "sar-prod-ed25519-03",
+    "counterparty": "0x1234567890abcdef1234567890abcdef12345678",
+    "receipt_id": "sha256:3083f50882af0b78afabc4230736eca14f2ee66ba3578b20495951150580e1e4",
+    "sig": "base64url:NlhMYvFpj5_75BCi_M1w6nPFB4ajsvm9pJqchU84YuV1RrwG39OcWntFLkkww31BeB2RW6auEEN7jyAy_b4KAA"
+  },
+  "verification": {
+    "signature_capability": "classical",
+    "signature_algorithm": "Ed25519",
+    "canonicalization_profile": "jcs-rfc-8785",
+    "hash_family": "sha-256"
+  }
+}

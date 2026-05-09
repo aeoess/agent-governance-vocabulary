@@ -9,7 +9,7 @@
   },
   "composition": {
     "prior_signal_digest": "sha256:96942da3ad2ce8283d0a9c890f281fd5e0d82c9c7e6d796c26b980893cfeeeb6",
-    "this_signal_digest": "sha256:3083f50882af0b78afabc4230736eca14f2ee66ba3578b20495951150580e1e4"
+    "this_signal_digest": "sha256:d46e984431afa7af39a2f06f21bf7ecea3ac0898dcbc4ead75aa7d093048905e"
   },
   "scenario_binding": {
     "step": 5,
@@ -31,11 +31,11 @@
     "verdict": "PASS",
     "confidence": 1.0,
     "reason_code": "SPEC_MATCH",
-    "ts": "2026-05-09T14:09:21.865851Z",
+    "ts": "2026-05-09T14:37:42.063630Z",
     "verifier_kid": "sar-prod-ed25519-03",
-    "counterparty": "0x1234567890abcdef1234567890abcdef12345678",
-    "receipt_id": "sha256:3083f50882af0b78afabc4230736eca14f2ee66ba3578b20495951150580e1e4",
-    "sig": "base64url:NlhMYvFpj5_75BCi_M1w6nPFB4ajsvm9pJqchU84YuV1RrwG39OcWntFLkkww31BeB2RW6auEEN7jyAy_b4KAA"
+    "counterparty": "0xf23C8C0695e0Bd7c6eB979AEc128386Bf1ce3dCc",
+    "receipt_id": "sha256:d46e984431afa7af39a2f06f21bf7ecea3ac0898dcbc4ead75aa7d093048905e",
+    "sig": "base64url:-8LfFBgZz3xwCvbGafuNemwAVJOY43bLfeyZOb-Opt6LK89k6bXLx-l-ebs-0U9RuEJGyPbx0FpyAy2_BCJgCw"
   },
   "verification": {
     "signature_capability": "classical",

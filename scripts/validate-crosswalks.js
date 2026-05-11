@@ -201,6 +201,11 @@ function validateFile(file) {
     return
   }
 
+  if (doc.crosswalk_type === 'domain_incubation') {
+    if (verbose) console.log(`  skip  ${path.relative(ROOT, file)} (domain incubation)`)
+    return
+  }
+
   // system_attributes is a crosscutting block that applies to all crosswalk
   // formats (standard + alternative). Validate before the alternative-format
   // early return.

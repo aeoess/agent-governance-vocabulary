@@ -1,0 +1,160 @@
+# crosswalk/budget_authority.yaml
+#
+# Budget Authority — canonical verb set for the cumulative-spend
+# enforcement layer between agent identity/delegation (APS) and
+# payment-rail settlement (x402, Stripe, ACP, MPP, AP2).
+#
+# Composition: passport (identity + delegation) → budget authority
+# (cumulative enforcement) → rail (settlement).
+#
+# Structurally different from the per-system forward crosswalks
+# (insumerapi.yaml, satp/, etc.) that map ONE issuer's internal names
+# to the canonical signal-type vocabulary. This file is a
+# canonical-verb-set definition shared across multiple converging
+# implementations and is therefore declared as
+# `crosswalk_type: domain_incubation` (validator Path A silent-skip).
+# Once a third production implementation surfaces and each `proposed`
+# verb gains a second implementer, the file promotes to canonical
+# (see Promotion path below).
+#
+# Public commitment:  agentic-commerce-protocol/agentic-commerce-protocol#231
+# Upstream proposals: google-agentic-commerce/AP2#252 (goodmeta sample,
+#                     rename to `reserve` pending merge)
+#                     aeoess/agent-passport-system#25 (Cycles,
+#                     runcycles.io, @amavashev)
+# Reviewers:          @Ectsang (goodmeta), @amavashev (Cycles)
+#
+# License: Apache-2.0. Copyright 2024-2026 Tymofii Pidlisnyi.
+
+crosswalk_type: domain_incubation
+status: INCUBATING
+
+upstream_references:
+  - https://github.com/agentic-commerce-protocol/agentic-commerce-protocol/issues/231
+  - https://github.com/google-agentic-commerce/AP2/issues/252
+  - https://github.com/aeoess/agent-passport-system/issues/25
+
+# Decision shape returned from `reserve` or any budget pre-check.
+# v0.1 freezes the three outcome values; v0.2 codifies the cap-type
+# vocabulary after a third production implementation surfaces.
+decision_shape:
+  values:
+    - ALLOW
+    - ALLOW_WITH_CAPS
+    - DENY
+  ALLOW_WITH_CAPS_structure:
+    allowed: boolean
+    caps:
+      - type: string                 # cap-type vocabulary deferred to v0.2
+        params: object               # caller-defined per cap type
+    reason: string
+    source: string
+
+# Verb status convention follows vocabulary.yaml: `candidate` = two
+# production implementations under this canonical name (allowing for
+# in-flight renames); `proposed` = one or zero distinct-verb impls
+# pending convergence.
+verbs:
+
+  reserve:
+    status: candidate
+    definition: >-
+      Hold capacity against delegation budget without spending.
+      Returns reservation_id and expires_at. Headroom allocated,
+      not yet committed in the ledger.
+    implementations:
+      goodmeta: authorize            # rename to `reserve` pending AP2#252 merge
+      cycles: reserve
+    notes: |
+      Two production implementations. AP2#252 rename from
+      `authorize` to `reserve` is pending merge; tracked by @Ectsang.
+
+  commit:
+    status: candidate
+    definition: >-
+      Convert reservation into final spend. References reservation_id.
+      Spend recorded against ledger.
+    implementations:
+      goodmeta: commit
+      cycles: commit
+
+  release:
+    status: proposed
+    definition: >-
+      Return unspent reservation to budget before commit. Pre-commit
+      only. Reservation cancelled, headroom restored.
+    implementations:
+      goodmeta: '-'                  # not first-class; folded into refund
+      cycles: release
+    notes: |
+      One production implementation (cycles). Pre-commit audit state.
+      Profile note: implementations declaring the `ledger-fidelity`
+      profile carry both `release` and `refund` first-class; the
+      `minimal` profile carries one.
+
+  refund:
+    status: proposed
+    definition: >-
+      Reverse committed spend. Post-commit only. References committed
+      transaction. Spend reversed in ledger.
+    implementations:
+      goodmeta: refund
+      cycles: '-'                    # captured via decision flow, not first-class
+    notes: |
+      One production implementation (goodmeta). Post-commit audit
+      state. Layer-separation note: budget-layer refund is a passive
+      ledger restore; rail-layer reversal (chargeback, settlement
+      revoke) is a separate concern at the rail and does not compose
+      through this verb.
+
+  query_budget:
+    status: proposed
+    definition: >-
+      Return current ledger state for a delegation (total committed,
+      total reserved, headroom remaining). Audit snapshot, no state
+      change.
+    implementations:
+      goodmeta: query
+      cycles: query
+    notes: |
+      Zero distinct-verb implementations; both impls multiplex
+      `query_budget` and `query_reservation` through a single `query`
+      verb. v0.2 splits if a third implementation surfaces with a
+      native split.
+
+  query_reservation:
+    status: proposed
+    definition: >-
+      Return state of a specific reservation by ID. Audit snapshot,
+      no state change.
+    implementations:
+      goodmeta: query(reservation_id)
+      cycles: query(reservation_id)
+    notes: |
+      Zero distinct-verb implementations; multiplexed through the
+      single `query` verb with optional `reservation_id` parameter.
+      v0.2 splits if a third implementation surfaces with a native
+      split.
+
+stewardship:
+  current:
+    org: aeoess
+    posture: stewarded-public
+    license: Apache-2.0
+  donation_trajectory:
+    target: AAIF
+    proposal: https://github.com/aaif/project-proposals/issues/14
+    state: in CA review
+  # Observed parallel work; convergence pending engagement.
+  forward_watch:
+    - https://github.com/x402-foundation/x402/issues/2176
+    - https://github.com/second-state/payment-skill/issues/31
+
+# Promotion path. File promotes from `domain_incubation` to canonical
+# when:
+#   1. A third production implementation of the budget-authority domain
+#      surfaces (x402-foundation/x402#2176, OpenClaw SpendEnvelope at
+#      second-state/payment-skill#31, or a new entrant).
+#   2. Each `proposed` verb gains a second implementer.
+# On promotion, file moves to the standard signal_types shape and
+# enters full validator coverage.

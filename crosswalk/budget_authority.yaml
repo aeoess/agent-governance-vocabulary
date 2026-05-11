@@ -99,7 +99,7 @@ verbs:
       transaction. Spend reversed in ledger.
     implementations:
       goodmeta: refund
-      cycles: '-'                    # captured via decision flow, not first-class
+      cycles: '-'                    # no first-class runtime verb; post-commit reversals require admin-plane ledger operations (CREDIT/DEBIT/RESET on the budget)
     notes: |
       One production implementation (goodmeta). Post-commit audit
       state. Layer-separation note: budget-layer refund is a passive
@@ -108,33 +108,33 @@ verbs:
       through this verb.
 
   query_budget:
-    status: proposed
+    status: candidate
     definition: >-
       Return current ledger state for a delegation (total committed,
       total reserved, headroom remaining). Audit snapshot, no state
       change.
     implementations:
-      goodmeta: query
-      cycles: query
+      goodmeta: query                # multiplexed via single query verb
+      cycles: get_balances           # distinct verb; GET /v1/balances
     notes: |
-      Zero distinct-verb implementations; both impls multiplex
-      `query_budget` and `query_reservation` through a single `query`
-      verb. v0.2 splits if a third implementation surfaces with a
-      native split.
+      Two production implementations. Cycles exposes a distinct
+      `get_balances` verb; goodmeta multiplexes through a single
+      `query` verb. Convergence on the canonical name `query_budget`
+      pending implementer choice.
 
   query_reservation:
-    status: proposed
+    status: candidate
     definition: >-
       Return state of a specific reservation by ID. Audit snapshot,
       no state change.
     implementations:
-      goodmeta: query(reservation_id)
-      cycles: query(reservation_id)
+      goodmeta: query(reservation_id)   # multiplexed via single query verb
+      cycles: get_reservation           # distinct verb; GET /v1/reservations/{id}
     notes: |
-      Zero distinct-verb implementations; multiplexed through the
-      single `query` verb with optional `reservation_id` parameter.
-      v0.2 splits if a third implementation surfaces with a native
-      split.
+      Two production implementations. Cycles exposes a distinct
+      `get_reservation` verb (plus `list_reservations` for the
+      collection form); goodmeta multiplexes through the single
+      `query` verb with an optional `reservation_id` parameter.
 
 stewardship:
   current:

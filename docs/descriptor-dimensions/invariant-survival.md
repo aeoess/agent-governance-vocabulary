@@ -1,8 +1,8 @@
 # Invariant Survival — Boundary-to-Boundary Continuity
 
-> Co-authored with [@QueBallSharken](https://github.com/QueBallSharken) (Steven K. Hensley) from [BBIS](https://github.com/QueBallSharken/BBIS) (Boundary-to-Boundary Invariant Survival).
+> Builds on the BBIS framework by [@QueBallSharken](https://github.com/QueBallSharken) (Steven K. Hensley). [BBIS](https://github.com/QueBallSharken/BBIS) (Boundary-to-Boundary Invariant Survival) remains @QueBallSharken's framework; this document uses BBIS language and framing where it overlaps with the v0.1 `invariant_survival` descriptor.
 > Discussion: [aeoess/agent-governance-vocabulary#39](https://github.com/aeoess/agent-governance-vocabulary/issues/39).
-> Scope: this artifact only, not BBIS itself. BBIS is QueBallSharken's framework; this document uses BBIS language and framing where it overlaps with the v0.1 `invariant_survival` descriptor.
+> Scope: this artifact only, not BBIS itself. This descriptor is an AEOESS vocabulary artifact and does not imply BBIS endorsement.
 
 This document is the long-form rationale for the `invariant_survival`
 descriptor in `vocabulary.yaml`. The YAML carries the four enum values

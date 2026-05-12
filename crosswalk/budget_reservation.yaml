@@ -27,6 +27,7 @@
 # License: Apache-2.0. Copyright 2024-2026 Tymofii Pidlisnyi.
 
 crosswalk_type: domain_incubation
+verified_at: 2026-05-12
 status: INCUBATING
 
 upstream_references:

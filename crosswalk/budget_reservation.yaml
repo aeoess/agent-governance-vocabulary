@@ -57,7 +57,15 @@ decision_shape:
 verbs:
 
   reserve:
-    status: candidate
+    status: proposed
+    status_note: |
+      Downgraded from candidate to proposed 2026-05-12 pending @Ectsang
+      confirmation of goodmeta verb support. Two-implementation threshold
+      for candidate requires both maintainers attesting; current state has
+      one shipped (Cycles, verified by amavashev in ed0fdb6) and one
+      asserted-by-us (goodmeta, no Ectsang confirmation). Promotion path:
+      Ectsang LGTM on the verb mapping OR AP2#252 merges with the
+      authorize→reserve rename.
     definition: >-
       Hold capacity against delegation budget without spending.
       Returns reservation_id and expires_at. Headroom allocated,
@@ -108,7 +116,15 @@ verbs:
       through this verb.
 
   query_budget:
-    status: candidate
+    status: proposed
+    status_note: |
+      Downgraded from candidate to proposed 2026-05-12 pending @Ectsang
+      confirmation of goodmeta verb support. Two-implementation threshold
+      for candidate requires both maintainers attesting; current state has
+      one shipped (Cycles, verified by amavashev in ed0fdb6) and one
+      asserted-by-us (goodmeta, no Ectsang confirmation). Promotion path:
+      Ectsang LGTM on the verb mapping OR AP2#252 merges with the
+      authorize→reserve rename.
     definition: >-
       Return current ledger state for a delegation (total committed,
       total reserved, headroom remaining). Audit snapshot, no state
@@ -123,7 +139,15 @@ verbs:
       pending implementer choice.
 
   query_reservation:
-    status: candidate
+    status: proposed
+    status_note: |
+      Downgraded from candidate to proposed 2026-05-12 pending @Ectsang
+      confirmation of goodmeta verb support. Two-implementation threshold
+      for candidate requires both maintainers attesting; current state has
+      one shipped (Cycles, verified by amavashev in ed0fdb6) and one
+      asserted-by-us (goodmeta, no Ectsang confirmation). Promotion path:
+      Ectsang LGTM on the verb mapping OR AP2#252 merges with the
+      authorize→reserve rename.
     definition: >-
       Return state of a specific reservation by ID. Audit snapshot,
       no state change.

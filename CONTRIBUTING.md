@@ -128,3 +128,31 @@ Every PR is evaluated against five questions, applied to every contributor equal
 - **Repository:** Apache License 2.0 (see [`LICENSE`](./LICENSE))
 - **`vocabulary.yaml` itself:** CC0 — canonical terms should be freely adoptable by any system without license friction
 - **Individual crosswalk files:** contributor's choice, provided the license permits Apache 2.0 downstream consumption. Declare the license in the crosswalk file header (`license:` field). Examples in merged crosswalks: Apache-2.0, MIT, MIT (code) + CC-BY-4.0 (specification).
+
+## `domain_incubation` crosswalks
+
+The `domain_incubation` `crosswalk_type` marks cross-system verb/domain
+namespaces still in incubation. Validator skips strict `signal_types`
+checks on these files (parallel to `rfc_category_reverse`), but the
+following gates apply:
+
+**Gate 1: Maintainer-only marker (reviewer-enforced).**
+Only PRs from `aeoess` org maintainer accounts may set `crosswalk_type:
+domain_incubation`. Reviewers reject non-maintainer PRs that attempt to
+use the marker.
+
+**Gate 2: Max 3 active files (validator-enforced).**
+At most 3 files may carry `crosswalk_type: domain_incubation` at any
+time. Validator counts and fails if exceeded.
+
+**Gate 3: 90-day sunset (validator-enforced).**
+Each `domain_incubation` file must carry a `verified_at: YYYY-MM-DD`
+field at the top level. The file fails validation 90 days after
+`verified_at`. Promotion to a standard `crosswalk_type` or deletion is
+required before sunset.
+
+**Required fields:**
+- `crosswalk_type: domain_incubation`
+- `verified_at: YYYY-MM-DD`
+- `implementations:` (list with maintainer per verb)
+- `promotion_criteria:` (explicit conditions for moving out of incubation)

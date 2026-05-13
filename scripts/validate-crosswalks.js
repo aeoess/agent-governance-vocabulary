@@ -104,6 +104,27 @@ function validateSystem(doc, file) {
   if (!sys.home && !sys.repo) warn(file, '`system` has neither `home` nor `repo` URL')
 }
 
+// domain_incubation files are silent-skipped from strict signal_types
+// checks but carry their own gates: a required verified_at date field
+// and a 90-day sunset measured from that date. Promotion to a standard
+// crosswalk_type or deletion is required before sunset.
+const DOMAIN_INCUBATION_SUNSET_MS = 90 * 24 * 60 * 60 * 1000
+
+function validateDomainIncubation(doc, file) {
+  if (doc.verified_at === undefined || doc.verified_at === null || doc.verified_at === '') {
+    err(file, 'domain_incubation requires verified_at field')
+    return
+  }
+  const verifiedMs = Date.parse(doc.verified_at)
+  if (Number.isNaN(verifiedMs)) {
+    err(file, `domain_incubation verified_at "${doc.verified_at}" is not a parseable ISO 8601 date`)
+    return
+  }
+  if (verifiedMs + DOMAIN_INCUBATION_SUNSET_MS < Date.now()) {
+    err(file, 'file is past 90-day sunset; re-verify or promote')
+  }
+}
+
 function validateSignalTypes(doc, file) {
   for (const [key, entry] of Object.entries(doc.signal_types)) {
     if (!entry || typeof entry !== 'object') continue
@@ -201,6 +222,12 @@ function validateFile(file) {
     return
   }
 
+  if (doc.crosswalk_type === 'domain_incubation') {
+    validateDomainIncubation(doc, file)
+    if (verbose) console.log(`  skip  ${path.relative(ROOT, file)} (domain incubation)`)
+    return
+  }
+
   // system_attributes is a crosscutting block that applies to all crosswalk
   // formats (standard + alternative). Validate before the alternative-format
   // early return.
@@ -220,6 +247,26 @@ const files = walkYaml(CROSSWALK_DIR)
 if (files.length === 0) {
   console.log('No crosswalk YAML files found.')
   process.exit(0)
+}
+
+// Global gate: domain_incubation is an exemption from strict signal_types
+// checks, so its population is capped to keep the silent-skip surface
+// bounded. Reviewer-enforced gates (maintainer-only marker) live in
+// CONTRIBUTING.md; the cap is validator-enforced here.
+const DOMAIN_INCUBATION_MAX = 3
+const incubationFiles = []
+for (const file of files) {
+  let doc
+  try {
+    doc = yaml.load(fs.readFileSync(file, 'utf8'))
+  } catch {
+    continue // YAML parse error surfaces inside validateFile
+  }
+  if (doc && doc.crosswalk_type === 'domain_incubation') incubationFiles.push(file)
+}
+if (incubationFiles.length > DOMAIN_INCUBATION_MAX) {
+  const rels = incubationFiles.map(f => path.relative(ROOT, f)).join(', ')
+  errors.push(`ERROR  crosswalk/: ${incubationFiles.length} files carry crosswalk_type: domain_incubation; max allowed is ${DOMAIN_INCUBATION_MAX} (${rels})`)
 }
 
 console.log(`validate-crosswalks: checking ${files.length} file(s) against vocabulary.yaml`)

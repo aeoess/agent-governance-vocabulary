@@ -1,0 +1,278 @@
+# crosswalk/cycles.yaml
+# =============================================================================
+# Maps Cycles pre-execution budget authority primitives to the canonical
+# vocabulary defined in vocabulary.yaml.
+#
+# Cycles is a pre-execution authorization protocol for AI agent runtimes:
+# every model call, tool call, and agent turn is gated by a Cycles
+# decide / reserve / commit / release call against per-subject budget caps.
+# Decisions are returned as ALLOW / ALLOW_WITH_CAPS / DENY with structured
+# cap payloads; reservations are concurrency-safe, idempotency-keyed, and
+# commit at actual usage.
+#
+# Spec:        https://github.com/runcycles/cycles-protocol
+# Home:        https://runcycles.io
+# Contributor: @amavashev (Albert Mavashev)
+# Status:      Proposed (v0.1) — signal-type rows only; budget-reservation
+#              verb-layer mappings land as a follow-up after #91 merges.
+#              (Verb-layer namespace renamed from `budget_authority` to
+#              `budget_reservation` per aeoess/agent-passport-system#25
+#              comment 4433715146, to avoid overlap with APS's
+#              delegation-authority concept.)
+# =============================================================================
+
+system:
+  name: Cycles
+  home: https://runcycles.io
+  repo: https://github.com/runcycles/cycles-protocol
+  spec: https://github.com/runcycles/cycles-protocol/blob/main/cycles-protocol-v0.yaml
+  spec_version: "cycles-protocol v0"
+  role: >
+    Pre-execution budget and action authority for AI agent runtimes. Cycles
+    issues decide / reserve / commit / release calls to authorize each
+    model call, tool call, and agent turn against per-subject budget caps
+    before the underlying handler executes. Decisions are returned as
+    ALLOW / ALLOW_WITH_CAPS / DENY with structured cap payloads;
+    reservations are concurrency-safe, idempotency-keyed, and commit at
+    actual usage. Cycles is action-class agnostic — callers declare their
+    own Action(kind, name) per call.
+  identity_layer: >
+    Caller-provided Subject (tenant + optional workspace, app, workflow,
+    agent, toolset, dimensions — all per the Cycles Subject schema).
+    Cycles does not issue or attest agent identity; identity is the
+    responsibility of the upstream gateway (e.g. APS).
+  license: "Apache-2.0"
+
+license: Apache-2.0
+maintainer:
+  github: amavashev
+  confirmed_at: "2026-05-12"
+
+# Cross-references:
+#   - Budget-reservation verb layer (reserve / commit / release / refund /
+#     query_budget / query_reservation) lives in a separate file proposed
+#     at aeoess/agent-governance-vocabulary#91 (`crosswalk/budget_reservation.yaml`;
+#     PR open at file creation; Cycles row already vetted in commit ed0fdb6
+#     and re-confirmed under the renamed namespace per
+#     aeoess/agent-passport-system#25 comment 4433715146). This file
+#     covers signal-type-level mappings only.
+#   - CyclesEvidence envelope (JCS-canonical signed evidence for the
+#     cross-system content-addressed join) is drafted at
+#     runcycles/cycles-protocol#90.
+#   - APS integration thread, including PaymentReceipt shape, two-receipt
+#     emission model, and CyclesEvidenceRef join interface:
+#     aeoess/agent-passport-system#25.
+#   - Cycles client library for LangChain agents:
+#     https://github.com/runcycles/langchain-runcycles (Apache-2.0).
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+#
+# Cycles has substantive behavior for one canonical signal_type
+# (governance_attestation, partial) and explicit no_mapping rationale
+# for three others (compliance_risk, wallet_state, settlement_witness).
+#
+# Other canonicals (behavioral_trust, passport_grade, trust_verification,
+# reasoning_integrity, security_posture, job_performance, peer_review,
+# wallet_intelligence, completion_ratio, entity_continuity) are out of
+# scope: Cycles is a runtime authority layer, not an identity, trust,
+# reputation, or post-action attestation layer.
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    cycles_term: "Decision + Reservation + Commit/Release records"
+    cycles_fields:
+      # Wire shapes — names and field lists match the runcycles Python SDK
+      # (https://github.com/runcycles/cycles-client-python). Optional fields
+      # are marked with `?`. Reservation has three distinct on-wire objects
+      # (request, response, detail); commit and release each have a request
+      # and a response.
+      - "decide (req) → DecisionRequest { idempotency_key, subject, action, estimate, metadata? }"
+      - "decide (resp) → DecisionResponse { decision, caps?, reason_code?, retry_after_ms?, affected_scopes? }"
+      - "reserve (req) → ReservationCreateRequest { idempotency_key, subject, action, estimate, ttl_ms?, grace_period_ms?, overage_policy?, dry_run?, metadata? }"
+      - "reserve (resp) → ReservationCreateResponse { decision, affected_scopes, reservation_id?, reserved?, caps?, reason_code?, retry_after_ms?, expires_at_ms?, scope_path?, balances? }"
+      - "reservation lookup → ReservationDetail { reservation_id, status, subject, action, reserved, created_at_ms, expires_at_ms, scope_path, affected_scopes, idempotency_key?, committed?, finalized_at_ms?, metadata? }"
+      - "commit (req) → CommitRequest { idempotency_key, actual, metrics?, metadata? }"
+      - "commit (resp) → CommitResponse { status, charged, released?, balances? }"
+      - "release (req) → ReleaseRequest { idempotency_key, reason? }"
+      - "release (resp) → ReleaseResponse { status, released, balances? }"
+      - "Decision enum: ALLOW | ALLOW_WITH_CAPS | DENY"
+      - "Unit enum: USD_MICROCENTS | TOKENS | CREDITS | RISK_POINTS"
+      - "Caps shape: { max_tokens?, max_steps_remaining?, tool_allowlist?, tool_denylist?, cooldown_ms? }"
+    cycles_definition: >
+      Cycles emits four kinds of governance-attestation artifacts across the
+      authorization lifecycle:
+        - A Decision (decide endpoint) — pure budget pre-check, stateless.
+        - A Reservation (reserve endpoint) — atomic, concurrency-safe,
+          time-bounded (ttl_ms) authorization with an estimated debit.
+        - A Commit (commit_reservation endpoint) — settles a reservation at
+          the actual usage value reported by the gated handler.
+        - A Release (release_reservation endpoint) — clears a reservation
+          without debiting; used on handler exception, cancellation, or
+          when actual cost is determined to be zero.
+      Each is a server-issued JSON response paired with the caller's
+      request — the request carries the `idempotency_key` (the responses
+      themselves do not echo it), and the request/response pair is what
+      a CyclesEvidence envelope wraps as a single signed artifact —
+      consumable as evidence by upstream auditors. Cross-event linkage
+      on the
+      commit/release path is via the URL: commit_reservation and
+      release_reservation take reservation_id as a path argument, and the
+      response bodies do not echo it. The CyclesEvidence envelope draft
+      in `cycles-protocol/drafts/` (runcycles/cycles-protocol#90) hoists
+      reservation_id into the signed canonical bytes so audit consumers
+      can recover the directional authorization → settlement chain from
+      evidence alone.
+    match: partial
+    notes: >
+      Cycles partially maps to governance_attestation with two meaningful
+      divergences from the canonical's typical shape:
+
+      1. TEMPORAL SPLIT — pre-execution authority, not post-action attestation.
+         The canonical signal_type's reference implementations (e.g. Nobulex
+         ActionLog, AEOESS receipts) mostly attest post-action: they record
+         what happened after execution. Cycles' decide and reserve
+         attestations are pre-execution: they record what was authorized
+         before the action runs. The commit / release attestations are
+         post-execution. A Cycles-gated action produces both pre- and
+         post-execution attestations; consumers asking "did this action
+         execute under authority?" need to join the reservation attestation
+         with the commit attestation by reservation_id.
+
+      2. BINDING ENFORCEMENT — not advisory. A DENY decision blocks the
+         underlying handler from executing. The attestation is the runtime
+         gate, not a post-hoc compliance record. See
+         descriptor_dimensions.governance_attestation.enforcement_class
+         below.
+
+      v0.1 scope note: this file does not enumerate per-shape signing
+      semantics because Cycles' on-wire artifacts today are server-issued
+      JSON over TLS with bearer-token authentication, not contributor-signed
+      envelopes. The CyclesEvidence draft at runcycles/cycles-protocol#90
+      defines a JCS-canonicalized signed envelope shape
+      (RFC 8785 + sha256 + Ed25519) for the cross-system content-addressed
+      join described in aeoess/agent-passport-system#25. A follow-up PR
+      will populate system_attributes (signature_capability,
+      canonicalization_profile, hash_family) once the CyclesEvidence
+      draft is normative.
+    issuers_in_production:
+      - "runcycles (Cycles server v0, https://github.com/runcycles/cycles-protocol)"
+      - "langchain-runcycles SDK (https://github.com/runcycles/langchain-runcycles)"
+    cross_references:
+      - "Budget-reservation verb-layer mappings: aeoess/agent-governance-vocabulary#91 (crosswalk/budget_reservation.yaml)"
+      - "APS PaymentReceipt integration shape and CyclesEvidenceRef join: aeoess/agent-passport-system#25"
+
+  compliance_risk:
+    cycles_term: null
+    match: no_mapping
+    notes: >
+      Cycles produces binary decisions (ALLOW / ALLOW_WITH_CAPS / DENY), not
+      scored compliance risk assessments. Each Cycles denial is definitive —
+      a single failed cap, policy match, or insufficient budget — and is
+      surfaced as a closed-taxonomy reason_code rather than a continuous
+      risk score. A downstream system could derive a risk signal from
+      aggregated Cycles denial rates per subject, but Cycles itself does
+      not produce a compliance_risk artifact.
+
+  wallet_state:
+    cycles_term: null
+    match: no_mapping
+    notes: >
+      Cycles is wallet-agnostic. Subjects are caller-provided
+      (tenant + optional scoping fields per the Cycles Subject schema —
+      workspace, app, workflow, agent, toolset, dimensions); Cycles
+      does not issue, track, or attest on-chain wallet state. The "budget" in Cycles is an
+      internal cumulative-spend ledger keyed on the subject, denominated in
+      one of the canonical Unit enum values (USD_MICROCENTS, TOKENS,
+      CREDITS, RISK_POINTS) — not a wallet balance. Wallet binding is the
+      responsibility of the upstream identity layer (e.g. APS, did:agent
+      methods); Cycles consumes a subject reference and operates on its
+      private ledger.
+
+  settlement_witness:
+    cycles_term: null
+    match: no_mapping
+    notes: >
+      Cycles commit_reservation looks superficially settlement-shaped — it
+      records the actual debit value at the moment a reservation is
+      finalized. But the canonical settlement_witness primitive is about
+      outcome attestations bound to external financial settlements (payment
+      rails, escrow release, on-chain settlement). Cycles' "settlement" is
+      an internal ledger debit against a caller-private budget; it does not
+      witness an external transfer of value. A Cycles commit can serve as
+      input to an upstream settlement_witness issuer, but Cycles itself does
+      not emit that primitive.
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Per-signal descriptors for the canonical entries Cycles maps to.
+# Top-level nested-per-signal shape.
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+  governance_attestation:
+    enforcement_class: binding
+    note_enforcement: >
+      A Cycles DENY blocks the underlying handler from executing. The
+      attestation is the runtime gate, not a post-hoc compliance record.
+      The langchain-runcycles SDK enforces this at the LangChain
+      AgentMiddleware boundary: wrap_tool_call / wrap_model_call /
+      before_model never invoke the wrapped handler when Cycles returns a
+      non-allow decision.
+
+    validity_temporal: at_issuance
+    note_validity: >
+      A Decision is valid at server issuance time. Cycles v0 responses do
+      not themselves carry a timestamp field; the authoritative issuance
+      time is captured in the CyclesEvidence envelope's `issued_at_ms`
+      (runcycles/cycles-protocol#90). A Reservation is valid for
+      `ttl_ms` milliseconds after creation (typically seconds to
+      minutes) and must be committed or released within that window or
+      it expires automatically. A Commit is point-in-time at the moment
+      the underlying handler returned and actual usage was reported.
+
+    refusal_authority: issuer
+    note_refusal: >
+      The Cycles server is the issuer of decisions and the authority that
+      refuses. The refusal is structurally external to the agent runtime:
+      the runtime calls Cycles over the network, receives a DENY, and is
+      unable to proceed without server consent. The agent has no path to
+      self-attest around it.
+
+    invariant_survival: post_action
+    note_invariant: >
+      The governance invariant (you cannot exceed your declared budget) is
+      enforced pre-action by reserve (which atomically debits the estimate)
+      and finalized post-action by commit (which corrects the debit to actual
+      usage). The invariant survives to the post-execution settlement, at
+      which point the debit is durable on the Cycles ledger.
+
+    replay_class: decision_replay
+    note_replay: >
+      A Cycles decision can be replayed in the sense that, given the same
+      subject, action, and idempotency key, the server returns an identical
+      response. But replay from recorded evidence alone (the on-wire JSON)
+      requires the server's ledger state at decision time — the response
+      is not standalone-verifiable. Idempotency keys (per-call UUID with
+      optional namespace) protect replay-on-retry from double-debiting.
+      Promotable to full_replay once **all three** of the following
+      conditions hold: (1) the CyclesEvidence envelope draft at
+      runcycles/cycles-protocol#90 is promoted to a normative spec
+      (out of `drafts/`), (2) at least one Cycles server implementation
+      emits envelopes in production, and (3) at least one cross-system
+      consumer (most likely APS via `CyclesEvidenceRef`) has verified
+      the standalone replay path end-to-end. A draft alone is not
+      sufficient — verifiable standalone replay must be live before
+      this crosswalk's `replay_class` is bumped.
+
+    governed_action_class: ["read", "write", "transfer", "delegate", "publish", "compose"]
+    note_governed: >
+      Cycles is action-class agnostic — callers declare an Action(kind, name)
+      per call, and the Cycles server applies caps and policy without
+      requiring the kind to be from any particular taxonomy. Common kinds in
+      production use:
+        - "model.call" / "model.turn" — LLM inference (compose, read)
+        - "tool.call" — external tool invocations (read, write, transfer, publish)
+        - "tenant.action" — caller-defined action classes
+      All six canonical governed_action_class values can be expressed as
+      Cycles actions; the SDK does not restrict the taxonomy.

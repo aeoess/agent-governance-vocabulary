@@ -41,14 +41,18 @@ under the chosen observation map, the target fact must take the same value.
 Applied to cognitive attestation: the *target fact* is a property of the
 agent's latent reasoning state at decision time (for example, "constraint C
 was considered before action A was selected"). The *observation* is the
-signed attestation envelope. The attestation is faithful when:
+signed attestation envelope. The descriptor commits to a conditional claim:
 
-> Every signed envelope that hashes to the same canonical bytes commits to
-> the same target fact about the latent reasoning state.
+> A signed `cognitive_attestation` envelope may make a protocol-level
+> attestation claim determinable from canonical signed bytes, provided
+> that the relevant configuration family F, observation function Ω, target
+> function D, and faithfulness / reduction assumptions are specified.
 
-This is the determinability criterion stated in protocol terms. Two envelopes
-in the same equivalence class (same canonical-bytes hash) must imply the
-same target fact, or the attestation is not faithful.
+In Target Determinability terms, determinability is always relative to
+`(F, Ω, D)`. The core criterion is that `D` must be constant on each
+`Ω`-equivalence class. Two envelopes in the same equivalence class (same
+canonical-bytes hash) must imply the same target fact, or the attestation
+is not faithful relative to the named `(F, Ω, D)`.
 
 ## What `cognitive_attestation` is
 
@@ -88,6 +92,29 @@ attested observation.
   may reveal latent state to verifiers. Privacy preservation (selective
   disclosure, zero-knowledge proofs over the reduction) is a separate concern
   and is not in scope for the descriptor v0.1.
+
+## Boundary conditions
+
+The descriptor commits to vocabulary-layer framing only. It does not claim
+or imply:
+
+1. `cognitive_attestation` does not make latent cognition directly
+   observable.
+2. JEP records and verifies signed protocol events, not cognitive truth.
+3. Same canonical bytes determine the same protocol-level commitment, not
+   the actual internal reasoning state itself.
+4. `precondition_set`, `candidate_set`, `decision_path`, and
+   `pre_commit_chain` are reduction-map / faithfulness scopes, not truth
+   levels.
+5. v0.1 stays at vocabulary-layer framing only. No verifier semantics, no
+   implementation guidance.
+
+A `cognitive_attestation` envelope can make a protocol-level attestation
+claim determinable from canonical signed bytes only relative to a specified
+configuration family `F`, observation function `Ω`, target function `D`, and
+reduction / faithfulness assumptions. The envelope does not by itself prove
+the external truth of the latent reasoning state, model intent, correctness,
+legal responsibility, or normative accountability.
 
 ## Composition with adjacent descriptors
 

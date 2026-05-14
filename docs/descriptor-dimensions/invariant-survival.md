@@ -70,9 +70,9 @@ still be aborted on invariant violation declares `during_action`.
 The distinguishing property is *live refusal capability inside the
 action*. A system that records intermediate states without being able
 to stop them is not `during_action`; it is `pre_action` with extra
-logging. In BBIS terms (per the canonical definition QueBallSharken
-maintains): "if refusal exists in theory but cannot act in time, BBIS
-is not satisfied for that boundary." The same test applies here. A
+logging. In BBIS terms, refusal capability that exists only in theory
+does not satisfy `during_action`; the test is whether refusal can act
+in time. The same test applies here. A
 declaration of `during_action` claims live, in-time refusal at one or
 more execution boundaries, not a written assertion that refusal could
 have happened.

@@ -25,19 +25,17 @@
 #
 # Home:        https://argentum.rgiskard.xyz
 # Contributor: @giskard09
-# Status:      Proposed (v0.1), draft. Mycelium-side semantics, descriptor
-#              enforcement, and per-envelope wire fields pending
-#              giskard09 confirmation. Draft status maintained until
-#              Mycelium-side semantics confirmed on review.
+# Status:      Proposed (v0.1). Mycelium-side review complete; giskard09
+#              confirmed values folded into v0.1 on 2026-05-13.
 # =============================================================================
 
 system:
   name: Mycelium Trails
   home: https://argentum.rgiskard.xyz
-  # repo / spec / spec_version / license pending giskard09 confirmation.
-  # Adoption thread only referenced the home URL above; spec and repo
-  # URLs were not surfaced in the adoption comment. Maintainer to
-  # populate or correct on review.
+  repo: https://github.com/giskard09/argentum-core
+  spec: https://argentum.rgiskard.xyz
+  spec_version: "0.4.0"
+  license: MIT
   role: >
     Signed-trail recording layer for AI-agent actions. Each TrailRecord
     binds an action to a content-addressed action_ref and an authority
@@ -56,6 +54,14 @@ license: Apache-2.0  # crosswalk file license (vocabulary repo convention)
 maintainer:
   github: giskard09
   confirmed_at: "2026-05-13"
+
+system_attributes:
+  hash_family: sha-256
+  canonicalization_profile: implementation-defined  # giskard09 confirmed: raw byte concatenation (UTF-8 strings + int64 big-endian for timestamp_ms); not a standard JCS variant, so mapped to the catch-all enum value
+  signature_capability: classical  # giskard09 confirmed: Ed25519
+
+issuers_in_production:
+  - https://argentum.rgiskard.xyz
 
 # Cross-references:
 #   - APS adoption thread (4 adoption points captured here):
@@ -85,8 +91,8 @@ signal_types:
     mycelium_term: "TrailRecord"
     mycelium_fields:
       # Field-name spellings (snake_case `action_ref` / `delegation_ref`)
-      # match giskard09's adoption comment verbatim. Confirm on review
-      # that the Mycelium wire shape uses the same casing.
+      # match the Mycelium TrailRecord wire shape. Confirmed by giskard09
+      # on review.
       - "action_ref ← sha256(agent_id UTF-8 || action_type UTF-8 || scope UTF-8 || timestamp_ms int64 big-endian)"
       - "delegation_ref ← sha256(passport_uri || DelegationGrant.signature)"
       - "delegation_ref: null for root passport actions (no synthetic root sentinel)"
@@ -170,11 +176,12 @@ descriptor_dimensions:
   governance_attestation:
     enforcement_class: advisory
     note_enforcement: >
-      v0.1 default. TrailRecords are post-action audit artifacts
-      mirroring the post-action audit posture of APS receipts (e.g., PaymentReceipt): the action ran before the trail
-      signs; the trail is the audit record, not a runtime refusal gate.
-      Promote to `binding` if Mycelium also gates execution at action
-      issuance time.
+      TrailRecords are post-action audit artifacts mirroring the
+      post-action audit posture of APS receipts (e.g., PaymentReceipt):
+      the action ran before the trail signs; the trail is the audit
+      record, not a runtime refusal gate. Confirmed advisory by
+      giskard09 on review (Mycelium is post-action audit only; the
+      action has already executed before the TrailRecord is signed).
 
     validity_temporal: at_processing
     note_validity: >
@@ -194,12 +201,14 @@ descriptor_dimensions:
 
     replay_class: decision_replay
     note_replay: >
-      v0.1 ships decision_replay: consumers can verify and correlate signed
-      TrailRecords by action_ref and delegation_ref. Promote to full_replay
-      once Mycelium confirms TrailRecords publish the action_ref and
+      decision_replay: consumers can verify and correlate signed
+      TrailRecords by action_ref and delegation_ref. Confirmed by
+      giskard09 on review. full_replay promotion deferred pending a
+      future wire-shape decision about publishing the action_ref /
       delegation_ref preimage fields (agent_id, action_type, scope,
-      timestamp_ms; passport_uri, DelegationGrant.signature) needed to
-      recompute the hashes from canonical bytes alongside each record.
+      timestamp_ms; passport_uri, DelegationGrant.signature) alongside
+      each record so consumers can recompute the hashes from canonical
+      bytes standalone.
 
     governed_action_class: ["read", "write", "transfer", "delegate", "publish", "compose"]
     note_governed: >
@@ -208,47 +217,38 @@ descriptor_dimensions:
       does not claim Mycelium validates or enforces the taxonomy.
 
 # ─────────────────────────────────────────────────
-# REVIEW NOTES
+# MAINTAINER REVIEW RESOLUTIONS
 #
-# Open questions for @giskard09 on review:
+# giskard09's confirmed values, folded into v0.1 on 2026-05-13:
 #
-#   1. CASING + FIELD NAMES. The adoption comment used snake_case
-#      `action_ref` / `delegation_ref`. Confirm the Mycelium TrailRecord
-#      wire schema uses the same casing (or correct to camelCase if not).
+#   1. CASING + FIELD NAMES. snake_case confirmed. action_ref and
+#      delegation_ref are the wire spellings; folded into signal_types.
 #
-#   2. SYSTEM METADATA. Public spec URL, repo URL, spec version, and
-#      Mycelium's own license were not surfaced in the adoption thread.
-#      Please populate `system.repo`, `system.spec`, `system.spec_version`,
-#      `system.license` on review.
+#   2. SYSTEM METADATA. repo, spec, spec_version, license populated
+#      under `system:` (argentum-core, argentum.rgiskard.xyz, 0.4.0, MIT).
 #
-#   3. ENFORCEMENT_CLASS. v0.1 assumes Mycelium is a post-action audit
-#      layer (advisory). Confirm or correct to `binding` if Mycelium also
-#      gates execution at issuance.
+#   3. ENFORCEMENT_CLASS. advisory confirmed. Mycelium is post-action
+#      audit only; the action has already executed before the TrailRecord
+#      is signed.
 #
-#   4. REPLAY_CLASS. `full_replay` assumes Mycelium publishes the
-#      action_ref / delegation_ref input fields alongside each trail so
-#      consumers can re-derive the hash and verify standalone. Confirm
-#      the wire shape includes those fields.
+#   4. REPLAY_CLASS. decision_replay confirmed. full_replay promotion
+#      deferred pending a future wire-shape decision about publishing
+#      preimage fields alongside each record.
 #
-#   5. SYSTEM_ATTRIBUTES. signature_capability, canonicalization_profile,
-#      and hash_family are not declared in v0.1. Per vocabulary
-#      convention these should declare together; please add once the
-#      Mycelium-side signing and canonicalization details are confirmed.
+#   5. SYSTEM_ATTRIBUTES. declared at top level: SHA-256 hash family,
+#      raw byte concatenation canonicalization (UTF-8 strings + int64
+#      big-endian for timestamp_ms), Ed25519 signature capability.
 #
-#   6. ISSUERS_IN_PRODUCTION. Confirm whether argentum.rgiskard.xyz is the
-#      production reference implementation issuing under the adopted byte
-#      contract, and list any additional implementations.
+#   6. ISSUERS_IN_PRODUCTION. argentum.rgiskard.xyz declared at top
+#      level as the live reference implementation under the adopted
+#      byte contract. Single issuer for v0.1; additional implementations
+#      land in v0.2+ as they appear.
 #
-#   7. REFUSAL_AUTHORITY. Not declared in v0.1. The current vocabulary
-#      enum (issuer / verifier / consumer_policy / shared) does not
-#      include a value for "refusal happens upstream, before the
-#      attestation exists", which is Mycelium's case (refusal sits in
-#      APS DelegationGrant validation / gateway preflight before any
-#      trail is recorded). Leaving the descriptor unset until either
-#      the enum is extended or a closer-fit value is identified.
-#
-#   8. ISSUERS_IN_PRODUCTION. Removed from v0.1. The reference
-#      implementation at argentum.rgiskard.xyz has not been confirmed
-#      as a production issuer. Re-add the field with confirmed
-#      issuer list on review.
+#   7. REFUSAL_AUTHORITY. intentionally unset for v0.1. The current
+#      vocabulary enum (issuer / verifier / consumer_policy / shared)
+#      does not include a value for "refusal happens upstream, before
+#      the attestation exists", which is Mycelium's case (refusal sits
+#      in APS DelegationGrant validation / gateway preflight before any
+#      trail is recorded). Descriptor remains unset pending vocabulary
+#      enum extension OR identification of a closer-fit existing value.
 # ─────────────────────────────────────────────────

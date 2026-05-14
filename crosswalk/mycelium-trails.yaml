@@ -22,10 +22,10 @@
 #
 # Home:        https://argentum.rgiskard.xyz
 # Contributor: @giskard09
-# Status:      Proposed (v0.1) — draft. Mycelium-side semantics, descriptor
+# Status:      Proposed (v0.1), draft. Mycelium-side semantics, descriptor
 #              enforcement, and per-envelope wire fields pending
-#              giskard09 confirmation. PR open under PR-MERGE-PROTOCOL v0.3
-#              (Consilium pass + Tima signoff required before merge).
+#              giskard09 confirmation. Draft status maintained until
+#              Mycelium-side semantics confirmed on review.
 # =============================================================================
 
 system:
@@ -45,7 +45,7 @@ system:
     Caller-provided. Mycelium Trails does not issue or attest agent
     identity; it consumes upstream identity (passport_uri, agent_id) and
     binds it into each TrailRecord. In the adopting integration, the
-    upstream identity layer is APS — passport_uri resolves to an APS
+    upstream identity layer is APS: passport_uri resolves to an APS
     passport and DelegationGrant.signature is the APS-side leaf
     delegation signature.
 
@@ -62,7 +62,6 @@ maintainer:
 #   - APS-side delegation_ref content-addressed form: APS V2 delegation
 #     surface; Mycelium adopts the byte contract
 #     `sha256(passport_uri || DelegationGrant.signature)` verbatim.
-#   - PR-MERGE-PROTOCOL v0.3 (Consilium + Tima signoff before merge).
 
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS

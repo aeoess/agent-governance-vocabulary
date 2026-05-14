@@ -2,22 +2,26 @@
 # =============================================================================
 # Bilateral mapping between Mycelium Trails TrailRecord fields and APS
 # authority + receipt primitives, anchored on the APS side per giskard09's
-# adoption on aeoess/agent-passport-system#1 (2026-05-13 20:41Z).
+# adoption on aeoess/agent-passport-system#1 (2026-05-13 20:41:33Z).
 #
 # Mycelium Trails publishes signed TrailRecords for AI-agent actions. Each
 # TrailRecord binds an action to an action_ref and a delegation_ref so the
-# record is a content-addressed, audit-replayable artifact of who acted
+# record is a content-addressed, audit-joinable artifact of who acted
 # under whose authority.
 #
 # Four adoption points captured from giskard09's comment thread:
 #
-#   1. `action_ref` is SHA-256(agent_id UTF-8 || action_type UTF-8 ||
+#   1. `action_ref` is sha256(agent_id UTF-8 || action_type UTF-8 ||
 #      scope UTF-8 || timestamp_ms int64 big-endian).
 #   2. `delegation_ref` is sha256(passport_uri || DelegationGrant.signature).
 #   3. `delegation_ref: null` for root passport actions (no synthetic root
 #      sentinel).
 #   4. Multi-agent compositions land as N separate TrailRecords with
 #      independent delegation_ref values, not one-to-many inside one record.
+#
+# Adoption is byte-contract only (action_ref and delegation_ref
+# computation rules plus the null-root and composition conventions).
+# The TrailRecord envelope is Mycelium-specific.
 #
 # Home:        https://argentum.rgiskard.xyz
 # Contributor: @giskard09
@@ -37,30 +41,27 @@ system:
   role: >
     Signed-trail recording layer for AI-agent actions. Each TrailRecord
     binds an action to a content-addressed action_ref and an authority
-    chain via delegation_ref, producing an audit-replayable record of
+    chain via delegation_ref, producing an audit-joinable record of
     who acted under whose authority. Trails are independent per-agent
     artifacts; multi-agent compositions emit one record per agent.
   identity_layer: >
     Caller-provided. Mycelium Trails does not issue or attest agent
     identity; it consumes upstream identity (passport_uri, agent_id) and
-    binds it into each TrailRecord. In the adopting integration, the
-    upstream identity layer is APS: passport_uri resolves to an APS
+    binds it into each TrailRecord. In the adopting APS integration,
+    the upstream identity layer is APS: passport_uri resolves to an APS
     passport and DelegationGrant.signature is the APS-side leaf
     delegation signature.
 
-license: Apache-2.0
+license: Apache-2.0  # crosswalk file license (vocabulary repo convention)
 maintainer:
   github: giskard09
   confirmed_at: "2026-05-13"
 
 # Cross-references:
 #   - APS adoption thread (4 adoption points captured here):
-#     aeoess/agent-passport-system#1, giskard09 2026-05-13 20:41Z.
-#   - APS-side action_ref reference: agent-passport-system V2 receipt
-#     surface in src/v2/types.ts on aeoess/agent-passport-system.
-#   - APS-side delegation_ref content-addressed form: APS V2 delegation
-#     surface; Mycelium adopts the byte contract
-#     `sha256(passport_uri || DelegationGrant.signature)` verbatim.
+#     aeoess/agent-passport-system#1, giskard09 2026-05-13 20:41:33Z.
+#   - Structured signal-level cross-references are folded into
+#     `signal_types.governance_attestation.cross_references` below.
 
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS
@@ -74,7 +75,9 @@ maintainer:
 # security_posture, job_performance, peer_review, wallet_intelligence,
 # completion_ratio, entity_continuity) are not in scope for v0.1 and
 # will be addressed in follow-up only if Mycelium produces or consumes
-# those primitives directly.
+# those primitives directly. Mycelium does not derive aggregate,
+# behavioral, scoring, or peer-review primitives, so these canonicals
+# are out of scope by construction.
 # ─────────────────────────────────────────────────
 signal_types:
 
@@ -84,7 +87,7 @@ signal_types:
       # Field-name spellings (snake_case `action_ref` / `delegation_ref`)
       # match giskard09's adoption comment verbatim. Confirm on review
       # that the Mycelium wire shape uses the same casing.
-      - "action_ref ← SHA-256(agent_id UTF-8 || action_type UTF-8 || scope UTF-8 || timestamp_ms int64 big-endian)"
+      - "action_ref ← sha256(agent_id UTF-8 || action_type UTF-8 || scope UTF-8 || timestamp_ms int64 big-endian)"
       - "delegation_ref ← sha256(passport_uri || DelegationGrant.signature)"
       - "delegation_ref: null for root passport actions (no synthetic root sentinel)"
       - "Multi-agent composition: N×TrailRecord with independent delegation_ref values per record"
@@ -96,14 +99,15 @@ signal_types:
       computation as APS, so a consumer can content-address-match
       Mycelium records against APS-produced authority records (and vice
       versa) without re-deriving identifiers.
-    match: structural
+    match: partial
     divergence: >
-      The action_ref and delegation_ref byte forms are intentionally
-      identical to APS by adoption. The surrounding TrailRecord envelope
-      is Mycelium-specific (the APS-side envelopes are DelegationGrant
-      and PaymentReceipt). Two systems sharing the same content-
-      addressing primitives can cross-join records without coordinating
-      identifier schemes.
+      The action_ref and delegation_ref byte forms are structurally
+      identical to APS by adoption (identifier-level structural match);
+      the surrounding TrailRecord envelope is Mycelium-specific while
+      APS-side envelopes are DelegationGrant and PaymentReceipt
+      (envelope-level partial match). Two systems sharing the same
+      content-addressing primitives can cross-join records without
+      coordinating identifier schemes.
     notes: >
       v0.1 captures the four adoption points only. Per-envelope wire
       fields, signature semantics, and descriptor enforcement_class
@@ -112,13 +116,10 @@ signal_types:
       it captures the byte-contract alignment so future cross-system
       replay and audit join paths can be built against a stable, shared
       identifier surface.
-    issuers_in_production:
-      # TODO(giskard09): confirm whether the reference implementation at
-      # argentum.rgiskard.xyz is the production issuer, and whether
-      # additional implementations are in flight.
-      - "Mycelium Trails reference implementation (https://argentum.rgiskard.xyz)"
     cross_references:
-      - "APS adoption thread (4-point byte-contract adoption): aeoess/agent-passport-system#1, giskard09 2026-05-13 20:41Z"
+      - "APS adoption thread (4-point byte-contract adoption): aeoess/agent-passport-system#1, giskard09 2026-05-13 20:41:33Z"
+      - "APS-side action_ref reference: src/v2/types.ts on aeoess/agent-passport-system"
+      - "APS-side delegation_ref content-addressed form: APS V2 delegation surface; exact path pending confirmation"
 
   compliance_risk:
     mycelium_term: null
@@ -136,17 +137,18 @@ signal_types:
     notes: >
       Mycelium Trails is wallet-agnostic. TrailRecords reference agents
       by agent_id and the passport_uri-derived delegation_ref, not by
-      on-chain wallet binding. Wallet state belongs to the upstream
-      identity layer (APS, did:agent methods).
+      on-chain wallet binding. Wallet state is out-of-scope for a
+      signed-trail recording layer and belongs to upstream identity
+      or payment layers.
 
   settlement_witness:
     mycelium_term: null
     match: no_mapping
     notes: >
       Mycelium Trails records action lineage and authority; it does not
-      witness external financial settlement. A TrailRecord may LINK to
-      a settlement event via its action_ref, but Mycelium itself is not
-      a settlement_witness issuer.
+      witness external financial settlement. A downstream system could
+      correlate settlement events using action_ref, but Mycelium itself
+      is not a settlement_witness issuer.
 
   behavioral_trust:
     mycelium_term: null
@@ -169,18 +171,20 @@ descriptor_dimensions:
     enforcement_class: advisory
     note_enforcement: >
       v0.1 default. TrailRecords are post-action audit artifacts
-      mirroring APS PaymentReceipts: the action ran before the trail
+      mirroring the post-action audit posture of APS receipts (e.g., PaymentReceipt): the action ran before the trail
       signs; the trail is the audit record, not a runtime refusal gate.
       Promote to `binding` if Mycelium also gates execution at action
       issuance time.
 
     validity_temporal: at_processing
     note_validity: >
-      v0.1 default. The action_ref binds a timestamp_ms field so the
-      record self-pins to its action time; the TrailRecord is valid
-      from issuance and persistent thereafter. Confirm on review
-      whether Mycelium also enforces a TTL or validity window beyond
-      this anchor.
+      v0.1 uses at_processing because the TrailRecord binds the action
+      timestamp and is evaluated as an issued audit artifact, not as an
+      ongoing authorization grant. The action_ref binds a timestamp_ms
+      field so the record self-pins to its action time; the TrailRecord
+      is valid from issuance and persistent thereafter. Confirm on
+      review whether Mycelium also enforces a TTL or validity window
+      beyond this anchor.
 
     invariant_survival: post_action
     note_invariant: >
@@ -188,22 +192,20 @@ descriptor_dimensions:
       action_ref and delegation_ref provide a stable join key for
       future cross-system replay.
 
-    replay_class: full_replay
+    replay_class: decision_replay
     note_replay: >
-      Content-addressed action_ref and delegation_ref make each
-      TrailRecord standalone-verifiable from canonical bytes plus the
-      issuer's public key, provided the input fields (agent_id,
-      action_type, scope, timestamp_ms; passport_uri,
-      DelegationGrant.signature) are recoverable alongside the trail.
-      Confirm on review that Mycelium publishes the input fields
-      together with each record; without them, replay degrades to
-      `decision_replay`.
+      v0.1 ships decision_replay: consumers can verify and correlate signed
+      TrailRecords by action_ref and delegation_ref. Promote to full_replay
+      once Mycelium confirms TrailRecords publish the action_ref and
+      delegation_ref preimage fields (agent_id, action_type, scope,
+      timestamp_ms; passport_uri, DelegationGrant.signature) needed to
+      recompute the hashes from canonical bytes alongside each record.
 
     governed_action_class: ["read", "write", "transfer", "delegate", "publish", "compose"]
     note_governed: >
-      Mycelium Trails is action-class agnostic; callers declare
-      action_type per record. All six canonical governed_action_class
-      values can be expressed.
+      Mycelium Trails is action-class agnostic; callers may declare
+      action_type values corresponding to these canonical classes. v0.1
+      does not claim Mycelium validates or enforces the taxonomy.
 
 # ─────────────────────────────────────────────────
 # REVIEW NOTES
@@ -244,4 +246,9 @@ descriptor_dimensions:
 #      APS DelegationGrant validation / gateway preflight before any
 #      trail is recorded). Leaving the descriptor unset until either
 #      the enum is extended or a closer-fit value is identified.
+#
+#   8. ISSUERS_IN_PRODUCTION. Removed from v0.1. The reference
+#      implementation at argentum.rgiskard.xyz has not been confirmed
+#      as a production issuer. Re-add the field with confirmed
+#      issuer list on review.
 # ─────────────────────────────────────────────────

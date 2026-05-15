@@ -6,7 +6,6 @@
 # Canonicalization: JCS (RFC 8785)
 # Signature: Detached JWS (RFC 7515) over JCS-canonicalized unsigned event
 # Algorithm policy: profile-defined / algorithm-agile
-# Companion draft: draft-wang-jep-profiles-00
 # =============================================================================
 # Contributor: @schchit
 # Date: 2026-04-15
@@ -27,26 +26,10 @@ maintainer:
   refreshed_at: "2026-05-13"
 
 version: "draft-06"
-jep_core_version: "0.6"
-wire_version: "1"
-
 spec_url: "https://datatracker.ietf.org/doc/draft-wang-jep-judgment-event-protocol/"
-profile_spec_url: "https://datatracker.ietf.org/doc/draft-wang-jep-profiles/"
 repository: "https://github.com/hjs-spec/jep"
-
 canonicalization: "jcs_rfc8785"
-signature: "detached_jws_over_jcs"
-signature_alg: "profile_defined"
-signature_notes: "JEP-Core uses detached JWS over JCS-canonicalized unsigned event payloads. Concrete signature algorithms, key types, hash algorithms, and acceptability policies are selected by JOSE headers, conformance profiles, and trust profiles."
-
-hash_algorithms:
-  required_to_support:
-    - "sha256"
-  notes: "JEP-Core-0.6 requires support for sha256 algorithm-tagged digest strings. Additional digest algorithms may be defined by conformance profiles, trust profiles, or registered extensions."
-
-companion_drafts:
-  - "draft-wang-jep-profiles-00"
-  - "draft-wang-jep-conformance-00"
+signature_alg: "profile_defined"  # Detached JWS over JCS; concrete algorithms are selected by JOSE headers, conformance profiles, and trust profiles.
 
 # -----------------------------------------------------------------------------
 # Field Mappings
@@ -71,7 +54,7 @@ mappings:
   - canonical: delegation_chain_hash
     internal: ref
     match: partial
-    partial_reason: "JEP's 'ref' field is a typed or cryptographic reference to another event, chain, digest, credential, policy, evidence, context, archive receipt, or external object. It may carry a delegation-chain hash under a suitable chain/profile interpretation, but JEP-Core does not make every reference a delegation chain."
+    partial_reason: "JEP's 'ref' field is a typed or cryptographic reference to another event, chain, digest, credential, policy, evidence, context, archive receipt, or external object. It may carry a delegation-chain hash under a suitable chain or profile interpretation, but JEP-Core does not make every reference a delegation chain."
 
   - canonical: wallet_binding
     internal: aud
@@ -125,7 +108,7 @@ mappings:
   - canonical: compliance_risk
     internal: (none)
     match: no_mapping
-    notes: "JEP-Core does not evaluate compliance risk. Policy or regulatory conclusions require profile-defined evidence rules and Level 4 policy validation."
+    notes: "JEP-Core does not evaluate compliance risk. Policy or regulatory conclusions require profile-defined evidence rules and policy-level validation."
 
   - canonical: wallet_state
     internal: (none)
@@ -156,7 +139,7 @@ mappings:
   - canonical: "(none)"
     internal: validation_result
     match: no_mapping
-    notes: "JEP validators return structured validation results with level, mode, profile, event_hash, warnings, and errors. This is a protocol validation output, not a canonical governance signal in v0.1."
+    notes: "JEP validators may return structured validation results with level, mode, profile, event_hash, warnings, and errors. This is a protocol validation output, not a canonical governance signal in v0.1."
 
 # -----------------------------------------------------------------------------
 # Descriptor Dimensions for JEP Events
@@ -164,100 +147,10 @@ mappings:
 descriptor_dimensions:
   enforcement_class: "binding"  # JEP binds an event payload to a signature/key claim under a trust profile. This is protocol-level binding, not legal non-repudiation, authorization validity, or policy compliance by itself.
   validity_temporal: "at_issuance"  # The event records an actor-supplied timestamp. Acceptance freshness, archival validity, and historical key validity are validation-mode and profile dependent.
-  refusal_authority: "verifier"  # A verifier can reject invalid JEP events or insufficient validation levels. Final action refusal may still live with consumer policy or deployment policy.
+  refusal_authority: "verifier"  # A verifier can refuse to accept an invalid JEP event or an event that has not reached the required validation level. JEP-Core does not decide refusal of the underlying target action.
   invariant_survival: "permanent"  # Event hashes and signatures preserve payload-integrity commitments over time, subject to archival assumptions and cryptographic algorithm status.
   replay_class: "decision_replay"  # A verifier can replay protocol validation of the signed decision event, but not necessarily reconstruct the full external decision context.
-  governed_action_class: "compose"  # JEP events compose into judgment, delegation, termination, verification, and accountability chains; JEP-Core records events but does not execute actions.
-
-# -----------------------------------------------------------------------------
-# Determinability Boundary
-# -----------------------------------------------------------------------------
-determinability_boundary:
-  protocol_facts:
-    - "event_payload_existed"
-    - "payload_signed_as_specified"
-    - "event_hash_matches_signed_event"
-    - "actor_key_binding_under_trust_profile"
-    - "timestamp_nonce_audience_and_references_present"
-    - "critical_extensions_processed"
-    - "declared_validation_level_reached"
-    - "delegation_termination_observed_in_available_log"
-  excluded_facts:
-    - "external_truth"
-    - "external_target_fact_determinability"
-    - "legal_liability"
-    - "moral_responsibility"
-    - "regulatory_compliance"
-    - "authorization_validity_unless_profile_defined"
-    - "permission_chain_enforcement"
-    - "complete_log_assumption"
-    - "causal_chain_or_responsibility_graph_computation"
-    - "actual_internal_model_state"
-    - "model_intent_or_understanding"
-    - "policy_validity_unless_profile_defined"
-  notes: "JEP determines protocol-level facts. It does not by itself prove external truth, legal effect, cognitive truth, policy validity, authorization validity, or log completeness. External target-fact determination requires explicit profiles, evidence policies, archival assumptions, and/or chain-composition layers."
-
-# -----------------------------------------------------------------------------
-# Profile Boundary
-# -----------------------------------------------------------------------------
-profile_boundary:
-  must_not_redefine:
-    - "core_event_verbs"
-    - "core_event_object"
-    - "signature_semantics"
-    - "event_hash_semantics"
-    - "core_validation_level_semantics"
-    - "failure_code_semantics"
-  may_define:
-    - "actor_identifier_forms"
-    - "key_resolution"
-    - "actor_key_binding_rules"
-    - "credential_rules"
-    - "attestation_rules"
-    - "authorization_context_rules"
-    - "archival_rules"
-    - "chain_rules"
-    - "privacy_considerations"
-    - "security_considerations"
-    - "failure_code_mappings"
-  optional_profiles:
-    - "did_vc"
-    - "x509_pki"
-    - "oauth_oidc"
-    - "rats_attestation"
-    - "local_iam"
-    - "hjs_archive"
-    - "jac_chain"
-    - "blockchain_anchor"
-    - "ai_actor"
-  notes: "JEP-Core remains neutral. Identity, credential, authorization, attestation, archival, chain, and privacy semantics are profile-defined and must not redefine JEP-Core semantics."
-
-# -----------------------------------------------------------------------------
-# Validation Model
-# -----------------------------------------------------------------------------
-validation_model:
-  levels:
-    - level: 0
-      name: "syntax"
-      meaning: "JSON, I-JSON, required fields, schema shape."
-    - level: 1
-      name: "cryptographic"
-      meaning: "JCS canonicalization, event hash, detached signature."
-    - level: 2
-      name: "actor_binding"
-      meaning: "Signing key bound to claimed actor under a trust profile."
-    - level: 3
-      name: "chain"
-      meaning: "References, critical extensions, replay, termination effects, and chain integrity."
-    - level: 4
-      name: "policy"
-      meaning: "Domain, legal, organizational, regulatory, or deployment policy."
-  modes:
-    - "acceptance"
-    - "archival"
-    - "chain"
-    - "policy"
-  notes: "A verifier reports the highest successfully completed validation level. Cryptographic validity must not be presented as policy validity."
+  governed_action_class: "compose"  # JEP composes judgment-event records and reference chains. It does not govern execution of the underlying target action.
 
 # -----------------------------------------------------------------------------
 # Extensions (JEP-specific capabilities not in canonical vocabulary)
@@ -288,7 +181,7 @@ extensions:
       - "2: actor_binding"
       - "3: chain"
       - "4: policy"
-    notes: "Validation levels distinguish syntax, cryptographic validity, actor binding, chain validation, and policy validation."
+    notes: "Validation levels distinguish syntax, cryptographic validity, actor binding, chain validation, and policy validation. Cryptographic validity must not be presented as policy validity."
 
   - name: "jep_validation_mode"
     description: "Context in which validation is performed."
@@ -313,6 +206,5 @@ extensions:
 verification:
   jwks_url: null  # JEP is a format, not a centralized issuer.
   test_vectors: "https://github.com/hjs-spec/jep/tree/main/test/vectors"
-  conformance_draft: "draft-wang-jep-conformance-00"
   verification_tool: "jep verify"
-  notes: "Concrete schema, test vectors, reference validator behavior, and baseline conformance classes are maintained outside the crosswalk. This crosswalk should not imply that JEP-Core proves external truth, legal liability, policy validity, log completeness, or actual internal model state."
+  notes: "Concrete schema, test vectors, reference validator behavior, and baseline conformance classes are maintained outside the crosswalk. For JEP draft-06 boundary verification, compare the current JEP draft sections on objective/non-goals, design principles, terminology, field semantics, references and chains, signature/hash/algorithm agility, trust profile interface, validation model, determinability boundary, observed log assumptions, and changes from -05. This crosswalk should not imply that JEP-Core proves external truth, legal liability, policy validity, log completeness, or actual internal model state."

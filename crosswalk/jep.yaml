@@ -6,6 +6,9 @@
 # Canonicalization: JCS (RFC 8785)
 # Signature: Detached JWS (RFC 7515) over JCS-canonicalized unsigned event
 # Algorithm policy: profile-defined / algorithm-agile
+# I-D status: Experimental (Intended status, draft-wang-jep-judgment-event-protocol-06).
+#   These mappings track an Experimental Internet-Draft and carry no interop-stability
+#   guarantee. They may change without notice as the draft evolves.
 # =============================================================================
 # Contributor: @schchit
 # Date: 2026-04-15

@@ -1,29 +1,35 @@
 # JEP (Judgment Event Protocol) → Agent Governance Vocabulary Crosswalk
 # =============================================================================
-# Spec: draft-wang-jep-judgment-event-protocol-04
+# Spec: draft-wang-jep-judgment-event-protocol-06
 # I-D URL: https://datatracker.ietf.org/doc/draft-wang-jep-judgment-event-protocol/
 # Repository: https://github.com/hjs-spec/jep
 # Canonicalization: JCS (RFC 8785)
-# Signature: JWS (RFC 7515) with Ed25519 (also supports P-256, SM2)
+# Signature: Detached JWS (RFC 7515) over JCS-canonicalized unsigned event
+# Algorithm policy: profile-defined / algorithm-agile
 # =============================================================================
 # Contributor: @schchit
 # Date: 2026-04-15
-# Status: Proposed (v0.1)
+# Updated: 2026-05-13 for JEP draft-06
+# Status: Proposed (v0.1), draft-06 refresh
 # =============================================================================
 
 system:
   name: jep
   home: "https://datatracker.ietf.org/doc/draft-wang-jep-judgment-event-protocol/"
   repo: "https://github.com/hjs-spec/jep"
+
 license: Apache-2.0
+
 maintainer:
   github: schchit
   confirmed_at: "2026-04-15"
-version: "draft-04"
+  refreshed_at: "2026-05-13"
+
+version: "draft-06"
 spec_url: "https://datatracker.ietf.org/doc/draft-wang-jep-judgment-event-protocol/"
 repository: "https://github.com/hjs-spec/jep"
 canonicalization: "jcs_rfc8785"
-signature_alg: "EdDSA"  # also supports ES256, SM2
+signature_alg: "profile_defined"  # Detached JWS over JCS; concrete algorithms are selected by JOSE headers, conformance profiles, and trust profiles.
 
 # -----------------------------------------------------------------------------
 # Field Mappings
@@ -32,109 +38,119 @@ mappings:
   # --- Core Event Fields ---
   - canonical: agent_did
     internal: who
-    match: exact
-    notes: "JEP's 'who' field is a DID, public key hash, or ephemeral identifier."
+    match: partial
+    partial_reason: "JEP's 'who' field is an actor identifier claimed by the event. It may be a DID under a DID/VC profile, but JEP-Core is identity-system-neutral and does not require DID support."
 
   - canonical: issuer_did
     internal: who
-    match: exact
-    notes: "For JEP events, the agent generating the event is the issuer."
+    match: partial
+    partial_reason: "For JEP events, 'who' identifies the claimed actor. The signer/key holder is not necessarily identical to the actor; actor/key binding is defined by a trust profile. This maps to issuer_did only when the deployment profile uses DID-based issuer identity."
 
   - canonical: attestation_timestamp
     internal: when
     match: exact
-    notes: "Unix epoch seconds."
+    notes: "Actor-supplied event timestamp, Unix epoch seconds. Freshness, replay windows, and archival interpretation are validation-mode and trust-profile dependent."
 
   - canonical: delegation_chain_hash
     internal: ref
-    match: exact
-    notes: "Hash of the parent event, creating a hash-linked chain."
+    match: partial
+    partial_reason: "JEP's 'ref' field is a typed or cryptographic reference to another event, chain, digest, credential, policy, evidence, context, archive receipt, or external object. It may carry a delegation-chain hash under a suitable chain or profile interpretation, but JEP-Core does not make every reference a delegation chain."
 
   - canonical: wallet_binding
     internal: aud
     match: partial
-    partial_reason: "JEP's 'aud' is an audience identifier (URL/DID), which maps to wallet_binding only when the audience is a wallet-bound entity. The A2A#1628 three-state model (wallet_bound / wallet_acknowledged / reference) provides the full semantic scope."
+    partial_reason: "JEP's 'aud' field is an intended audience or validation context. It maps to wallet_binding only when the audience is a wallet-bound entity under an external profile. JEP-Core itself is wallet-agnostic."
 
   - canonical: expires_at
     internal: (extension)
     match: no_mapping
-    notes: "JEP core has no expiration field. The TTL extension (https://jep.org/ttl) can provide this."
+    notes: "JEP-Core has no required top-level expiration field. Freshness and replay checks are validation-mode and profile dependent; expiration-like semantics may be supplied by extensions or profiles."
 
   # --- Decision Trajectory Primitives ---
   - canonical: decision_lineage
     internal: ref chain
     match: partial
-    partial_reason: "JEP's 'ref' field creates a linear hash chain (each event points to one parent), which is a subset of the full decision_lineage primitive (which may be a DAG or Merkle tree). The lineage is verifiable but the linking model is strictly linear."
+    partial_reason: "JEP references can support verifiable lineage between observed event objects, but richer DAG, Merkle, causal graph, responsibility-chain, or workflow-accountability semantics remain profile- or extension-defined. A JEP reference does not by itself imply causality or complete-log coverage."
 
   - canonical: baseline_revision
     internal: (none)
     match: no_mapping
-    notes: "JEP does not track behavioral baselines. This is left to higher layers (e.g., PDR)."
+    notes: "JEP does not track behavioral baselines. Baseline revision belongs to higher-layer governance, reputation, or drift-detection systems."
 
   - canonical: divergence_signal
     internal: (none)
     match: no_mapping
-    notes: "JEP records judgments but does not compute divergence from a baseline."
+    notes: "JEP records judgment-related events but does not compute divergence from a behavioral baseline."
 
   - canonical: trust_velocity
     internal: (none)
     match: no_mapping
-    notes: "JEP does not compute trust scores."
+    notes: "JEP does not compute trust scores or trust velocity. These remain higher-layer derived signals."
 
   # --- Constraints ---
   - canonical: observation_window
     internal: (none)
     match: no_mapping
-    notes: "JEP events are point-in-time records; no observation window is defined."
+    notes: "JEP events are point-in-time records. Replay and freshness windows exist for validation, but JEP-Core does not define a behavioral observation_window primitive."
 
   # --- Verbs as Decision Semantics ---
   - canonical: decision_trajectory
     internal: verb
     match: partial
-    partial_reason: "JEP's four verbs (J/D/T/V) provide semantic structure for decision events. 'J' maps to decision initiation, 'D' to delegation, 'T' to termination, 'V' to verification. This is more granular than a single 'decision' primitive but less comprehensive than a full state machine."
+    partial_reason: "JEP's four immutable verbs (J/D/T/V) provide protocol-level structure for judgment-related acts. 'J' records judgment, 'D' records delegation, 'T' records termination, and 'V' records verification. This is more granular than a single decision primitive but less comprehensive than a full state machine or decision trajectory model."
 
   # --- Explicit Gaps (Honest no_mappings) ---
   - canonical: behavioral_trust
     internal: (none)
     match: no_mapping
-    notes: "JEP records facts, not trust scores. Behavioral trust is a higher-layer signal."
+    notes: "JEP records protocol-level facts about judgment-related acts; it does not compute behavioral trust scores."
 
   - canonical: compliance_risk
     internal: (none)
     match: no_mapping
-    notes: "JEP does not evaluate compliance risk."
+    notes: "JEP-Core does not evaluate compliance risk. Policy or regulatory conclusions require profile-defined evidence rules and policy-level validation."
 
   - canonical: wallet_state
     internal: (none)
     match: no_mapping
-    notes: "JEP is wallet-agnostic."
+    notes: "JEP-Core is wallet-agnostic."
 
   - canonical: settlement_witness
     internal: (none)
     match: no_mapping
-    notes: "JEP records decisions, not settlement outcomes."
+    notes: "JEP records decision-related events, not settlement outcomes."
 
   - canonical: physical_constraint
     internal: (none)
     match: no_mapping
-    notes: "JEP has no physical constraint layer."
+    notes: "JEP-Core has no physical constraint layer. Physical, environmental, or RATS-style evidence may be referenced by profiles or extensions."
 
-  # --- Nonce (Implementation-Specific) ---
-  - canonical: (none)
+  # --- Protocol / Validator Mechanisms Not Promoted to Canonical Vocabulary ---
+  - canonical: "(none)"
     internal: nonce
     match: no_mapping
-    notes: "JEP's anti-replay nonce (UUIDv4) is an implementation-specific security mechanism, not a governance primitive. It is not promoted to the canonical vocabulary at this time."
+    notes: "JEP's anti-replay nonce is a protocol security mechanism, not a governance primitive. It is evaluated in actor/audience/profile/replay-window context."
+
+  - canonical: "(none)"
+    internal: ext_crit
+    match: no_mapping
+    notes: "JEP's critical-extension list is a validator mechanism. Unknown critical extensions cause rejection, but ext_crit is not promoted to the canonical vocabulary in v0.1."
+
+  - canonical: "(none)"
+    internal: validation_result
+    match: no_mapping
+    notes: "JEP validators may return structured validation results with level, mode, profile, event_hash, warnings, and errors. This is a protocol validation output, not a canonical governance signal in v0.1."
 
 # -----------------------------------------------------------------------------
 # Descriptor Dimensions for JEP Events
 # -----------------------------------------------------------------------------
 descriptor_dimensions:
-  enforcement_class: "binding"  # JEP signatures provide cryptographic non-repudiation
-  validity_temporal: "at_issuance"  # Event is valid at the timestamp it records
-  refusal_authority: "structurally_impossible_to_violate"  # Signatures make tampering evident
-  invariant_survival: "checked_to_irreversible_primitive"  # Hash chain provides integrity
-  replay_class: "offline_with_recorded_evidence"  # JWS + JCS can be verified offline
-  governed_action_class: "reversible"  # JEP records decisions; it does not execute them
+  enforcement_class: "binding"  # JEP binds an event payload to a signature/key claim under a trust profile. This is protocol-level binding, not legal non-repudiation, authorization validity, or policy compliance by itself.
+  validity_temporal: "at_issuance"  # The event records an actor-supplied timestamp. Acceptance freshness, archival validity, and historical key validity are validation-mode and profile dependent.
+  refusal_authority: "verifier"  # A verifier can refuse to accept an invalid JEP event or an event that has not reached the required validation level. JEP-Core does not decide refusal of the underlying target action.
+  invariant_survival: "permanent"  # Event hashes and signatures preserve payload-integrity commitments over time, subject to archival assumptions and cryptographic algorithm status.
+  replay_class: "decision_replay"  # A verifier can replay protocol validation of the signed decision event, but not necessarily reconstruct the full external decision context.
+  governed_action_class: "compose"  # JEP composes judgment-event records and reference chains. It does not govern execution of the underlying target action.
 
 # -----------------------------------------------------------------------------
 # Extensions (JEP-specific capabilities not in canonical vocabulary)
@@ -146,18 +162,49 @@ extensions:
     notes: "Not promoted to canonical vocabulary in v0.1; may be proposed if other systems adopt similar verb-level semantics."
 
   - name: "jep_nonce"
-    description: "UUIDv4 anti-replay nonce."
-    notes: "Implementation-specific security mechanism. Not promoted to canonical."
+    description: "Replay-protection nonce."
+    notes: "Protocol security mechanism. Not promoted to canonical vocabulary."
 
-  - name: "jep_digest_only"
-    description: "Privacy extension for salted identity digests."
-    spec_url: "https://jep.org/priv/digest-only"
-    notes: "Candidate for future privacy-related canonical term."
+  - name: "jep_ext"
+    description: "Extension object for profile-defined or registered extension data."
+    notes: "Extensions must not redefine core JEP member semantics."
+
+  - name: "jep_ext_crit"
+    description: "Critical extension identifier list."
+    notes: "Unknown critical extensions must cause rejection. Unknown non-critical extensions may be ignored."
+
+  - name: "jep_validation_level"
+    description: "The highest validation level completed by a verifier."
+    values:
+      - "0: syntax"
+      - "1: cryptographic"
+      - "2: actor_binding"
+      - "3: chain"
+      - "4: policy"
+    notes: "Validation levels distinguish syntax, cryptographic validity, actor binding, chain validation, and policy validation. Cryptographic validity must not be presented as policy validity."
+
+  - name: "jep_validation_mode"
+    description: "Context in which validation is performed."
+    values: ["acceptance", "archival", "chain", "policy"]
+    notes: "Acceptance validation checks freshness and replay. Archival validation should not reject solely because the event is outside the current freshness window."
+
+  - name: "jep_failure_codes"
+    description: "Structured validator failure codes."
+    notes: "Failure codes cover syntax, cryptographic, actor/trust, replay/freshness, reference/chain, extension, and policy errors."
+
+  - name: "jep_digest_reference"
+    description: "Digest-based reference to claims, credentials, evidence, policies, archives, or external objects."
+    notes: "Supports privacy by minimization: sensitive evidence should be referenced by digest or controlled evidence mechanisms rather than embedded by default."
+
+  - name: "jep_trust_profile"
+    description: "Profile-defined actor/key binding, algorithm acceptability, credential or attestation use, revocation, historical validity, and policy hooks."
+    notes: "Trust profiles are required to interpret actor/key binding and deployment-specific acceptance rules."
 
 # -----------------------------------------------------------------------------
 # Verification Endpoints (for round-trip testing)
 # -----------------------------------------------------------------------------
 verification:
-  jwks_url: null  # JEP is a format, not a centralized issuer
+  jwks_url: null  # JEP is a format, not a centralized issuer.
   test_vectors: "https://github.com/hjs-spec/jep/tree/main/test/vectors"
-  verification_tool: "jep verify"  # CLI tool for verifying JEP receipts
+  verification_tool: "jep verify"
+  notes: "Concrete schema, test vectors, reference validator behavior, and baseline conformance classes are maintained outside the crosswalk. For JEP draft-06 boundary verification, compare the current JEP draft sections on objective/non-goals, design principles, terminology, field semantics, references and chains, signature/hash/algorithm agility, trust profile interface, validation model, determinability boundary, observed log assumptions, and changes from -05. This crosswalk should not imply that JEP-Core proves external truth, legal liability, policy validity, log completeness, or actual internal model state."

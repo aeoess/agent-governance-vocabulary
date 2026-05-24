@@ -174,6 +174,17 @@ verbs:
 # clearing) is a separate concern per the `refund` verb's notes.
 reservation_lifecycle:
   status: proposed
+
+  # `normative_force` makes the boundary unambiguous for downstream
+  # readers: the block's CONTENT is descriptive until Cycles and
+  # goodmeta confirm or diverge on #98. Distinct from `status` (which
+  # tracks the lifecycle of the section's promotion path itself —
+  # proposed → candidate → canonical per the verb-status convention
+  # above). Downstream code generators / validators SHOULD treat
+  # `descriptive_only_pending_convergence` blocks as documentation
+  # rather than wire-level constants.
+  normative_force: descriptive_only_pending_convergence
+
   status_note: |
     First implementer: SpendGuard (sdk-v0.4.0). Cycles + goodmeta
     confirmation pending; track in #98.

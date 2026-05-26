@@ -108,6 +108,12 @@ or imply:
    levels.
 5. v0.1 stays at vocabulary-layer framing only. No verifier semantics, no
    implementation guidance.
+6. The v0.1 vocabulary schema does not carry (F, Ω, D). Faithfulness
+   checking as defined is the correctness condition; structural support
+   for (F, Ω, D) in signed envelopes is future work outside v0.1 scope.
+   A downstream consumer reading a bare `cognitive_attestation` value
+   without the qualifier sees a less-rigorous claim than the
+   determinability criterion strictly requires.
 
 A `cognitive_attestation` envelope can make a protocol-level attestation
 claim determinable from canonical signed bytes only relative to a specified
@@ -132,25 +138,26 @@ existing structural and behavioral signals.
 
 ## Determinability classes (v0.1)
 
-The descriptor v0.1 recognizes four determinability classes for cognitive
+The descriptor v0.1 recognizes three determinability classes for cognitive
 attestations, ordered by strength:
+
+These classes are AEOESS's v0.1 taxonomy proposal. The Target Determinability framework review by @schchit covers the determinability criterion itself, not endorsement of this specific taxonomy.
 
 | Class | Definition | Example |
 |-------|------------|---------|
 | `precondition_set` | Attestation commits to which preconditions were available at decision time (delegation scope, policy constraints, tool availability, context window). | "At step 3, the agent was operating under delegation D with scope S, with tools T1..Tk available." |
 | `candidate_set` | Attestation commits to which candidate actions were evaluated and which were eliminated, with elimination reasons. | "At step 3, the agent considered actions {transfer, deny, escalate}. Transfer eliminated: violates policy 4.2." |
 | `decision_path` | Attestation commits to the chosen path with confidence and the structured reasoning that selected it. | "At step 3, the agent chose 'deny' with confidence 0.91, citing constraint compliance." |
-| `pre_commit_chain` | Attestation chains pre-commitments emitted *during* reasoning, before the final decision is signed. The final envelope chains all prior pre-commit attestations. | "Before deciding, agent signed: 'about to evaluate three paths.' Then: 'path A fails C.' Then: 'path B passes, 0.87.' Final: 'I choose path B.'" |
 
 Each class corresponds to a different reduction map and a different
 faithfulness scope. A signal entry can carry exactly one class per envelope;
 multiple envelopes may compose to cover multiple classes across a session.
 
-The four classes are *not* a hierarchy of correctness. They are different
+The three classes are *not* a hierarchy of correctness. They are different
 contracts between attestor and verifier. `precondition_set` is the cheapest
-to produce and the least informative; `pre_commit_chain` is the most
-expensive and the most informative. Choice of class is an integration
-decision, not a vocabulary requirement.
+to produce and the least informative; `decision_path` is the most
+expensive of the v0.1 set and the most informative. Choice of class is an
+integration decision, not a vocabulary requirement.
 
 ## Boundaries
 
@@ -162,25 +169,26 @@ The descriptor v0.1 explicitly does not standardize:
 - The verifier algorithm for checking faithfulness (separate spec work)
 - The privacy posture of the attestation (orthogonal concern)
 
-What v0.1 does standardize: the determinability framing, the four classes,
+What v0.1 does standardize: the determinability framing, the three classes,
 the composition rules, and the boundaries above.
 
 ## Future work
 
-The `pre_commit_chain` class is intentionally lightweight in v0.1. The full
-specification of continuous attestation during generation — chained
-intermediate commitments emitted as the model reasons, with the final
-envelope binding all of them — is a v0.2 item. It depends on tighter
-integration with model generation loops than current SDK/model interfaces
-support, and the determinability criterion may need extension to handle
-streaming observation maps cleanly.
+The `pre_commit_chain` class is deferred to v0.2. It attests to chained
+pre-commitments emitted *during* reasoning, before the final decision is
+signed. The final envelope binds all prior pre-commit attestations. The
+full specification of continuous attestation during generation depends on
+tighter integration with model generation loops than current SDK/model
+interfaces support, and the determinability criterion may need extension
+to handle streaming observation maps cleanly. It is named here as a v0.2
+candidate and is not part of the v0.1 surface.
 
 We expect v0.2 to be informed by:
 - Operator experience with v0.1 `decision_path` attestations
 - Extensions to the Target Determinability framework for streaming
   observations, if @schchit's theoretical work extends in that direction
 - Convergence with cognitive-attestation primitives in adjacent ecosystems
-  (Anthropic interpretability, frontier-model evaluation suites)
+  (model-internal interpretability research, frontier-model evaluation suites)
 
 ## References
 

@@ -1,13 +1,13 @@
 # Cognitive Attestation — Determinability and Faithful Reduction
 
-> Builds on the **Target Determinability** framework by [@schchit](https://github.com/schchit) (Yuqiang Wang, JEP). [Target Determinability under Partial Causal Observation: A Faithful Reduction Framework](https://zenodo.org/records/19678205) remains @schchit's work; this document uses the determinability criterion to ground the `cognitive_attestation` descriptor in the agent-governance vocabulary.
+> Builds on the **Target Determinability** framework by [@schchit](https://github.com/schchit) (Yuqiang Wang, JEP). [Target Determinability under Partial Causal Observation: A Faithful Reduction Framework](https://zenodo.org/records/19678205) remains @schchit's work; this document uses the determinability criterion to ground the `cognitive_attestation` signal_type in the agent-governance vocabulary.
 > Origin: [aaif/project-proposals#14](https://github.com/aaif/project-proposals/issues/14) comments 2026-04-23 and 2026-04-24, where @schchit identified the structural resonance between the Cognitive Attestation envelope and the determinability criterion, and we agreed to land the bridging documentation at the vocabulary layer.
 > APS-side foundation: [*Cognitive Attestation: Signing Interpretable Decompositions of Latent Model State in AI Agent Governance*](https://zenodo.org/records/19646276) ([SSRN](https://doi.org/10.2139/ssrn.6677441)).
-> Scope: this document is an AEOESS vocabulary artifact and does not imply Target Determinability endorsement. The framework remains @schchit's; the descriptor specification is ours.
+> Scope: this document is an AEOESS vocabulary artifact and does not imply Target Determinability endorsement. The framework remains @schchit's; the signal_type specification is ours.
 
 This document is the long-form rationale for the `cognitive_attestation`
-descriptor dimension. It explains what makes a cognitive attestation *faithful*
-under the determinability criterion, and what the descriptor commits to and
+signal_type. It explains what makes a cognitive attestation *faithful*
+under the determinability criterion, and what the signal_type commits to and
 does not commit to.
 
 ## How this composes with the existing JEP crosswalk
@@ -17,7 +17,7 @@ The vocabulary already includes [`crosswalk/jep.yaml`](../../crosswalk/jep.yaml)
 JEP captures the *event-level* judgment record: who decided, when, against
 what reference. That is the wire-format layer.
 
-`cognitive_attestation` as a descriptor operates one level deeper. It is
+`cognitive_attestation` operates one level deeper. It is
 about *what was attested* — the structural claim the signed envelope makes
 about the agent's latent reasoning state at the moment of decision. The two
 compose; they do not conflict.
@@ -25,10 +25,10 @@ compose; they do not conflict.
 | Layer | Artifact | Question |
 |------|----------|----------|
 | Event | JEP crosswalk + envelope | What event happened, signed by whom, against which reference? |
-| Cognitive | `cognitive_attestation` descriptor | What property of the reasoning state does the envelope commit to? |
+| Cognitive | `cognitive_attestation` signal_type | What property of the reasoning state does the envelope commit to? |
 
 Both can be present in a single end-to-end fixture. A JEP envelope carries
-the event; the `cognitive_attestation` descriptor on that envelope declares
+the event; the `cognitive_attestation` signal_type on that envelope declares
 the determinability class of the reasoning fingerprint inside it.
 
 ## The determinability criterion
@@ -41,7 +41,7 @@ under the chosen observation map, the target fact must take the same value.
 Applied to cognitive attestation: the *target fact* is a property of the
 agent's latent reasoning state at decision time (for example, "constraint C
 was considered before action A was selected"). The *observation* is the
-signed attestation envelope. The descriptor commits to a conditional claim:
+signed attestation envelope. The signal_type commits to a conditional claim:
 
 > A signed `cognitive_attestation` envelope may make a protocol-level
 > attestation claim determinable from canonical signed bytes, provided
@@ -79,7 +79,7 @@ attested observation.
 ## What `cognitive_attestation` is not
 
 - **Not a recording of the full reasoning trace.** Diarization records every
-  token; attestation commits to a structured claim. The descriptor covers
+  token; attestation commits to a structured claim. The signal_type covers
   the latter, not the former.
 - **Not a guarantee of reasoning soundness.** The attestation commits to
   *what was reasoned about*, not to *whether the reasoning was correct*. A
@@ -91,11 +91,11 @@ attested observation.
 - **Not a privacy-preserving abstraction by default.** A cognitive attestation
   may reveal latent state to verifiers. Privacy preservation (selective
   disclosure, zero-knowledge proofs over the reduction) is a separate concern
-  and is not in scope for the descriptor v0.1.
+  and is not in scope for the signal_type v0.1.
 
 ## Boundary conditions
 
-The descriptor commits to vocabulary-layer framing only. It does not claim
+The signal_type commits to vocabulary-layer framing only. It does not claim
 or imply:
 
 1. `cognitive_attestation` does not make latent cognition directly
@@ -132,13 +132,13 @@ legal responsibility, or normative accountability.
 | `entity_continuity` | A behavioral fingerprint dimension may include attestation-class statistics (rate of faithful vs unfaithful claims), feeding into the PDR slope. |
 | `invariant_survival` | An invariant about reasoning may be attested across boundaries — for example, "no decision in this session relied on constraint C" — turning a cognitive property into a survival check. |
 
-These compositions are descriptive; the descriptor v0.1 does not enforce them.
+These compositions are descriptive; the signal_type v0.1 does not enforce them.
 They establish where future fixtures can compose `cognitive_attestation` with
 existing structural and behavioral signals.
 
 ## Determinability classes (v0.1)
 
-The descriptor v0.1 recognizes three determinability classes for cognitive
+The signal_type v0.1 recognizes three determinability classes for cognitive
 attestations, ordered by strength:
 
 These classes are AEOESS's v0.1 taxonomy proposal. The Target Determinability framework review by @schchit covers the determinability criterion itself, not endorsement of this specific taxonomy.
@@ -161,10 +161,10 @@ integration decision, not a vocabulary requirement.
 
 ## Boundaries
 
-The descriptor v0.1 explicitly does not standardize:
+The signal_type v0.1 explicitly does not standardize:
 
 - The reduction map syntax (left to implementers and future work)
-- The signing-key class required (the descriptor inherits the receipt's
+- The signing-key class required (the signal_type inherits the receipt's
   `system_attributes.signature_capability`)
 - The verifier algorithm for checking faithfulness (separate spec work)
 - The privacy posture of the attestation (orthogonal concern)

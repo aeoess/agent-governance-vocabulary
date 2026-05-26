@@ -45,7 +45,7 @@ Operational worked examples (§3 of the substrate file):
 
 **Open ambiguity.**
 
-The 2026-05-25 substrate file's own §2 authorship note credits AlgoVoi (chopmob-cloud) as the originator of the discrimination-tuple injectivity formulation, with named co-authorship at AlgoVoi's 2026-05-23 request. AEOESS lineage review against published artifacts on 2026-05-23 observed that the row-classification work in `agentgraph-co/agentgraph` predates AlgoVoi's substrate involvement and contains the injectivity invariant in earlier form. The synthesis record carries both threads without selecting between them. Readers running the lineage trace against published artifacts will find the May 14 AlgoVoi note explicit on the rule, and the v0.3.3 row-classification work prior to that. The substrate file accepted Thread A; the synthesis matrix documents that decision without inheriting it.
+The 2026-05-25 substrate file records the lineage decision in §2 authorship note at `agentgraph-co/agentgraph` commit `229040b`: AlgoVoi (chopmob-cloud) is credited as the originator of the discrimination-tuple injectivity formulation per the A2A #1734 2026-05-14 framing, with named co-authorship per the 2026-05-23 request. Per the matrix's stated discipline of recording the substrate as-it-landed and inheriting the substrate file's own attribution decisions, this carries forward without dispute. No counter-attestation against this attribution is recorded in the substrate file itself.
 
 **What the substrate establishes.**
 
@@ -134,20 +134,20 @@ The substrate-vs-governance closure decision is the open question the candidate 
 
 **Submitted substrate.**
 
-- chopmob-cloud (AlgoVoi). `canon_version` cross-exhibit pair (pre/post canonicalization rules) demonstrating that a receipt carrying its own canon-version pin can be re-verified under either old or new rules without external context. Submitted via AlgoVoi submissions on A2A#1734 and x402-foundation/x402#2436.
-- Liuyanfeng1234 (Agent OS): second pre/post `canon_version` instance via the COMMITTED Claim engine (8715), independently produced. Pairs with AlgoVoi's exhibit to make the mechanism substrate-general rather than implementation-specific.
+- chopmob-cloud (AlgoVoi). `canon_version` cross-exhibit pair (pre/post canonicalisation rules) demonstrating that a receipt carrying its own canon-version pin can be re-verified under either old or new rules without external context. Submitted via AlgoVoi submissions on A2A#1734 and x402-foundation/x402#2436 (now superseded by sole-AlgoVoi-authored PR #2453); normatively specified in IETF Internet-Draft `draft-hopley-x402-canonicalisation-jcs-v1` (Independent Submission, Informational). The AlgoVoi Substrate Adopters Registry at `docs.algovoi.co.uk/adopters` records six adopter-side parties pinning `canon_version: jcs-rfc8785-v1` in-band on emitted artefacts (AlgoVoi v1, AlgoVoi v2, Supership / Crest service_trust_v0, PEAC Protocol AP2 OMH fixtures, Nobulex bilateral-receipt vectors at `arian-gogani/nobulex`, Vauban Pay STARK receipts).
+- Liuyanfeng1234 (Agent OS). A structurally-related but mechanism-distinct fingerprint via the COMMITTED Claim engine (8715), described at `agntcy/identity#165` (2026-05-26) as `Provenance Fingerprint = SHA-256(agent_id:action_type:scope:timestamp)`. Recorded for cross-reference. The Agent OS fingerprint uses `:`-joined string hash rather than JCS canonical bytes, and does not carry a `canon_version` field on emitted artefacts; the C4 candidate framing asks for "the format version is part of the receipt itself, not external metadata," which the AlgoVoi `canon_version` mechanism satisfies and the Agent OS fingerprint does not.
 
 **Open ambiguity.**
 
-None of substance. Two independent implementations producing pre/post canon_version cross-exhibits is the substrate-general signal the candidate asked for.
+None of substance. Substrate-generality of `canon_version: jcs-rfc8785-v1` is established by six independent adopters pinning the field in-band on emitted artefacts (per the AlgoVoi Substrate Adopters Registry). The Agent OS Provenance Fingerprint is a related-but-non-conformant fingerprint mechanism (no JCS canonicalisation, no version-pin field) and does not pair with the AlgoVoi canon_version exhibit to establish substrate-generality; recorded for cross-reference under the matrix's "different surface" framing.
 
 **What the substrate establishes.**
 
-The `canon_version` mechanism is substrate-general (two implementations, independent production). A receipt with a canonical-version pin can be forward-migrated without external coordination, since the pin tells the verifier which canonicalization rules to apply. The legacy-retention case (multi-year receipts persisting across canon-version updates) becomes a routine field-resolution at verification time.
+The `canon_version` mechanism is substrate-general at six adopter-side implementations of one specification (AlgoVoi-authored IETF I-D `draft-hopley-x402-canonicalisation-jcs-v1`). A receipt with a canonical-version pin can be forward-migrated without external coordination, since the pin tells the verifier which canonicalisation rules to apply. The legacy-retention case (multi-year receipts persisting across canon-version updates) becomes a routine field-resolution at verification time.
 
 **What remains open.**
 
-The candidate is well-covered at substrate. A third independent implementation would strengthen substrate-generality further but is not required for substrate sufficiency.
+The candidate is well-covered at substrate. Additional independent adopters pinning `canon_version: jcs-rfc8785-v1` in-band would extend the registry; the cross-mechanism comparison with the Agent OS Provenance Fingerprint surface remains a separate question at the canonicalisation-primitive layer.
 
 ---
 

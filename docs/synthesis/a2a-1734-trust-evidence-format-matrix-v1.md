@@ -69,7 +69,7 @@ Verifier-policy downstream of tuple-mismatch detection (reject vs warn vs surfac
 **Submitted substrate.**
 
 - Agent OS (Liuyanfeng1234). `Trust_Ledger 8731` production data, issued-valid / executed-revoked fixture composed with the argentum-core dual-timestamp pattern. Submitted via Agent OS public submissions on A2A#1734.
-- azender1 (SafeAgent). `RFC_EXECUTION_GUARD_1.md` three-incident production case study (2026-05-19, 2026-05-21, 2026-05-22) at `github.com/azender1/SafeAgent/blob/main/docs/RFC_EXECUTION_GUARD_1.md`. Two production-observed cases:
+- azender1 (SafeAgent). `RFC_EXECUTION_GUARD.md` three-incident production case study (2026-05-19, 2026-05-21, 2026-05-22) at `github.com/azender1/SafeAgent/blob/main/RFC_EXECUTION_GUARD.md`. Two production-observed cases:
   - 422-cascade anchor-absence fixture (companion to anchor-inadmissibility)
   - Race-condition variant: both instances reach the broker before either commits, guard present but window between claim and commit wide enough that both readers see "not yet claimed"
 - argentum-core (giskard09). NEXUS production deployment on Base mainnet, two gap classes:
@@ -172,7 +172,7 @@ The candidate is well-covered at substrate. A third independent implementation w
 - giskard09 (argentum-core / NEXUS): production deployment on Base mainnet with two empirically observed gap classes:
   - Gap class A: anchor_status polling under L2 settlement variable finality (any L2 settlement plane, not NEXUS-specific)
   - Gap class B: credential window at execution (audit question not answerable from receipt alone; resolved in-receipt via `revocation_check_at_ms` field)
-- azender1 (SafeAgent). `RFC_EXECUTION_GUARD_1.md` three-incident production case study composes with Candidate 2 substrate and contributes the race-condition variant to deployment-pattern catalog
+- azender1 (SafeAgent). `RFC_EXECUTION_GUARD.md` three-incident production case study composes with Candidate 2 substrate and contributes the race-condition variant to deployment-pattern catalog
 
 **Submitted substrate (discovery-plane).**
 

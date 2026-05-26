@@ -45,7 +45,7 @@ Operational worked examples (§3 of the substrate file):
 
 **Open ambiguity.**
 
-The 2026-05-25 substrate file's own §2 authorship note credits AlgoVoi (chopmob-cloud) as the originator of the discrimination-tuple injectivity formulation, with named co-authorship at AlgoVoi's 2026-05-23 request. AEOESS lineage review against published artifacts on 2026-05-23 observed that the row-classification work in `agentgraph-co/agentgraph` predates AlgoVoi's substrate involvement and contains the injectivity invariant in earlier form. The synthesis record carries both threads without selecting between them. Readers running the lineage trace against published artifacts will find the May 14 AlgoVoi note explicit on the rule, and the v0.3.3 row-classification work prior to that. The substrate file accepted Thread A; the synthesis matrix documents that decision without inheriting it.
+The 2026-05-25 substrate file's own §2 authorship note credits AlgoVoi (chopmob-cloud) as the originator of the discrimination-tuple injectivity formulation, with named co-authorship at AlgoVoi's 2026-05-23 request. The substrate author recorded the lineage decision in-text. Per the matrix's stated discipline ("AEOESS reads the substrate, records what landed"), the substrate file's authorship note is what landed. No submitted substrate artefact -- no commit hash, no dated document, no publicly-citable URL predating A2A #1734 2026-05-14 -- that contains the discrimination-tuple injectivity rule as a stated formalism has been submitted against this candidate. _Amendment 2026-05-26: removed AEOESS independent lineage-review sentence; the substrate file is the record._
 
 **What the substrate establishes.**
 
@@ -135,19 +135,17 @@ The substrate-vs-governance closure decision is the open question the candidate 
 **Submitted substrate.**
 
 - chopmob-cloud (AlgoVoi). `canon_version` cross-exhibit pair (pre/post canonicalization rules) demonstrating that a receipt carrying its own canon-version pin can be re-verified under either old or new rules without external context. Submitted via AlgoVoi submissions on A2A#1734 and x402-foundation/x402#2436.
-- Liuyanfeng1234 (Agent OS): second pre/post `canon_version` instance via the COMMITTED Claim engine (8715), independently produced. Pairs with AlgoVoi's exhibit to make the mechanism substrate-general rather than implementation-specific.
-
 **Open ambiguity.**
 
-None of substance. Two independent implementations producing pre/post canon_version cross-exhibits is the substrate-general signal the candidate asked for.
+None of substance.
 
 **What the substrate establishes.**
 
-The `canon_version` mechanism is substrate-general (two implementations, independent production). A receipt with a canonical-version pin can be forward-migrated without external coordination, since the pin tells the verifier which canonicalization rules to apply. The legacy-retention case (multi-year receipts persisting across canon-version updates) becomes a routine field-resolution at verification time.
+The `canon_version` mechanism is substrate-general. Substrate-generality is established by five independent parties carrying `canon_version: jcs-rfc8785-v1` in-band on published artefacts, listed in the AlgoVoi Substrate Adopters Registry ([docs.algovoi.co.uk/adopters](https://docs.algovoi.co.uk/adopters)): AlgoVoi (substrate author, v1); Supership / Crest Deployment Systems (`verify.crestsystems.ai`); PEAC Protocol (`peacprotocol/peac`); Nobulex (`arian-gogani/nobulex`, bilateral-receipt vectors); Vauban Pay (STARK receipts, `vauban-org/x402-stark-receipts-conformance`). A sixth AlgoVoi artefact (`algovoi-substrate-pqc`, `canon_version: jcs-rfc8785-v2`) demonstrates the mechanism supports forward migration -- which is the precise property C4 asks for. A receipt with a canonical-version pin can be re-verified under either old or new rules without external context, since the pin is self-describing on the receipt. The legacy-retention case (multi-year receipts persisting across canon-version updates) becomes a routine field-resolution at verification time. _Amendment 2026-05-26: removed Agent OS COMMITTED Claim engine (8715) from submitted substrate; the Agent OS Provenance Fingerprint (SHA-256 over colon-joined string preimage, agntcy/identity#165) does not carry a `canon_version` field on emitted artefacts and does not satisfy C4's stated criterion ("the format version is part of the receipt itself, not external metadata"). Substrate-generality is established by the five independent external adopters listed above._
 
 **What remains open.**
 
-The candidate is well-covered at substrate. A third independent implementation would strengthen substrate-generality further but is not required for substrate sufficiency.
+The candidate is well-covered at substrate.
 
 ---
 
@@ -216,3 +214,13 @@ Reference implementations cited by URL in the matrix itself. No consolidation un
 - **v2, Q3 2026 (target).** Cadence is one methodology-ownership artifact per 6-to-8 weeks per AEOESS doctrine. A v2 update may shift candidate framings if substrate has materially changed the open questions.
 
 Future v1.x updates amend existing rows with dated changelog notes rather than silently rewriting attribution. A `## Changelog` section at the bottom of this file carries the dated history once the first amendment lands.
+
+---
+
+## Changelog
+
+### v1.1 -- 2026-05-26 (PR: chopmob-cloud/agent-governance-vocabulary)
+
+**C1 open-ambiguity column:** Removed the sentence asserting an independent AEOESS lineage review that observed the `agentgraph-co/agentgraph` row-classification work predating AlgoVoi's substrate involvement. The submitted substrate file (`semantic-divergence-boundary-v0.md`, commit `229040b`) contains an unambiguous in-text §2 authorship note crediting AlgoVoi (chopmob-cloud) as the originator of the discrimination-tuple injectivity formulation. Per the matrix's own stated discipline, the substrate file is the record. No submitted substrate artefact that contains the injectivity rule as a stated formalism and predates A2A #1734 2026-05-14 was submitted against this candidate.
+
+**C4 submitted substrate:** Removed Agent OS COMMITTED Claim engine (8715) as a second `canon_version` implementation. The Agent OS Provenance Fingerprint (`SHA-256(agent_id:action_type:scope:timestamp)`, agntcy/identity#165, posted 2026-05-26 14:32 UTC) uses a colon-joined string preimage and does not carry a `canon_version` field on emitted artefacts. C4's stated criterion requires "the format version is part of the receipt itself, not external metadata"; the Agent OS fingerprint shape does not satisfy this test. Substrate-generality for `canon_version` is established by five independent external adopters (AlgoVoi, Supership/Crest, PEAC Protocol, Nobulex, Vauban Pay) plus the AlgoVoi v2 artefact demonstrating forward migration; these are documented in the AlgoVoi Substrate Adopters Registry at `docs.algovoi.co.uk/adopters`.

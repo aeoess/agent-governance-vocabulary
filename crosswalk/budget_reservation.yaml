@@ -158,6 +158,155 @@ verbs:
       collection form); goodmeta multiplexes through the single
       `query` verb with an optional `reservation_id` parameter.
 
+# Reservation lifecycle states + transitions + idempotency contract.
+#
+# v0.1 contribution from SpendGuard (sdk-v0.4.0; Agent Spend Protocol
+# Draft-01 §3.3), brought upstream pre-promotion per #98. The state
+# set below is the SpendGuard implementation; goodmeta and Cycles
+# are invited to confirm semantics match or surface divergence on
+# #98. Per the verb-status convention above, this section sits at
+# `proposed` until a second implementer confirms each state name +
+# transition; promotes to `candidate` at the two-implementer
+# threshold.
+#
+# Layer separation: this section describes the budget-layer state
+# machine only. Rail-layer settlement state (chargeback, irrevocable
+# clearing) is a separate concern per the `refund` verb's notes.
+reservation_lifecycle:
+  status: proposed
+
+  # `normative_force` makes the boundary unambiguous for downstream
+  # readers: the block's CONTENT is descriptive until Cycles and
+  # goodmeta confirm or diverge on #98. Distinct from `status` (which
+  # tracks the lifecycle of the section's promotion path itself —
+  # proposed → candidate → canonical per the verb-status convention
+  # above). Downstream code generators / validators SHOULD treat
+  # `descriptive_only_pending_convergence` blocks as documentation
+  # rather than wire-level constants.
+  normative_force: descriptive_only_pending_convergence
+
+  status_note: |
+    First implementer: SpendGuard (sdk-v0.4.0). Cycles + goodmeta
+    confirmation pending; track in #98.
+
+  states:
+
+    RESERVED:
+      definition: >-
+        Capacity is held against the budget but not yet spent.
+        Entered via `reserve` with a TTL deadline. Transitions out
+        to COMMITTED (via `commit`), RELEASED (via `release`),
+        EXPIRED_IN_GRACE (via TTL boundary), or QUARANTINED (via
+        overage policy on commit).
+      verb_entry: reserve
+
+    COMMITTED:
+      definition: >-
+        Capacity has been spent. Terminal state. Spend is recorded
+        in the ledger. A subsequent `refund` reverses the ledger
+        row but does not re-enter this state machine — `refund` is
+        a post-commit reversal verb in its own right.
+      verb_entry: commit
+
+    RELEASED:
+      definition: >-
+        Capacity has been returned to the budget before commit.
+        Terminal state. The reservation_id is one-shot; further
+        verb calls against it return the documented dedup or
+        conflict error (see `dedup_contract` below).
+      verb_entry: release
+
+    EXPIRED_IN_GRACE:
+      definition: >-
+        TTL deadline has passed but the implementation-defined
+        grace window has not closed. A late `commit` within this
+        window is honored; the audit chain MUST emit both the
+        TTL-boundary event AND the late-commit event so observers
+        can distinguish on-time commits from grace commits. After
+        the grace window closes without commit, the state
+        transitions to EXPIRED_BEYOND_GRACE.
+      verb_entry: "(TTL boundary, internal)"
+
+    EXPIRED_BEYOND_GRACE:
+      definition: >-
+        TTL + grace window have both passed without commit or
+        release. Terminal state. A subsequent `commit` is rejected
+        with EXPIRED_BEYOND_GRACE; the underlying provider call
+        (if it occurred) is the caller's reconciliation problem
+        and is not captured in this state machine.
+      verb_entry: "(grace window close, internal)"
+
+    QUARANTINED:
+      definition: >-
+        `commit`'s observed amount exceeded the held reservation,
+        and the budget's overage policy was set to REJECT (the
+        default). Terminal state. The provider call has occurred
+        but the spend was NOT debited; operator escalation is
+        required. Distinct from EXPIRED_BEYOND_GRACE because the
+        commit attempt was made within TTL — the failure mode is
+        overage-on-commit, not lateness.
+      verb_entry: "(commit overage, internal)"
+
+  # Idempotency contract for `commit` and `release` retries.
+  # SpendGuard binding documents this at ASP Draft-01 §3.3; the
+  # wire-level dedup-key shape MAY be implementation-specific but
+  # the three branches below describe the required outcomes any
+  # implementation MUST surface.
+  dedup_contract:
+    key: "(reservation_id, idempotency_key)"
+
+    same_pair_same_body: |
+      Authority returns the original outcome. No new audit event is
+      emitted. Standard network-retry safety.
+
+    same_pair_conflicting_body: |
+      REPLAY_CONFLICT. Authority MUST reject with a typed client
+      error (e.g. gRPC FailedPrecondition) and emit an audit event
+      recording the rejection. Implementations differ on how
+      "body" is canonicalized for hashing; the convention is
+      implementation-defined but MUST be stable across retries
+      from the same caller.
+
+    different_idempotency_key_against_terminal: |
+      RESERVATION_SETTLED / RESERVATION_RELEASED /
+      EXPIRED_BEYOND_GRACE depending on the reservation's terminal
+      state. Authority MUST reject with a typed client error. A
+      new reservation requires a fresh `reserve` call.
+
+  # TTL grace window — implementation-defined bound. Prevents
+  # legitimate slow-commit retries from being lost while still
+  # bounding how far a stale reservation can stretch.
+  ttl_grace:
+    semantics: |
+      Window between TTL deadline and EXPIRED_BEYOND_GRACE during
+      which a late `commit` is still honored. The reservation
+      enters EXPIRED_IN_GRACE at the TTL boundary; the boundary
+      event MUST be emitted regardless of whether a late commit
+      eventually arrives.
+
+    recommended_max: "5 minutes"
+
+    publication: |
+      Authorities SHOULD publish their grace window value via a
+      discoverable metadata endpoint so adapters can make informed
+      retry decisions. Publication mechanism is
+      implementation-defined; SpendGuard exposes it via the
+      handshake response.
+
+  # Open questions tracked for v0.2 / canonical promotion:
+  open_questions:
+    - |
+      Should `ttl_grace.recommended_max` become a hard cap in the
+      canonical contract, or stay implementation-defined?
+    - |
+      QUARANTINED transition: should the canonical vocab require an
+      operator-escalation channel (e.g. emit-event-to-topic), or
+      stay implementer-specific?
+    - |
+      State naming: SpendGuard uses EXPIRED_BEYOND_GRACE; Cycles
+      and goodmeta may have different terms. Convergence pending
+      on #98.
+
 stewardship:
   current:
     org: aeoess

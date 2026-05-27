@@ -16,6 +16,20 @@ The matrix records the substrate as-it-landed under the schema's discipline. Per
 
 ---
 
+## Substrate Attestation (added 2026-05-27)
+
+The matrix admits a contributor-elected substrate-attestation pointer alongside the existing commit citation: a verifier-issued URL plus content hash, cited next to the commit reference, where a contributor elects to use one. Independent execution stays on the verifier's side; the matrix records the receipt URL and the content hash, not the underlying judgment. Per the matrix's NOT-claims: the substrate-attestation pointer does not establish runtime behavior, authorship priority, or semantic truth.
+
+**Registry (rolling).**
+
+| Verifier | Receipt URL | Contributor (routed by) | Date routed |
+|----------|-------------|--------------------------|-------------|
+| Crest Systems (`verify.crestsystems.ai`) | `verify.crestsystems.ai/argentum-core-substrate-v0.json` | giskard09 (argentum-core) | 2026-05-27 |
+
+Contributors wanting to route a substrate-attestation pointer alongside their submission can post the receipt URL on A2A Discussion #1734 with the substrate-attestation context.
+
+---
+
 ## Matrix
 
 ### Candidate 1: Semantic divergence under byte-match identity
@@ -103,6 +117,7 @@ Verifier-policy choices (admit-with-backoff vs reject-on-pending) are explicitly
 
 - giskard09 (argentum-core) argues the closure happens **inside the receipt schema** via the dual-timestamp pattern (authority_verified_at_ms + revocation_check_at_ms in action-ref.md v1.0). Under MiCA Art. 80 / AMLR Art. 56 the issuance anchor is the relevant boundary; under DORA Art. 14 / FCA SYSC 9.1 the execution-time check is the relevant boundary; a receipt carrying both fields satisfies both regimes from a single schema. Cross-jurisdictional admissibility becomes a field-selection problem at verification time, not a schema-fork at issuance.
 - Liuyanfeng1234 (Agent OS) submits SCP v2.2 (8725) jurisdiction-aware degrade-and-retry path as the **adjacent-governance** closure if AEOESS synthesis lands on that side. Agent OS reports it is prepared for either closure direction; both their COMMITTED Claim engine (8715) and CAR arbiter (8716) already emit the dual-timestamp pattern in production, so the receipt-schema closure path is also covered on their side.
+- argentum-core (giskard09): `cross-system-verification-v1.0` (commit `b502d85`, 2026-05-26) supplies a **third closure path**: an off-chain four-step verification procedure (`recompute_action_ref` → `match_trail_record` → `fetch_chain_anchor` → `match_anchor_payload`) requiring no call to any Giskard-operated endpoint. Jurisdiction-agnostic by construction; any regulator, auditor, smart contract, or competing accountability layer running the four steps against any public RPC produces a tamper-evident `verification_ref`. Canonical fixture at `giskard09/argentum-core/blob/main/examples/conformance/cross-system-verification-v1.fixture.json`, verifier_ref `ca602e8726617b0e0491bbe2b7593f44b99591be2952193c9a3e414e784cec7d`.
 
 **Open ambiguity.**
 
@@ -110,6 +125,7 @@ This is the candidate's structural open question, not a contributor ambiguity. T
 
 - Receipt-schema closure (argentum-core view): the dual-timestamp pattern already in `action-ref.md v1.0` satisfies both temporal boundaries from a single schema; per-jurisdiction obligations become a field-selection problem at verification, not a schema branch at issuance
 - Adjacent-governance closure (Agent OS SCP v2.2 path available): jurisdiction-aware degrade-and-retry at the governance layer; receipt schema stays jurisdiction-neutral; per-region obligations enforced one layer above
+- Off-chain-verifier-substrate closure (argentum-core `cross-system-verification-v1.0`): four-step verification procedure against any public RPC, no contributor-operated endpoint required, produces tamper-evident verification_ref. The closure happens neither inside the receipt schema nor in adjacent governance, but in a portable third-party verification primitive composable with both
 
 AEOESS reading: both closures are coherent. The receipt-schema closure (argentum-core) has the lighter contributor burden and reuses the dual-timestamp substrate from Candidate 2; the adjacent-governance closure (Agent OS SCP v2.2) handles obligations the receipt schema cannot semantically express (mandatory reporting, EDD scope, sanctions screening). They are not mutually exclusive; the receipt schema can carry the temporal substrate while adjacent governance carries the obligation enforcement. The synthesis matrix does not select; it records both submitted substrates and the structural question as open for further substrate.
 
@@ -176,6 +192,10 @@ The candidate is well-covered at substrate.
 
 - kenneives (AgentGraph). `State of Agent Security 2026` scan corpus (35,000+ agents across MCP Registry, OpenClaw skills marketplace, npm/PyPI agent packages, AI-generated Solidity from Microsoft-backed Dreamspace). Full report at `agentgraph.co/state-of-agent-security-2026`, published 2026-05-12.
 
+**Submitted substrate (delegation-plane).**
+
+- argentum-core (giskard09): `delegation-chain-ref-v1.0` (commit `a148776`, 2026-05-26) supplies multi-hop delegation chain provenance with dual traversal (forward via `hops[]` and `delegation_chain_ref`, backward via `parent_delegation_ref` from each hop artifact) plus the continuity invariant `hops[i].delegatee == hops[i+1].delegator`. A verifier holding only `leaf_action_ref` and the leaf delegation artifact walks to root without the full chain artifact. The leaf trail record carries both the immediate parent's `delegation_ref` and the root-to-leaf `delegation_chain_ref`; intermediate hops carry only their own `delegation_ref`. This matches the multi-agent pattern in A2A: per-hop records do not require full chain context; the leaf record anchors provenance end-to-end. Canonical fixture (3-hop chain giskard-self → pioneer-agent-001 → lightning → soma-agent) at `giskard09/argentum-core/blob/main/examples/conformance/delegation-chain-ref-v1.fixture.json`, delegation_chain_ref `453529e323616b344fef58c203ea9bb0caae79954661d3d344fa1b4707457197`.
+
 **Open ambiguity.**
 
 None of substance. Settlement-plane and discovery-plane substrate are distinct surfaces (production-observed receipts in deployed systems vs population-scale scan corpus of declared identities and skills) and complementary; neither subsumes the other.
@@ -196,6 +216,7 @@ The deployment-pattern catalog is open-ended by nature. Further production-incid
 - `aeoess/agent-governance-vocabulary`: vocabulary repo where this matrix lives. Crosswalk files for AgentGraph, Agent OS, argentum-core (`crosswalk/mycelium-trails.yaml`), AlgoVoi, and others are visible under `crosswalk/`. Cross-impl substrate (rfc8785, JCS) lives in fixtures.
 - A2A #1734 thread: `github.com/a2aproject/A2A/discussions/1734`
 - AEOESS synthesis-attribution schema (internal doctrine, paste-safe summary): originating contribution = the conceptual work, submitted substrate = the empirical work, open ambiguity = disputed or unresolved lineage. Both columns citable; dispute documentation rather than adjudication.
+- **CTEF v0.3.2** (kenneives / agentgraph-co, published 2026-05-27): `https://github.com/agentgraph-co/agentgraph/releases/tag/v0.3.2`. The canonical cohort specification the substrate built against this matrix composes with; six normative additions traceable to A2A #1786 and adjacent threads, 53 conformance vectors across five JCS implementations and five languages with 265 byte-for-byte agreements and zero divergence. Cross-impl substrate at `agentgraph-co/agentgraph/tree/v0.3.3-cross-extension-matrix/tests/cross-impl`.
 
 ## How to cite this matrix
 
@@ -224,3 +245,13 @@ Future v1.x updates amend existing rows with dated changelog notes rather than s
 **C1 open-ambiguity column:** Removed the sentence asserting an independent AEOESS lineage review that observed the `agentgraph-co/agentgraph` row-classification work predating AlgoVoi's substrate involvement. The submitted substrate file (`semantic-divergence-boundary-v0.md`, commit `229040b`) contains an unambiguous in-text §2 authorship note crediting AlgoVoi (chopmob-cloud) as the originator of the discrimination-tuple injectivity formulation. Per the matrix's own stated discipline, the substrate file is the record. No submitted substrate artefact that contains the injectivity rule as a stated formalism and predates A2A #1734 2026-05-14 was submitted against this candidate.
 
 **C4 submitted substrate:** Removed Agent OS COMMITTED Claim engine (8715) as a second `canon_version` implementation. The Agent OS Provenance Fingerprint (`SHA-256(agent_id:action_type:scope:timestamp)`, agntcy/identity#165, posted 2026-05-26 14:32 UTC) uses a colon-joined string preimage and does not carry a `canon_version` field on emitted artefacts. C4's stated criterion requires "the format version is part of the receipt itself, not external metadata"; the Agent OS fingerprint shape does not satisfy this test. Substrate-generality for `canon_version` is established by five independent external adopters (AlgoVoi, Supership/Crest, PEAC Protocol, Nobulex, Vauban Pay) plus the AlgoVoi v2 artefact demonstrating forward migration; these are documented in the AlgoVoi Substrate Adopters Registry at `docs.algovoi.co.uk/adopters`.
+
+**2026-05-27 amendments (maintainer commit by AEOESS, post-publication substrate landings).**
+
+**Substrate-attestation primitive added.** New section "## Substrate Attestation" documents the contributor-elected verifier-receipt mechanism: a URL plus content hash cited next to the existing commit citation, where a contributor elects to use one. Independent execution stays on the verifier's side. First registry entry: Crest Systems verifier receipt for argentum-core at `verify.crestsystems.ai/argentum-core-substrate-v0.json`, routed by giskard09 (argentum-core) following the admissibility decision posted on A2A Discussion #1734 on 2026-05-27 (discussioncomment-17079847).
+
+**C3 submitted substrate addition.** argentum-core `cross-system-verification-v1.0` (commit `b502d85`, 2026-05-26) added as a third closure path. Jurisdiction-agnostic four-step verification procedure against any public RPC; verifier_ref `ca602e8726617b0e0491bbe2b7593f44b99591be2952193c9a3e414e784cec7d`. The C3 "open ambiguity" enumeration updated to record three closure paths (receipt-schema, adjacent-governance, off-chain-verifier-substrate).
+
+**C5 submitted substrate addition.** New "(delegation-plane)" subsection added to Candidate 5 alongside the existing (settlement-plane) and (discovery-plane) substrate. argentum-core `delegation-chain-ref-v1.0` (commit `a148776`, 2026-05-26) cited as multi-hop delegation chain substrate; delegation_chain_ref `453529e323616b344fef58c203ea9bb0caae79954661d3d344fa1b4707457197`.
+
+**Cross-references update.** CTEF v0.3.2 release (agentgraph-co/agentgraph, published 2026-05-27) added as the canonical cohort specification the substrate built against this matrix composes with.

@@ -1,0 +1,506 @@
+# crosswalk/aps-acta.yaml
+#
+# Pairwise composition crosswalk: Agent Passport System (APS) ↔
+# Acta Signed Receipts (ACTA) — receipt envelope, signing, delegation
+# chain, selective disclosure.
+#
+# Distinct from the per-system → canonical-vocabulary pattern used by
+# the rest of crosswalk/. This file maps two systems to each other,
+# bridged through canonical vocabulary terms where both systems
+# already crosswalk (see aeoess-aps.yaml + veritasacta.yaml).
+#
+# Precedent for non-standard `crosswalk_type` marker:
+# crosswalk/rfc-category-taxonomy.yaml uses `crosswalk_type:
+# rfc_category_reverse` to mark a vocabulary→external-taxonomy
+# direction. The validator at scripts/validate-crosswalks.js skips
+# strict signal_types validation for files that don't carry the
+# canonical signal_types section, emitting a warning instead of an
+# error (line 119–122).
+#
+# Authored by APS side (@aeoess). ACTA-side review pending.
+# Strategic posture: complementary, not competing — see
+# strategic_posture below.
+#
+# This crosswalk is calibrated against:
+#   - APS:  agent-passport-system @ 2.3.0-alpha (npm), src/index.ts
+#   - ACTA: @veritasacta/artifacts @ 0.2.2 (SPEC.md, 349 lines)
+#           @veritasacta/protocol @ 0.1.1
+#           @veritasacta/verify @ 0.6.0 (engines/{ed25519-receipt,
+#             delegation, selective-disclosure}.js)
+#           protect-mcp @ 0.6.0
+#           draft-farley-acta-signed-receipts (rev -01, 2026-04-25,
+#             Tom Farley, ScopeBlind/Veritas Acta)
+#
+# Inventory: ~/aeoess_web/specs/reports/ACTA-INVENTORY-2026-04-26.md
+
+crosswalk_type: pairwise_composition
+source_system: aps
+target_system: acta
+source_crosswalk: crosswalk/aeoess-aps.yaml
+target_crosswalk: crosswalk/veritasacta.yaml
+
+system:
+  name: APS-ACTA composition
+  home: https://github.com/aeoess/agent-governance-vocabulary
+  role: |
+    Pairwise mapping of Agent Passport System receipt and delegation
+    primitives to Acta Signed Receipts envelope and verification
+    primitives, with explicit migration paths for the partial and
+    divergent rows.
+
+license: Apache-2.0
+maintainer:
+  github: aeoess
+  author: Tymofii Pidlisnyi
+  contact: signal@aeoess.com
+  acta_side_review_pending: tomjwxf
+
+spec_refs:
+  aps:
+    - https://github.com/aeoess/agent-passport-system
+    - https://www.npmjs.com/package/agent-passport-system
+    - https://aeoess.com/llms-full.txt
+  acta:
+    - https://datatracker.ietf.org/doc/draft-farley-acta-signed-receipts/
+    - https://www.npmjs.com/package/@veritasacta/artifacts
+    - https://www.npmjs.com/package/@veritasacta/verify
+    - https://www.npmjs.com/package/protect-mcp
+    - https://veritasacta.com
+
+# Strategic posture (per CONTRIBUTING.md guidance to keep
+# vendor-positioning out of per-row notes; surfacing once at the top).
+strategic_posture: |
+  This crosswalk positions APS and ACTA as complementary surfaces, not
+  competing stacks. APS specializes in cryptographic delegation chain
+  with monotonic narrowing, cascade revocation, scope-bound action
+  receipts, and a Merkle-rooted audit log (Papers 1, 2, 5). ACTA
+  specializes in selective-disclosure receipts via per-field SHA-256
+  commitments (AIP-0002, draft-farley-acta-signed-receipts §Selective
+  Disclosure) and offline issuer-blind verification.
+
+  Composition pathways:
+
+  - An ACTA `decision_receipt` (v2) can be wrapped under an APS
+    `ActionReceipt` to inherit a delegation chain root and
+    cascade-revocation enforcement. The APS receipt's
+    `delegationChain` field carries APS delegation IDs; ACTA
+    `payload.authorization.delegation_chain` carries hash references
+    in a different shape — these surfaces are not byte-identical and
+    require either dual-emit or wrapping.
+
+  - An APS `ActionReceipt` can be carried as an ACTA-shaped
+    `decision_receipt` v2 envelope by emitting under
+    `algorithm: ed25519`, `kid: <JWK thumbprint of APS pubkey>`, with
+    APS-specific fields (`delegation_chain_root`, scope vector,
+    spend_limit, principal_endorsement) under an `x-aps:` extension
+    namespace per ACTA's namespace convention
+    (`@veritasacta/protocol` docs/governance.md §Namespace Rules).
+
+  - The single biggest interop subtlety is canonicalization. APS
+    legacy `canonicalize` strips nulls; ACTA does not. APS
+    `canonicalizeJCS` (RFC 8785) does not enforce ASCII keys; ACTA
+    requires all object keys to contain only printable ASCII
+    (0x20–0x7E). A receipt that round-trips bit-identically across
+    both stacks must restrict inputs to "ASCII keys, no nulls."
+
+# ─────────────────────────────────────────────────
+# MAPPINGS — each row is one APS↔ACTA correspondence.
+#
+# match_type values:
+#   exact         — same primitive, same surface (vocab canonical)
+#   structural    — same question, different surface (vocab canonical)
+#   partial       — overlapping but not identical (vocab canonical)
+#   divergent     — different shape, document the gap (this file's
+#                   working term; maps to canonical
+#                   `non_equivalent_similar_label` from vocabulary.yaml
+#                   when both sides have a comparable primitive in
+#                   different shapes)
+#   no_mapping    — one side has it, the other does not (vocab canonical)
+# ─────────────────────────────────────────────────
+mappings:
+
+  # ── 1. Action-receipt envelope ───────────────────────────────────
+  - id: 1
+    aps_concept: ActionReceipt
+    aps_field: ActionReceipt object (src/types/passport.ts; createReceipt/verifyReceipt in src/core/delegation.ts)
+    acta_concept: SignedArtifact (v2) with type=decision_receipt
+    acta_field: "v=2, type='decision_receipt', algorithm='ed25519', kid, issuer, issued_at, payload, signature (per @veritasacta/artifacts SPEC.md §v2 Envelope Format)"
+    canonical_bridge: governance_attestation
+    match_type: partial
+    notes: |
+      Both are signed envelopes attesting to a completed action with a
+      cryptographic signature. APS adds delegation chain composition
+      (delegationChain: string[] of delegationIds, root-first) and
+      Values Floor attestation references; ACTA adds the JWK-thumbprint
+      kid and the structured v2 envelope split. APS receipts always
+      carry delegation context; ACTA receipts may or may not (per
+      payload.authorization.delegation_chain optional field).
+    migration_paths:
+      aps_to_acta: |
+        Emit an ACTA v2 envelope: type='decision_receipt',
+        kid=base64url(SHA-256(JWK(apsPublicKey))), issuer=apsAgentDid,
+        issued_at=ActionReceipt.timestamp, payload={
+          decision: ActionReceipt.result.status === 'success'
+                    ? 'allow' : 'deny',
+          policy_digest: SHA-256(ActionReceipt.delegation),
+          scope: ActionReceipt.action.scopeUsed,
+          authorization: { delegation_chain: <APS delegationChain
+                           mapped to ACTA receipt_hash form, leaf-first> },
+          'x-aps': { delegation_chain_root: <hex>,
+                     spend_limit_ref: <number>, principal_did: <did> }
+        }, signature=ed25519(JCS(envelope_minus_signature)).
+        Use ASCII-only keys, no nulls, to make the envelope canonicalize
+        identically under both stacks' canonicalizers.
+      acta_to_aps: |
+        The wrapping APS agent MUST attach an authoritative
+        delegation_chain_root from its own chain. Map ACTA
+        decision_receipt fields onto ActionReceipt: action.scopeUsed
+        from payload.scope; result.status from payload.decision;
+        timestamp from issued_at; agentId from issuer or
+        payload.agent_id; delegationId from one of
+        payload.authorization.delegation_chain leaves. Re-sign with
+        APS's canonicalize (strip-nulls form) using the new agent's
+        private key.
+
+  # ── 2. Receipt identifier ────────────────────────────────────────
+  - id: 2
+    aps_concept: receiptId
+    aps_field: ActionReceipt.receiptId (UUID-derived 'rcpt_' prefix; src/core/delegation.ts createReceipt)
+    acta_concept: implicit hash addressing
+    acta_field: "no native id field; ACTA receipts are hash-addressable via SHA-256 of the canonical envelope. The verifier exposes receipt_hash via chain-explore (src/engines/chain-explore.js)."
+    match_type: non_equivalent_similar_label
+    notes: |
+      APS uses an explicit, opaque, prefixed identifier
+      ('rcpt_<uuid12>'); ACTA uses content-addressed hashing. Both
+      uniquely identify a receipt, but the APS id can be referenced
+      before the receipt is signed (createReceipt assigns it during
+      construction); the ACTA hash is only knowable after signing and
+      canonicalization.
+    migration_paths:
+      aps_to_acta: |
+        Compute the ACTA hash AFTER signing. APS receiptId can be
+        carried as an extension field under x-aps:receipt_id for
+        round-trip identity preservation.
+      acta_to_aps: |
+        Mint a new APS receiptId on wrap. Optionally embed the
+        original ACTA receipt_hash in the APS ActionReceipt as
+        action.target_hash for forward referenceability.
+
+  # ── 3. Issuer / signing identity ─────────────────────────────────
+  - id: 3
+    aps_concept: agentId / passport public key
+    aps_field: "ActionReceipt.agentId; SignedPassport.passport.publicKey (Ed25519 raw 32 bytes, hex 64 chars)"
+    acta_concept: kid (JWK thumbprint per RFC 7638)
+    acta_field: "v2 envelope kid field: base64url(SHA-256({\"crv\":\"Ed25519\",\"kty\":\"OKP\",\"x\":\"<base64url-pubkey>\"}))"
+    canonical_bridge: trust_verification
+    match_type: partial
+    notes: |
+      Both identify the signing key. Different identifier shapes:
+      raw pubkey hex vs JWK thumbprint. The thumbprint is a
+      collision-resistant derivation from the same Ed25519 public key,
+      so a 1:1 mapping is computable in either direction.
+    migration_paths:
+      aps_to_acta: |
+        kid = base64url(SHA-256(canonical_jwk(apsPublicKey)))
+      acta_to_aps: |
+        Cannot derive raw pubkey from JWK thumbprint alone; requires a
+        side-channel JWKS lookup or the receipt-attached agent_manifest
+        artifact carrying public_key.
+
+  # ── 4. Canonicalization ──────────────────────────────────────────
+  - id: 4
+    aps_concept: canonicalize / canonicalizeJCS
+    aps_field: "src/core/canonical.ts (legacy: sort keys + strip nulls + JSON.stringify); src/core/canonical-jcs.ts (RFC 8785 JCS)"
+    acta_concept: JCS with ASCII-only key constraint
+    acta_field: "@veritasacta/artifacts SPEC.md §Canonical Serialization (JCS): sort keys recursively + JSON.stringify + reject non-ASCII keys at sign time"
+    match_type: partial
+    notes: |
+      Three canonicalizers across the two stacks; none are byte-equal
+      across the full input space:
+      - APS canonicalize: strips nulls; permits non-ASCII keys
+      - APS canonicalizeJCS: RFC 8785 strict; permits non-ASCII keys
+      - ACTA JCS: does not strip nulls; rejects non-ASCII keys
+      All three produce identical bytes ONLY for inputs constrained to
+      "ASCII keys, no nulls." This is the load-bearing interop
+      restriction.
+    migration_paths:
+      aps_to_acta: |
+        Use canonicalizeJCS (not legacy canonicalize) on the APS side
+        AND restrict input objects to ASCII keys with no null values.
+        Test cross-stack receipt with both canonicalizers and assert
+        byte equality before deploying.
+      acta_to_aps: |
+        ACTA receipts are signed under their own JCS variant; APS-side
+        verification must use canonicalizeJCS (NOT legacy canonicalize)
+        and assert no null-valued fields exist in the envelope.
+
+  # ── 5. Signature primitive ───────────────────────────────────────
+  - id: 5
+    aps_concept: Ed25519 signature
+    aps_field: "src/crypto/keys.ts sign/verify (lowercase hex, 128 chars)"
+    acta_concept: Ed25519 signature
+    acta_field: "@veritasacta/artifacts SPEC.md §Signing (lowercase hex, 128 chars, ed25519_sign(canonical_bytes))"
+    match_type: exact
+    notes: |
+      Identical signature primitive: Ed25519 over UTF-8-encoded
+      canonical bytes, output as lowercase hex 128 chars (64 bytes).
+      Algorithm string "ed25519" matches. Encoding matches.
+      Verification matches per RFC 8032. The ONLY divergence is the
+      bytes being signed (per row 4); the signature math itself is
+      identical.
+
+  # ── 6. Delegation chain root ─────────────────────────────────────
+  - id: 6
+    aps_concept: delegation_chain_root
+    aps_field: "computeDelegationChainRoot(chain: Delegation[]) returns SHA-256(JCS(chain_array)); src/decisionReceipt.ts:138; bound into in-toto Decision Receipt envelope"
+    acta_concept: implicit chain integrity via per-hash references
+    acta_field: "payload.authorization.delegation_chain: string[] of base64url(receipt_hash), leaf-first; src/engines/delegation.js verifies each hash against caller-supplied delegation envelope map"
+    match_type: divergent
+    notes: |
+      APS publishes a single SHA-256 chain-root digest as a content
+      address for the entire chain. ACTA does not publish such a
+      digest; chain integrity is established by the action receipt
+      naming each delegation's hash, and the verifier walking those
+      hashes against caller-supplied delegation envelopes. APS's
+      chain-root digest is verifiable in one read; ACTA's chain
+      integrity requires the verifier to have all delegation envelopes
+      in hand.
+    migration_paths:
+      aps_to_acta: |
+        Carry delegation_chain_root under
+        payload.authorization['x-aps']['delegation_chain_root'] as an
+        extension field. ACTA verifiers will not natively check it;
+        APS-aware consumers can.
+      acta_to_aps: |
+        Compute delegation_chain_root locally by hashing the JCS of the
+        resolved delegation envelopes. Note: requires the wrapping APS
+        agent to have access to all delegation envelopes referenced in
+        the ACTA chain.
+
+  # ── 7. Scope ─────────────────────────────────────────────────────
+  - id: 7
+    aps_concept: Delegation.scope
+    aps_field: "string[] with hierarchical/glob/wildcard interpretation; scopeAuthorizes / scopeCovers in src/core/delegation.ts"
+    acta_concept: scope (single string in v2 decision_receipt; structured object in delegation envelope)
+    acta_field: "payload.scope: string (v2 decision_receipt); DelegationScope: {tools?, targets?, resources?, max_depth?} (delegation envelope per AIP-0006)"
+    match_type: partial
+    notes: |
+      Two ACTA scope shapes, one APS scope shape. APS string-array
+      with interpretation modes covers ACTA's single-string scope
+      (1:1 with one element) and partially covers the structured
+      delegation scope object (APS scope strings can encode tool/
+      target/resource via convention 'tool:target:resource', but the
+      structure is implicit, not declared). max_depth maps directly
+      between APS Delegation.maxDepth and ACTA DelegationScope.max_depth.
+    migration_paths:
+      aps_to_acta: |
+        For decision_receipt: collapse APS scope[] to the single
+        scopeUsed string from the ActionReceipt. For delegation
+        envelope: parse APS scope strings via convention to populate
+        tools/targets/resources arrays.
+      acta_to_aps: |
+        For decision_receipt: scope -> single-element array. For
+        delegation envelope: emit each {tools, targets, resources}
+        triple as a colon-joined APS scope string.
+
+  # ── 8. Selective disclosure / Merkle commitment ──────────────────
+  - id: 8
+    aps_concept: Merkle attribution (whole-receipt audit trail)
+    aps_field: "buildMerkleRoot(leaves: string[]); generateMerkleProof; verifyMerkleProof; hashReceipt; src/core/attribution.ts"
+    acta_concept: per-field selective-disclosure commitments (AIP-0002)
+    acta_field: "_commitments: { '<dot-path>': 'sha256:<hex>' } where commitment = SHA-256(salt || JSON.stringify(value)); src/engines/selective-disclosure.js"
+    match_type: divergent
+    notes: |
+      Different primitives, same building block (SHA-256). APS Merkle
+      is a whole-receipt audit log: each leaf is hashReceipt(receipt),
+      proofs answer "is receipt X in batch B?" ACTA _commitments are
+      per-field privacy-preserving commitments WITHIN a single
+      receipt, answering "does field X reveal value V without
+      exposing other fields?" APS does NOT currently ship per-field
+      commitments (gap noted in BUILD-QUEUE §B3 for EU AI Act Article
+      12 hook). The IETF draft also specifies a Merkle-tree multi-
+      field disclosure variant (leaves = SHA-256(0x00 || canonical),
+      internal nodes = SHA-256(0x01 || left || right)); this variant
+      is spec-only at draft rev -01 and not yet in the v0.6.0
+      verifier.
+    migration_paths:
+      aps_to_acta: |
+        Not yet supported. APS does not produce per-field commitments.
+        Future B3 build will add ActionReceipt._commitments byte-
+        compatible with the AIP-0002 commitment scheme.
+      acta_to_aps: |
+        ACTA _commitments can be carried opaquely on an APS
+        ActionReceipt as an extension field, but APS verification
+        does not consume them today. APS Merkle-rooted batches can be
+        emitted alongside ACTA receipts to provide cross-receipt
+        inclusion proofs that ACTA does not natively ship.
+
+  # ── 9. Revocation ────────────────────────────────────────────────
+  - id: 9
+    aps_concept: cascade revocation
+    aps_field: "cascadeRevoke (deprecation stub; full impl in @aeoess/gateway DelegationStore); revokeDelegation; verifyDelegation cachedRevocationState; src/core/delegation.ts"
+    acta_concept: no documented revocation mechanism
+    acta_field: "@veritasacta/verify v0.6.0 has no revocation engine; SPEC.md does not define a revocation receipt type"
+    match_type: no_mapping
+    notes: |
+      APS ships cascade revocation (revoke a delegation, all
+      transitively-derived delegations are invalidated). ACTA receipts
+      are immutable post-issuance — revocation as a primitive is not
+      part of the SPEC. Existing crosswalk/veritasacta.yaml line 37:
+      "default_ttl_seconds: null  # receipts do not expire; validity
+      is permanent." Consumers requiring revocation must layer it on
+      out-of-band.
+
+  # ── 10. Values Floor attestation ─────────────────────────────────
+  - id: 10
+    aps_concept: FloorAttestation
+    aps_field: "attestFloor / verifyAttestation; ValuesFloor structure; src/core/values.ts"
+    acta_concept: no analog
+    acta_field: not present in SPEC.md
+    match_type: no_mapping
+    notes: |
+      APS Values Floor is a compositional attestation that an agent
+      satisfies declared value-system principles (Honest Identity,
+      Scoped Authority, Revocability, etc.). ACTA does not attest to
+      value-system compliance — it attests to decisions and policy
+      evaluation outcomes. Different abstraction layers; no migration
+      path.
+
+  # ── 11. Verification surface ─────────────────────────────────────
+  - id: 11
+    aps_concept: verifyReceipt / verifyDelegation
+    aps_field: "src/core/delegation.ts: verifyReceipt(receipt, agentPublicKey); verifyDelegation(delegation, opts?)"
+    acta_concept: "@veritasacta/verify CLI + delegation chain engine"
+    acta_field: "npx @veritasacta/verify <receipt.json>; src/engines/{ed25519-receipt, delegation, selective-disclosure}.js"
+    match_type: partial
+    notes: |
+      Both verify Ed25519 signatures over canonical bytes. APS
+      verifyReceipt checks signature only; APS verifyDelegation also
+      checks expiry, notBefore, depth, and (with cachedRevocationState)
+      revocation. ACTA verify CLI dispatches to multiple engines:
+      Ed25519 receipt, delegation chain (walks chain, verifies each
+      hop's signature/expiry/scope-subset/max_depth), selective
+      disclosure (commitment reconstruction), VOPRF (rate-limit token).
+      ACTA verification surface is broader (multiple receipt types)
+      but does not include revocation.
+    migration_paths:
+      aps_to_acta: |
+        APS-issued receipts can be verified by ACTA CLI IF the
+        canonicalization rule (row 4) is honored AND the envelope
+        format is v2-compatible.
+      acta_to_aps: |
+        ACTA-issued receipts can be verified by APS verifyReceipt IF
+        the receipt is wrapped in an APS-shaped ActionReceipt and
+        re-signed by an APS agent.
+
+  # ── 12. Type / discriminator ────────────────────────────────────
+  - id: 12
+    aps_concept: APS evidence envelope discriminator
+    aps_field: "evidenceEnvelope: 'aps-trust-profile-v1' (gateway /api/v1/public/trust/:agentId); in-toto Decision Receipt predicateType: https://aeoess.com/predicates/bilateral-delegation-receipt/v0.1"
+    acta_concept: type field
+    acta_field: "v1+v2 envelope type: string (e.g., 'decision_receipt', 'gateway_restraint', 'trust_ticket', 'audit_anchor', 'agent_manifest', 'scopeblind:decision', 'acta:anchor')"
+    match_type: partial
+    notes: |
+      Both are namespace-discriminator strings identifying the
+      artifact class. APS uses URL-form predicateType (in-toto
+      pattern) and short tags ('aps-trust-profile-v1'). ACTA uses
+      colon-namespaced short strings ('decision_receipt', 'sb:protect',
+      'acta:anchor'). The ACTA draft does NOT use the term
+      'predicateType' — that question in the prompt is answered: the
+      functional equivalent is the type field.
+    migration_paths:
+      aps_to_acta: |
+        Map APS predicateType to a corresponding ACTA type string under
+        a registered or 'x-aps:' namespace. The protocol governance.md
+        §Namespace Rules permits any '<org>:' prefix.
+      acta_to_aps: |
+        ACTA type 'decision_receipt' maps to APS in-toto predicateType
+        'https://aeoess.com/predicates/decision-receipt/v0.1'. Other
+        ACTA types map analogously.
+
+  # ── 13. Holder Binding Commitment ────────────────────────────────
+  - id: 13
+    aps_concept: PrincipalEndorsement
+    aps_field: "PrincipalEndorsement envelope; src/core/principal.ts createPrincipalIdentity / endorseAgent / verifyEndorsement"
+    acta_concept: HBC (Holder Binding Commitment)
+    acta_field: "HBC = SHA-256('DS_holder_bind' || key_material || nonce); embedded in decision_receipt payload as holder_binding (SPEC.md §Holder Binding Commitment)"
+    match_type: divergent
+    notes: |
+      Both bind a receipt to an identity, but with opposite privacy
+      tradeoffs. APS PrincipalEndorsement EXPOSES the principal's
+      public key for verification. ACTA HBC HIDES the holder's key
+      material — only the holder can reproduce the commitment by
+      knowing the original key + nonce. Different privacy posture,
+      different verification model. No clean migration; would require
+      adding an HBC primitive to APS (not currently in scope).
+
+  # ── 14. Trust tier / passport grade ──────────────────────────────
+  - id: 14
+    aps_concept: PassportGrade
+    aps_field: "passport.grade: 0..3 (computePassportGrade in src/core/attestation.ts)"
+    acta_concept: trust tier
+    acta_field: "v2 ordered set: unknown(0) < signed-known(1) < evidenced(2) < privileged(3); embedded in decision_receipt and gateway_restraint as 'tier'"
+    canonical_bridge: passport_grade
+    match_type: partial
+    notes: |
+      Same ordered-set shape (0..3) and similar semantic intent
+      ('how trustworthy is this agent at decision time'). Different
+      derivation: APS computes grade from identity binding strength +
+      endorsement chain + operational history. ACTA tiers are
+      operator-assigned at decision time. Numeric values align by
+      coincidence, not by design — do not assume APS grade 2 == ACTA
+      'evidenced' without explicit policy mapping.
+    migration_paths:
+      aps_to_acta: |
+        APS grade 0 -> ACTA 'unknown'; 1 -> 'signed-known'; 2 ->
+        'evidenced'; 3 -> 'privileged' as a default convention.
+        Operator may override via policy.
+      acta_to_aps: |
+        Reverse the convention. Note: APS grade is signed into the
+        passport envelope and attests to derivation; the reverse
+        mapping carries a weaker claim than the original.
+
+# ─────────────────────────────────────────────────
+# SUMMARY
+# ─────────────────────────────────────────────────
+summary:
+  total_mappings: 14
+  exact: 1                          # row 5 (Ed25519 signature primitive)
+  structural: 0
+  partial: 7                        # rows 1, 3, 4, 7, 11, 12, 14
+  divergent: 3                      # rows 6, 8, 13 (canonical: non_equivalent_similar_label)
+  non_equivalent_similar_label: 1   # row 2 (receiptId vs hash addressing)
+  no_mapping: 2                     # rows 9 (revocation), 10 (Values Floor)
+
+  load_bearing_interop_subtlety: |
+    Canonicalization byte-divergence (row 4). Cross-stack receipt
+    swap requires inputs restricted to "ASCII object keys, no null
+    values." Without this constraint, neither APS canonicalizer
+    matches ACTA's JCS byte-for-byte.
+
+  unique_aps_capabilities: |
+    Cascade revocation (row 9), Values Floor attestation (row 10),
+    delegation chain root digest (row 6), Principal Endorsement (row
+    13 partner). None have ACTA equivalents.
+
+  unique_acta_capabilities: |
+    Per-field selective-disclosure commitments (row 8), Holder
+    Binding Commitment (row 13), JWK-thumbprint kid (row 3 partner).
+    APS does not currently ship these; the per-field commitment is
+    on the APS roadmap (BUILD-QUEUE §B3).
+
+# ─────────────────────────────────────────────────
+# CROSSWALK METADATA
+# ─────────────────────────────────────────────────
+crosswalk_metadata:
+  authored_by: "@aeoess"
+  authored_date: "2026-04-26"
+  vocabulary_version: "0.1.0"
+  acta_side_review: pending (@tomjwxf)
+  inventory_artifact: ~/aeoess_web/specs/reports/ACTA-INVENTORY-2026-04-26.md
+  build_queue_reference: BUILD-QUEUE-FROM-DAY-69.md §B5
+  next_revisions:
+    - "After ACTA-side review (@tomjwxf): refine partial/divergent rationales per his read of APS"
+    - "After APS B3 (selective-disclosure receipts) ships: row 8 changes match_type from divergent to partial"
+    - "After AGT Tutorial 33 conformant-implementation appendix is verified directly against draft body: cite §A.9 in row 1 notes"
+    - "If pairwise composition crosswalk pattern lands well (Tima decides), consider extracting a META.md document at vocab repo root explaining when system→canonical vs pairwise composition is appropriate"

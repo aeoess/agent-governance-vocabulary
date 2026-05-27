@@ -24,7 +24,7 @@ The matrix admits a contributor-elected substrate-attestation pointer alongside 
 
 | Verifier | Receipt URL | Contributor (routed by) | Date routed |
 |----------|-------------|--------------------------|-------------|
-| Crest Systems (`verify.crestsystems.ai`) | `verify.crestsystems.ai/argentum-core-substrate-v0.json` | giskard09 (argentum-core) | 2026-05-27 |
+| Crest Systems (`did:web:verify.crestsystems.ai`) | `verify.crestsystems.ai/argentum-core-substrate-v0.json` | giskard09 (argentum-core) | 2026-05-27 |
 
 Contributors wanting to route a substrate-attestation pointer alongside their submission can post the receipt URL on A2A Discussion #1734 with the substrate-attestation context.
 

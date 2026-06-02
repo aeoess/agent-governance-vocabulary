@@ -37,7 +37,7 @@ upstream_references:
 
 # Decision shape returned from `reserve` or any budget pre-check.
 # v0.1 freezes the three outcome values; v0.2 codifies the cap-type
-# vocabulary after a third production implementation surfaces.
+# vocabulary (`cap_vocabulary` stub below, pending lead-author).
 decision_shape:
   values:
     - ALLOW
@@ -46,10 +46,59 @@ decision_shape:
   ALLOW_WITH_CAPS_structure:
     allowed: boolean
     caps:
-      - type: string                 # cap-type vocabulary deferred to v0.2
+      - type: string                 # cap-type vocabulary deferred to v0.2 — see `cap_vocabulary` stub below
         params: object               # caller-defined per cap type
     reason: string
     source: string
+
+# Cap-type vocabulary v0.2 — STUB. Section reserved so the v0.2
+# proposal lands in-file rather than as a parallel doc; CONTENT is
+# a SpendGuard starter sketch only.
+#
+# @amavashev signaled willingness to author the v0.2 cap-vocab
+# proposal in their review on #98 ("Happy to flesh out a v0.2
+# cap-vocab proposal in a separate thread if useful"). SpendGuard
+# defers the canonical structure to whoever the lead-author ends up
+# being. The two-family starter sketch below records the SpendGuard
+# reading of @amavashev's Q3 response on #98 (`degrade.route_to` is
+# categorically distinct from cap-narrowing) — the lead may keep,
+# restructure, or scrap it.
+cap_vocabulary:
+  status: stub_pending_proposal
+  normative_force: descriptive_only_pending_convergence
+  introduced_by: "#98 (Cycles review, @amavashev — Q3 cap-vocab response)"
+
+  # Starter sketch only; the lead-author decides the actual structure.
+  starter_sketch:
+    families:
+      - id: narrow
+        intent: |
+          Caps that constrain the original action surface without
+          redirecting. The original action still targets its
+          declared route / model / tool; the caps reduce what
+          that action may do.
+      - id: redirect
+        intent: |
+          Caps that substitute the action's target route / model
+          / tool. The original action does not run against its
+          declared target; it runs against the substitute.
+    rationale: |
+      Receipt-layer auditability. "Action ran with narrowed
+      capacity X" and "action was redirected to Y" are
+      categorically different events. Splitting at family level
+      avoids forcing every receipt consumer to re-derive intent
+      by inspecting a cap-type discriminator after the fact.
+
+  # Load-bearing decisions intentionally left unspecified in this
+  # stub. Listed so the lead-author has a complete-enough surface
+  # to react to.
+  decisions_owed_to_lead:
+    - exhaustive cap membership per family (which existing implementer caps land in `narrow`, which in `redirect`, which split off into new families)
+    - namespacing convention (`narrow.<cap>` / `redirect.<cap>` prefix vs sibling enums vs another shape)
+    - receipt-layer obligations (must `family` appear in emitted events, or only the resolved cap type?)
+    - whether `redirect`-family receipts carry observability fields (was the substitute route reached, what was its actual cost) at the canonical layer or stay implementation-defined
+    - family membership for unclassified caps (priority-bump, model-fallback, tool-retry shapes)
+    - how a runtime that exposes BOTH families' caps in a single decision composes them at the wire
 
 # Verb status convention follows vocabulary.yaml: `candidate` = two
 # production implementations under this canonical name (allowing for

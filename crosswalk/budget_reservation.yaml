@@ -36,9 +36,8 @@ upstream_references:
   - https://github.com/aeoess/agent-passport-system/issues/25
 
 # Decision shape returned from `reserve` or any budget pre-check.
-# v0.1 freezes the three outcome values. v0.2 codifies the cap-type
-# vocabulary; the proposed split (narrow.* vs redirect.*) is captured
-# in the `cap_vocabulary` section below pending convergence.
+# v0.1 freezes the three outcome values; v0.2 codifies the cap-type
+# vocabulary after a third production implementation surfaces.
 decision_shape:
   values:
     - ALLOW
@@ -47,75 +46,10 @@ decision_shape:
   ALLOW_WITH_CAPS_structure:
     allowed: boolean
     caps:
-      - type: string                 # see `cap_vocabulary` section below for v0.2 family split
+      - type: string                 # cap-type vocabulary deferred to v0.2
         params: object               # caller-defined per cap type
     reason: string
     source: string
-
-# Cap-type vocabulary — proposed split for v0.2 freeze.
-#
-# Per @amavashev's review on #98: caps that NARROW the original
-# action surface are categorically distinct from caps that REDIRECT
-# the action to a substitute route. Collapsing both under a single
-# `caps[].type` namespace forces every receipt consumer to inspect
-# a cap-type discriminator after the fact to learn what happened;
-# splitting at the family level makes the audit distinction
-# load-bearing at receipt-emit time:
-#
-#   - family: narrow  → "the action ran with narrowed capacity X"
-#   - family: redirect → "the action was redirected to Y"
-#
-# Section sits at `proposed` until v0.2 freeze. Convergence pending
-# Cycles + SpendGuard alignment on family membership for any caps
-# not yet listed.
-cap_vocabulary:
-  status: proposed
-  normative_force: descriptive_only_pending_convergence
-  introduced_by: "#98 (Cycles review, @amavashev)"
-
-  families:
-
-    narrow:
-      semantics: |
-        Constrains the action surface without redirecting. The
-        original action still targets its declared route / model
-        / tool; the caps reduce what that action may do.
-      caps:
-        - narrow.max_tokens
-        - narrow.max_steps_remaining
-        - narrow.tool_allowlist
-        - narrow.tool_denylist
-        - narrow.cooldown_ms
-      implementers: [cycles]
-      canonical_ref: "cycles-protocol-v0.yaml L682-714 (Caps schema)"
-
-    redirect:
-      semantics: |
-        Substitutes the action's target route / model / tool with
-        an alternative. The original action does not run against
-        its declared target; it runs against the substitute.
-      caps:
-        - redirect.route_to
-        - redirect.model_to            # proposed; pending convergence
-      implementers: [spendguard]
-      canonical_ref: |
-        SpendGuard ALLOW_WITH_CAPS.degrade.route_to (sdk-v0.4.0).
-
-  receipt_distinction: |
-    The split is load-bearing for receipt-layer auditability.
-    Consumers SHOULD branch on `family` at receipt-emit time
-    rather than re-derive intent by inspecting a cap-type
-    discriminator after the fact.
-
-  open_questions:
-    - |
-      Family membership for caps not yet listed (e.g. should a
-      `priority_bump` cap be narrow.*, redirect.*, or its own
-      family?). Tracked for v0.2 freeze.
-    - |
-      Whether redirect.* receipts carry observability fields
-      (substitute route reached? substitute cost?) at the canonical
-      layer, or stay implementation-defined.
 
 # Verb status convention follows vocabulary.yaml: `candidate` = two
 # production implementations under this canonical name (allowing for
@@ -584,7 +518,5 @@ stewardship:
 #   2. Each `proposed` verb gains a second implementer.
 #   3. Each `proposed` lifecycle profile gains a second implementer
 #      (or both consolidate into a single canonical profile).
-#   4. `cap_vocabulary` reaches family-membership convergence for
-#      caps not yet listed.
 # On promotion, file moves to the standard signal_types shape and
 # enters full validator coverage.

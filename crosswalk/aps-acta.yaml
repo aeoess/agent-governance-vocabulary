@@ -53,7 +53,25 @@ maintainer:
   github: aeoess
   author: Tymofii Pidlisnyi
   contact: signal@aeoess.com
-  acta_side_review_pending: tomjwxf
+
+normative_status: non_normative          # documents structural correspondence; confers no canonical vocabulary term
+validation_status: manually_reviewed_pending_schema   # pairwise_composition validator schema tracked separately; warn-skip is NOT validation
+concurrence:
+  aps_side:
+    reviewer: aeoess
+    status: authored
+  acta_side:
+    reviewer: tomjwxf
+    status: concurred
+    concurrence_ref: https://github.com/aeoess/agent-governance-vocabulary/pull/55#issuecomment-4608756449
+    note: >-
+      Concurred on ACTA-side v0.1 mappings at head ccd652b. The
+      composition_boundary block was added after concurrence as a faithful
+      encoding of the concurrence language (content-hash reference, no
+      re-sign, native ACTA validity, revocation no_mapping, selective
+      disclosure divergent-but-composable); the 14 mappings are unchanged.
+      Encoding re-confirm requested on the post-edit head.
+  review_cadence: re-review on either side's version bump (calibrated versions in header)
 
 spec_refs:
   aps:
@@ -96,12 +114,41 @@ strategic_posture: |
     namespace per ACTA's namespace convention
     (`@veritasacta/protocol` docs/governance.md §Namespace Rules).
 
-  - The single biggest interop subtlety is canonicalization. APS
-    legacy `canonicalize` strips nulls; ACTA does not. APS
+  - Canonicalization is not a subtlety here, it is a composition
+    hazard. APS legacy `canonicalize` strips nulls; ACTA does not. APS
     `canonicalizeJCS` (RFC 8785) does not enforce ASCII keys; ACTA
     requires all object keys to contain only printable ASCII
-    (0x20–0x7E). A receipt that round-trips bit-identically across
-    both stacks must restrict inputs to "ASCII keys, no nulls."
+    (0x20-0x7E). A receipt round-trips bit-identically only for the
+    restricted input set "ASCII keys, no nulls"; outside that set the
+    composition is lossy and MUST reject. See `composition_boundary`
+    below for the normative boundary on what does and does not compose.
+
+# Composition boundary (added per adversarial review 2026-06-02).
+# Structural composition only. Not an interoperability guarantee.
+composition_boundary:
+  outer_receipt_does_not_re_sign_inner: true
+  inner_validity_remains_native: true
+  aps_cascade_revocation_not_inherited_by_acta: true
+  acta_selective_disclosure_not_modified_by_aps: true
+  aps_delegation_semantics_not_inherited_by_acta: true
+  x_aps_fields_are_extension_only: true
+  no_runtime_enforcement_claimed: true
+  canonicalization_mismatch_is_lossy: |
+    APS permits UTF-8 object keys and (legacy canonicalize) strips
+    nulls; ACTA requires printable-ASCII keys (0x20-0x7E) and does not
+    strip nulls. An APS receipt with non-ASCII keys carried into an
+    ACTA envelope per the pathways above is rejected or has fields
+    dropped ACTA-side, which BREAKS the signature over the APS
+    delegation chain. A bit-identical round-trip is defined only for
+    the restricted input set "ASCII keys, no nulls"; outside that set
+    the composition is lossy and MUST reject.
+  warning: |
+    This crosswalk documents structural composition only. It does not
+    assert that APS revocation, delegation, or enforcement semantics
+    are inherited by ACTA receipts, or that ACTA selective-disclosure
+    semantics are inherited by APS receipts. Following the composition
+    pathways with inputs outside "ASCII keys, no nulls" produces broken
+    cryptographic verification, not a valid composed receipt.
 
 # ─────────────────────────────────────────────────
 # MAPPINGS — each row is one APS↔ACTA correspondence.

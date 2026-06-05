@@ -260,7 +260,7 @@ reservation_lifecycle:
 
     minimal:
       implementers: [cycles]
-      canonical_ref: "cycles-protocol-v0.yaml L797-799 (ReservationState)"
+      canonical_ref: "cycles-protocol-v0.yaml L799 (ReservationStatus)"
       grace_handling: |
         Grace is an HTTP-410 boundary contract, not a state. The
         reservation stays ACTIVE through `expires_at_ms +

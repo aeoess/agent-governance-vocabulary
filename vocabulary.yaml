@@ -180,6 +180,79 @@ signal_types:
       governed_action_class: publish
       measurement_point: mutation_boundary
 
+  cognitive_attestation:
+    status: proposed
+    proposed_by: ["AEOESS"]
+    definition: >
+      Signed commitment to a structural property of an agent's reasoning
+      state at decision time, under a declared reduction map and
+      faithfulness scope. Answers: what cognitive content did the agent
+      commit to using at this decision, and at what determinability class?
+      Distinct from reasoning_integrity (scoped to actions, wallet-agnostic)
+      and governance_attestation (attests that a declared governance
+      requirement was satisfied). cognitive_attestation attests to what
+      was reasoned over, not whether a policy passed.
+    issuers_in_production: []
+    notes: |
+      AEOESS-authored vocabulary primitive. Long-form rationale at
+      `docs/proposed/cognitive-attestation.md` (PR #93). Builds on the
+      Target Determinability framework by @schchit (Yuqiang Wang, JEP);
+      see origin thread aaif/project-proposals#14 comments 2026-04-23
+      and 2026-04-24. The framework remains @schchit's work; the
+      signal_type specification and the v0.1 taxonomy are AEOESS
+      contributions. The determinability criterion grounds what makes
+      an attestation faithful under a reduction map; the signal_type
+      specifies how that criterion surfaces in the vocabulary.
+
+      Specification references:
+        - Zenodo records/19646276; SSRN doi:10.2139/ssrn.6677441
+          (Pidlisnyi 2026, "Cognitive Attestation: Signing Interpretable
+          Decompositions of Latent Model State in AI Agent Governance")
+        - Zenodo records/19678205 (@schchit 2026, "Target Determinability
+          under Partial Causal Observation: A Faithful Reduction
+          Framework")
+
+      Three v0.1 determinability classes, ordered by strength of
+      commitment but not a hierarchy of correctness. The classes are
+      different attestor-verifier contracts:
+        - precondition_set: attestation commits to which preconditions
+          were available at decision time (delegation scope, policy
+          constraints, tool availability, context window).
+        - candidate_set: attestation commits to which candidate actions
+          were evaluated and which were eliminated, with elimination
+          reasons.
+        - decision_path: attestation commits to the chosen path with
+          confidence and the structured reasoning that selected it.
+
+      A signal entry carries exactly one class per envelope. Multiple
+      envelopes may compose to cover multiple classes across a session.
+
+      v0.1 schema gap: the vocabulary does not carry (F, Ω, D) at the
+      envelope level, where (F, Ω, D) refers to the reduction map,
+      faithfulness scope, and determinability class fields. A bare
+      cognitive_attestation value without the qualifier sees a
+      less-rigorous claim than the determinability criterion strictly
+      requires. Structural support for (F, Ω, D) in signed envelopes
+      is future work outside v0.1 scope.
+
+      v0.2 deferred class: pre_commit_chain (chained pre-commitments
+      emitted during reasoning, before the final decision is signed).
+      Depends on tighter integration with model generation loops than
+      current SDK/model interfaces support.
+
+      Single proposer as of 2026-05-26. Status stays proposed until a
+      second independent implementation surfaces, per CONTRIBUTING.md
+      2-implementation threshold.
+
+    descriptor_dimensions:
+      enforcement_class: advisory
+      validity_temporal: at_issuance
+      refusal_authority: consumer_policy
+      invariant_survival: post_action
+      replay_class: fingerprint_only
+      governed_action_class: publish
+      measurement_point: mutation_boundary
+
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS (per @QueBallSharken)
 # Each canonical term carries descriptor metadata answering concrete governance questions.

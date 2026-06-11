@@ -22,7 +22,7 @@
 # strategic_posture below.
 #
 # This crosswalk is calibrated against:
-#   - APS:  agent-passport-system @ 2.6.0-alpha.9 (npm), src/index.ts
+#   - APS:  agent-passport-system @ 2.6.0 (npm), src/index.ts
 #   - ACTA: @veritasacta/artifacts @ 0.2.2 (SPEC.md, 349 lines)
 #           @veritasacta/protocol @ 0.1.1
 #           @veritasacta/verify @ 0.6.1 (engines/{ed25519-receipt,

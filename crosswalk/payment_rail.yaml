@@ -129,6 +129,11 @@ protocol_layers:
 
 verbs:
 
+  normative_force: descriptive_only_pending_convergence
+  # Content is descriptive until each protocol's verb mapping gains a
+  # second independent implementer; tracks content force, not the
+  # section's promotion lifecycle (see top-level `status`).
+
   charge:
     canonical_meaning: >
       Initiate a payment — the operation that starts money moving from

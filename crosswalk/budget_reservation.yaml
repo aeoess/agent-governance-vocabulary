@@ -501,10 +501,6 @@ stewardship:
     org: aeoess
     posture: stewarded-public
     license: Apache-2.0
-  donation_trajectory:
-    target: AAIF
-    proposal: https://github.com/aaif/project-proposals/issues/14
-    state: in CA review
   # Observed parallel work; convergence pending engagement.
   forward_watch:
     - https://github.com/x402-foundation/x402/issues/2176

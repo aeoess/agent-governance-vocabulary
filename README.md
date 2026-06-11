@@ -1,8 +1,44 @@
 # Agent Governance Vocabulary
 
-Canonical names for governance primitives across multi-issuer agent ecosystems.
+Every agent-governance system names its own primitives. MolTrust issues a "Swarm Intelligence Trust Score." Other systems publish "trust attestations," "scope profiles," "reputation grades." A verifier consuming signals from three systems has to learn three vocabularies just to discover that two of them mean the same thing, or worse, that two identical labels mean different things.
 
-**Precedent:** IANA JWT claim registry, JSON-LD `@context`. Each system keeps its internal code. This repo provides shared reference + per-system crosswalks.
+This repo is the shared reference that fixes the naming problem without asking anyone to rename anything. One canonical vocabulary, one crosswalk file per system, and a match type on every row that says exactly how close the mapping is.
+
+## What a row looks like
+
+From `crosswalk/moltrust.yaml`:
+
+```yaml
+behavioral_trust:
+  canonical: behavioral_trust
+  internal: "Swarm Intelligence Trust Score (Phase 2)"
+  match: exact
+  signed_payload_fields: [did, trust_score, grade, endorser_count, flags, flag_count, breakdown]
+```
+
+One line of meaning: when MolTrust signs a Swarm Intelligence Trust Score, a verifier can treat it as the canonical `behavioral_trust` signal, and these are the fields the signature covers.
+
+The registry documents differences as carefully as matches. InsumerAPI's crosswalk maps `behavioral_trust` as `no_mapping`: InsumerAPI does not issue that signal, and the row says so instead of stretching a similar label to fit. Five match types carry this honesty: `exact`, `structural`, `partial`, `non_equivalent_similar_label`, `no_mapping`. The last two exist because false equivalence is the failure mode this layer prevents.
+
+## How the pieces fit
+
+```mermaid
+flowchart TD
+    C1["crosswalk/moltrust.yaml"] --> V["vocabulary.yaml<br/>15 canonical signal types<br/>7 descriptor dimensions"]
+    C2["crosswalk/insumerapi.yaml"] --> V
+    C3["crosswalk/your-system.yaml"] --> V
+    V --> D["Verifiers and tooling<br/>compose signals across systems<br/>without learning each one's dialect"]
+```
+
+Current corpus: 32 crosswalk files from independent contributors, mapped against 15 canonical signal types. The full system-by-signal grid is at [`docs/generated/crosswalk-matrix.md`](./docs/generated/crosswalk-matrix.md).
+
+**Precedent:** the IANA JWT claim registry and JSON-LD `@context`. Each system keeps its internal code and its production envelope values. This repo provides the shared reference and the per-system mappings.
+
+## Who this is for
+
+- **Building a verifier or gateway** that consumes signals from more than one issuer: read `vocabulary.yaml` for the canonical names, then the crosswalk for each system you accept.
+- **Running a system that issues governance signals**: open a PR adding `crosswalk/<your-system>.yaml`. Partial and non-equivalent rows are encouraged; this layer exists to clarify differences, not hide them.
+- **Writing a spec or standard** that references governance signal classes: cite the canonical names so implementations converge on one vocabulary instead of inventing a parallel one.
 
 ## Status
 

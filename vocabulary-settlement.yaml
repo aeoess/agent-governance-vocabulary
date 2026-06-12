@@ -5,8 +5,8 @@
 # descriptive while the verb set has a single owned definition
 # surface.
 #
-# Verb definitions are copied verbatim from the canonical_meaning
-# fields in the verbs block of PR #100's crosswalk/payment_rail.yaml
+# Verb definitions follow the canonical_meaning
+# fields in the verbs block (punctuation normalized) of PR #100's crosswalk/payment_rail.yaml
 # (PR head 0287779).
 #
 # prior_art_anchors entries are anchors only: named prior art or a
@@ -17,13 +17,13 @@
 
 status: INCUBATING
 normative_force: descriptive_only_pending_convergence
-proposed_by: "@Ectsang (goodmeta) — PR #100"
+proposed_by: "@Ectsang (goodmeta), PR #100"
 
 verbs:
 
   charge:
     definition: >-
-      Initiate a payment — the operation that starts money moving from
+      Initiate a payment: the operation that starts money moving from
       payer to payee.
     prior_art_anchors:
       - "Stripe PaymentIntents authorize/capture/refund lifecycle: https://docs.stripe.com/payments/paymentintents/lifecycle"
@@ -69,5 +69,6 @@ boundary_note: >-
   the rail. An enforcement-layer hold (budget_reservation.reserve) is a
   spend-authority hold in the ledger. A reserve token appearing at the
   settlement layer names the fund hold, never the budget hold.
-  Precedent: google-agentic-commerce/AP2#252 renamed authorize to
+  Precedent: google-agentic-commerce/AP2#252 (open PR; its current
+  head already carries the rename) proposes renaming authorize to
   reserve on the budget side to escape exactly this collision.

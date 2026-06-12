@@ -32,7 +32,7 @@ status: INCUBATING
 
 upstream_references:
   - https://github.com/agentic-commerce-protocol/agentic-commerce-protocol/issues/231
-  - https://github.com/google-agentic-commerce/AP2/issues/252
+  - https://github.com/google-agentic-commerce/AP2/pull/252
   - https://github.com/aeoess/agent-passport-system/issues/25
 
 # Decision shape returned from `reserve` or any budget pre-check.

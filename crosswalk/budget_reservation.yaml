@@ -115,6 +115,14 @@ verbs:
       `authorize` (Ectsang-confirmed, pre-AP2#252-merge state). Post
       AP2#252 the goodmeta verb renames to `reserve`; tracked for
       follow-up PR per Ectsang.
+
+      Evidence-basis annotation (2026-06-12): the goodmeta leg of the
+      2026-05-13 promotion rested on principal attestation (Ectsang
+      LGTM, PR #91), which under the Evidence standards section of
+      CONTRIBUTING.md (adopted 2026-06-12) no longer counts toward
+      promotion arithmetic. The promotion is grandfathered pre-rule;
+      reverify_by: 2026-09-10; status upgrades to rule-conformant on a
+      public artifact or counterparty attestation for the goodmeta leg.
     definition: >-
       Hold capacity against delegation budget without spending.
       Returns reservation_id and expires_at. Headroom allocated,

@@ -123,6 +123,30 @@ Every PR is evaluated against five questions, applied to every contributor equal
 
 ---
 
+## Evidence standards
+
+Crosswalk cells carry one of two evidence bases, stated explicitly.
+
+Publicly verifiable: the implementation is open source or has a public stable
+artifact (spec, changelog, API reference). Cells pin to an immutable ref
+(commit SHA, release tag, or dated document URL).
+
+Principal attestation: the implementer's own maintainer confirms the cell and
+no public artifact exists. The cell carries verification_method:
+principal_attestation, verified_at, and reverify_after fields.
+
+Both bases may populate cells. Promotion arithmetic (for example the
+two-implementation candidate threshold) counts only publicly verifiable
+implementations or independent counterparty attestations. A counterparty
+attestation means: a publicly identifiable party other than the principal,
+posting publicly in the registry's issues or PRs (never relayed by the
+principal), with their relationship to the implementer disclosed, attesting
+they integrated against the claimed behavior and observed it. Principal-only
+attestations are visible but weightless for promotion. There are no
+time-based unlocks; elapsed time is not evidence.
+
+---
+
 ## Licensing
 
 - **Repository:** Apache License 2.0 (see [`LICENSE`](./LICENSE))

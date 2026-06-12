@@ -1,0 +1,73 @@
+# vocabulary-settlement.yaml
+#
+# Maintainer-governed canonical settlement verb set; proposed by
+# @Ectsang in PR #100; governed here so the crosswalk stays
+# descriptive while the verb set has a single owned definition
+# surface.
+#
+# Verb definitions are copied verbatim from the canonical_meaning
+# fields in the verbs block of PR #100's crosswalk/payment_rail.yaml
+# (PR head 0287779).
+#
+# prior_art_anchors entries are anchors only: named prior art or a
+# public URL for orientation. No claim of equivalence is made between
+# a canonical verb and an anchored operation.
+#
+# License: Apache-2.0. Copyright 2024-2026 Tymofii Pidlisnyi.
+
+status: INCUBATING
+normative_force: descriptive_only_pending_convergence
+proposed_by: "@Ectsang (goodmeta) — PR #100"
+
+verbs:
+
+  charge:
+    definition: >-
+      Initiate a payment — the operation that starts money moving from
+      payer to payee.
+    prior_art_anchors:
+      - "Stripe PaymentIntents authorize/capture/refund lifecycle: https://docs.stripe.com/payments/paymentintents/lifecycle"
+      - "ISO 8583 message-class conventions"
+
+  authorize:
+    definition: >-
+      Pre-approve a payment without moving money. Reserves funds or
+      creates a binding commitment that a future charge will succeed.
+    prior_art_anchors:
+      - "Stripe PaymentIntents authorize/capture/refund lifecycle: https://docs.stripe.com/payments/paymentintents/lifecycle"
+      - "ISO 8583 message-class conventions"
+      - "x402 auth-capture scheme (exact/upto/auth-capture/batch-settlement): https://github.com/x402-foundation/x402"
+
+  settle:
+    definition: >-
+      Finalize a previously authorized payment. Move money from payer
+      to payee. Distinct from charge only when a separate authorize
+      step preceded it.
+    prior_art_anchors:
+      - "Stripe PaymentIntents authorize/capture/refund lifecycle: https://docs.stripe.com/payments/paymentintents/lifecycle"
+      - "ISO 8583 message-class conventions"
+      - "x402 auth-capture scheme (exact/upto/auth-capture/batch-settlement): https://github.com/x402-foundation/x402"
+
+  refund:
+    definition: >-
+      Return funds to payer after settlement. Partial or full reversal
+      of a completed charge.
+    prior_art_anchors:
+      - "Stripe PaymentIntents authorize/capture/refund lifecycle: https://docs.stripe.com/payments/paymentintents/lifecycle"
+      - "ISO 8583 message-class conventions"
+      - "x402 auth-capture scheme (exact/upto/auth-capture/batch-settlement): https://github.com/x402-foundation/x402"
+
+  query:
+    definition: >-
+      Check the current state of a payment or checkout session.
+    # No prior_art_anchors: the anchor set for this file (Stripe
+    # PaymentIntents lifecycle, ISO 8583 message-class conventions,
+    # x402 schemes) carries no clean state-query analog.
+
+boundary_note: >-
+  A settlement-layer hold (payment_rail.authorize) is a fund hold at
+  the rail. An enforcement-layer hold (budget_reservation.reserve) is a
+  spend-authority hold in the ledger. A reserve token appearing at the
+  settlement layer names the fund hold, never the budget hold.
+  Precedent: google-agentic-commerce/AP2#252 renamed authorize to
+  reserve on the budget side to escape exactly this collision.

@@ -149,10 +149,12 @@ verbs:
       Return unspent reservation to budget before commit. Pre-commit
       only. Reservation cancelled, headroom restored.
     implementations:
-      goodmeta: '-'                  # not first-class; folded into refund
+      goodmeta: release
       cycles: release
     notes: |
-      One production implementation (cycles). Pre-commit audit state.
+      Two production implementations (cycles, goodmeta). goodmeta added
+      first-class `release` in v0.5 (POST /v1/release), distinct from
+      post-commit `refund`. Pre-commit audit state.
       Profile note: implementations declaring the `ledger-fidelity`
       profile carry both `release` and `refund` first-class; the
       `minimal` profile carries one.

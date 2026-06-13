@@ -27,7 +27,7 @@
 # License: Apache-2.0. Copyright 2024-2026 Tymofii Pidlisnyi.
 
 crosswalk_type: domain_incubation
-verified_at: 2026-06-11
+verified_at: 2026-06-13
 status: INCUBATING
 
 upstream_references:
@@ -75,12 +75,41 @@ cap_vocabulary:
   supersedes: "#106 (SpendGuard starter-sketch stub)"
   lead_author: "@amavashev (Cycles, runcycles.io)"
 
+  # `family` is CLASSIFICATION METADATA ONLY. Consumers MUST NOT infer
+  # enforcement behavior solely from family membership — it describes how an
+  # audit consumer reads a cap (narrowed-surface vs redirected-target), not a
+  # runtime contract. This is what keeps `receipt_obligation.family_on_wire:
+  # not_required` honest: without it the registry quietly becomes runtime
+  # infrastructure that consumers pin at different versions, and version skew
+  # turns into divergent classification with no failure signal.
+  classification_only: >
+    family is classification metadata only; consumers MUST NOT infer
+    enforcement behavior solely from family membership.
+
+  # A new cap family requires TWO independently implemented examples OR an
+  # explicit incubation rationale recorded in-file.
+  minting_rule: >
+    new cap families require two independently implemented examples or an
+    explicit incubation rationale.
+
+  # narrow / redirect are the FOUNDING axis pair — minted together to define
+  # the receipt-consumer axis. That is what legitimizes `redirect` carrying a
+  # single current member (`model_alias`): it is half the founding axis, NOT a
+  # new single-member family seeking minting. `temperature` WOULD be exactly
+  # such a new family (a `tune.*` axis), so it stays unclassified until a
+  # second tuning implementer converges — the asymmetry is intentional.
+  founding_axis: [narrow, redirect]
+
+  # Sources pinned to commit SHA + locator (same standard #100 applies to
+  # payment_rail) so `grounded_in` does not reference moving file heads.
   grounded_in:
     - implementer: Cycles
-      source: "cycles-protocol-v0.yaml#/components/schemas/Caps (L694-713)"
+      source: "cycles-protocol-v0.yaml#/components/schemas/Caps"
+      pinned: "runcycles/cycles-protocol@62146e1 — cycles-protocol-v0.yaml L818-851"
       ref: https://github.com/aeoess/agent-passport-system/issues/25
     - implementer: SpendGuard
       source: "agentic-spendguard docs/contract-dsl-spec-v1alpha1.md §11 (degrade effect mutation_kinds)"
+      pinned: "m24927605/agentic-spendguard@8519814 — docs/contract-dsl-spec-v1alpha1.md §11"
       ref: https://github.com/aeoess/agent-governance-vocabulary/issues/98
 
   # Decision 2 — namespacing. A `family` DISCRIMINATOR carried as
@@ -201,12 +230,29 @@ cap_vocabulary:
         narrow: most_restrictive_wins   # intersect bounds; a non-empty allowlist overrides a denylist (Cycles precedence)
       cross_family:
         status: live
+        # NOT a universal execution-order rule. "redirect before narrow" is
+        # DESCRIPTIVE of the cited implementations only: a runtime that treats
+        # alias resolution as policy routing can coherently evaluate
+        # narrow-first, and the two orders produce different outcomes on the
+        # same bytes. Consuming specifications adopt the order EXPLICITLY; the
+        # registry does not impose it. The mutation_kinds were verified
+        # byte-level but their execution order was NOT, so the order is
+        # recorded as a proposed interpretation until a SpendGuard spec
+        # revision fixes it normatively.
+        order: proposed_interpretation
+        order_rule_scope: descriptive_of_cited_implementations
+        unclassified_composition: >
+          composition over unclassified caps (e.g. temperature) is
+          implementation-defined; absent an implementer-stated order it falls
+          back to wire order.
         worked_example: >
           SpendGuard's single `degrade` decision can mutate BOTH a narrow
           kind (max_output_tokens) AND a redirect kind (model_alias) at
-          once. Canonical rule: classify and apply per mutation-kind —
-          redirect resolves first (it determines what will actually run),
-          then narrow constrains the substituted action.
+          once. Proposed interpretation (NOT a universal rule): classify and
+          apply per mutation-kind — redirect resolves first (it determines
+          what will actually run), then narrow constrains the substituted
+          action. A consuming spec that adopts a different order is conformant
+          so long as it states the order it uses.
 
 # Verb status convention follows vocabulary.yaml: `candidate` = two
 # production implementations under this canonical name (allowing for

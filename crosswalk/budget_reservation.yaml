@@ -100,14 +100,18 @@ cap_vocabulary:
   # second tuning implementer converges — the asymmetry is intentional.
   founding_axis: [narrow, redirect]
 
-  # Sources pinned to commit SHA + locator (same standard #100 applies to
-  # payment_rail) so `grounded_in` does not reference moving file heads.
+  # Both groundings are PUBLICLY VERIFIABLE per CONTRIBUTING.md "Evidence
+  # standards": each is an open-source repo pinned to an immutable commit SHA +
+  # locator (not a moving file head), so a reviewer can re-verify byte-level.
+  # Neither rests on principal attestation.
   grounded_in:
     - implementer: Cycles
+      verification_method: publicly_verifiable
       source: "cycles-protocol-v0.yaml#/components/schemas/Caps"
       pinned: "runcycles/cycles-protocol@62146e1 — cycles-protocol-v0.yaml L818-851"
       ref: https://github.com/aeoess/agent-passport-system/issues/25
     - implementer: SpendGuard
+      verification_method: publicly_verifiable
       source: "agentic-spendguard docs/contract-dsl-spec-v1alpha1.md §11 (degrade effect mutation_kinds)"
       pinned: "m24927605/agentic-spendguard@8519814 — docs/contract-dsl-spec-v1alpha1.md §11"
       ref: https://github.com/aeoess/agent-governance-vocabulary/issues/98

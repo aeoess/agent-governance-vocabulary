@@ -713,13 +713,30 @@ stewardship:
     - https://github.com/x402-foundation/x402/issues/2176
     - https://github.com/second-state/payment-skill/issues/31
 
-# Promotion path. File promotes from `domain_incubation` to canonical
-# when:
-#   1. A third production implementation of the budget-reservation domain
-#      surfaces (x402-foundation/x402#2176, OpenClaw SpendEnvelope at
-#      second-state/payment-skill#31, or a new entrant).
-#   2. Each `proposed` verb gains a second implementer.
-#   3. Each `proposed` lifecycle profile gains a second implementer
-#      (or both consolidate into a single canonical profile).
-# On promotion, file moves to the standard signal_types shape and
-# enters full validator coverage.
+# Promotion path — codified as the required `promotion_criteria:` field below
+# (CONTRIBUTING `domain_incubation` gate). Conditions are all-of: every one
+# must hold before the file leaves incubation.
+promotion_criteria:
+  # All-of: every condition must hold before the file leaves incubation.
+  conditions:
+    - id: third_production_implementation
+      condition: >-
+        A third production implementation of the budget-reservation domain
+        surfaces beyond Cycles and goodmeta (candidates:
+        x402-foundation/x402#2176, OpenClaw SpendEnvelope at
+        second-state/payment-skill#31, or a new entrant).
+    - id: proposed_verbs_second_implementer
+      condition: >-
+        Each `proposed` verb gains a second independent implementer.
+    - id: proposed_lifecycle_profiles_second_implementer
+      condition: >-
+        Each `proposed` lifecycle profile gains a second implementer, or the
+        profiles consolidate into a single canonical profile.
+    - id: cap_vocabulary_convergence
+      condition: >-
+        The v0.2 `cap_vocabulary` narrow/redirect families gain >=2 independent
+        implementations that agree on the cap shapes (the block is
+        `descriptive_only_pending_convergence` until then).
+  on_promotion: >-
+    File moves to the standard signal_types shape and enters full validator
+    coverage.

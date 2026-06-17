@@ -119,6 +119,41 @@ function validateDomainIncubation(doc, file) {
     err(file, 'domain_incubation requires verified_at field')
     return
   }
+
+  // verified_at may be EITHER a scalar ISO 8601 date (original form) OR a
+  // per-system map whose every value is a parseable ISO 8601 date, for a
+  // crosswalk that incubates several systems verified on different dates
+  // (e.g. payment_rail: { x402: <date>, ap2: <date>, ... }). The map is the
+  // more-truthful shape. The 90-day sunset is measured from the EARLIEST
+  // per-system date, so the file is only as fresh as its stalest column.
+  if (typeof doc.verified_at === 'object'
+      && !(doc.verified_at instanceof Date)
+      && !Array.isArray(doc.verified_at)) {
+    const entries = Object.entries(doc.verified_at)
+    if (entries.length === 0) {
+      err(file, 'domain_incubation verified_at map is empty; needs at least one system date')
+      return
+    }
+    let earliestMs = Infinity
+    let bad = false
+    for (const [sysKey, val] of entries) {
+      // js-yaml parses bare ISO dates into Date objects; accept Date or string.
+      const ms = Date.parse(val instanceof Date ? val.toISOString() : val)
+      if (Number.isNaN(ms)) {
+        err(file, `domain_incubation verified_at.${sysKey} "${val}" is not a parseable ISO 8601 date`)
+        bad = true
+        continue
+      }
+      if (ms < earliestMs) earliestMs = ms
+    }
+    if (bad) return
+    if (earliestMs + DOMAIN_INCUBATION_SUNSET_MS < Date.now()) {
+      err(file, 'file is past 90-day sunset; re-verify or promote (oldest per-system verified_at)')
+    }
+    return
+  }
+
+  // Scalar path: unchanged.
   const verifiedMs = Date.parse(doc.verified_at)
   if (Number.isNaN(verifiedMs)) {
     err(file, `domain_incubation verified_at "${doc.verified_at}" is not a parseable ISO 8601 date`)

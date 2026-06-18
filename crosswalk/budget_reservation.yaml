@@ -27,7 +27,7 @@
 # License: Apache-2.0. Copyright 2024-2026 Tymofii Pidlisnyi.
 
 crosswalk_type: domain_incubation
-verified_at: 2026-06-02
+verified_at: 2026-06-13
 status: INCUBATING
 
 upstream_references:
@@ -37,7 +37,7 @@ upstream_references:
 
 # Decision shape returned from `reserve` or any budget pre-check.
 # v0.1 freezes the three outcome values; v0.2 codifies the cap-type
-# vocabulary (`cap_vocabulary` stub below, pending lead-author).
+# vocabulary (`cap_vocabulary` below).
 decision_shape:
   values:
     - ALLOW
@@ -46,59 +46,222 @@ decision_shape:
   ALLOW_WITH_CAPS_structure:
     allowed: boolean
     caps:
-      - type: string                 # cap-type vocabulary deferred to v0.2 — see `cap_vocabulary` stub below
+      - type: string                 # native implementer cap key; classified by family — see `cap_vocabulary` below
         params: object               # caller-defined per cap type
     reason: string
     source: string
 
-# Cap-type vocabulary v0.2 — STUB. Section reserved so the v0.2
-# proposal lands in-file rather than as a parallel doc; CONTENT is
-# a SpendGuard starter sketch only.
+# Cap-type vocabulary v0.2 — lead-authored by @amavashev (Cycles),
+# superseding the SpendGuard starter-sketch stub (#106). Descriptive
+# only: a naming layer OVER the cap surfaces two shipping
+# budget_reservation implementers already emit — it renames NO wire
+# field (CONTRIBUTING "Out of scope": the vocabulary does not rename
+# values stamped into signed bytes). Grounded in:
+#   - Cycles    `Caps`    — cycles-protocol-v0.yaml L694-713
+#   - SpendGuard `degrade` — agentic-spendguard contract-dsl-spec-v1alpha1.md §11
 #
-# @amavashev signaled willingness to author the v0.2 cap-vocab
-# proposal in their review on #98 ("Happy to flesh out a v0.2
-# cap-vocab proposal in a separate thread if useful"). SpendGuard
-# defers the canonical structure to whoever the lead-author ends up
-# being. The two-family starter sketch below records the SpendGuard
-# reading of @amavashev's Q3 response on #98 (`degrade.route_to` is
-# categorically distinct from cap-narrowing) — the lead may keep,
-# restructure, or scrap it.
+# Two families on the receipt-consumer axis: a cap that NARROWS the
+# original action surface vs one that REDIRECTS the action to a
+# substitute target are categorically different audit events. The split
+# lets a consumer tell "ran with narrowed capacity X" from "was
+# redirected to Y" without inspecting a cap-type discriminator after
+# the fact. Classification is at MUTATION-KIND granularity: SpendGuard's
+# single `degrade` effect mutates along kinds that do not all share a
+# family, so each kind is classified on its own.
 cap_vocabulary:
-  status: stub_pending_proposal
+  status: proposed
   normative_force: descriptive_only_pending_convergence
   introduced_by: "#98 (Cycles review, @amavashev — Q3 cap-vocab response)"
+  supersedes: "#106 (SpendGuard starter-sketch stub)"
+  lead_author: "@amavashev (Cycles, runcycles.io)"
 
-  # Starter sketch only; the lead-author decides the actual structure.
-  starter_sketch:
-    families:
-      - id: narrow
-        intent: |
-          Caps that constrain the original action surface without
-          redirecting. The original action still targets its
-          declared route / model / tool; the caps reduce what
-          that action may do.
-      - id: redirect
-        intent: |
-          Caps that substitute the action's target route / model
-          / tool. The original action does not run against its
-          declared target; it runs against the substitute.
-    rationale: |
-      Receipt-layer auditability. "Action ran with narrowed
-      capacity X" and "action was redirected to Y" are
-      categorically different events. Splitting at family level
-      avoids forcing every receipt consumer to re-derive intent
-      by inspecting a cap-type discriminator after the fact.
+  # `family` is CLASSIFICATION METADATA ONLY. Consumers MUST NOT infer
+  # enforcement behavior solely from family membership — it describes how an
+  # audit consumer reads a cap (narrowed-surface vs redirected-target), not a
+  # runtime contract. This is what keeps `receipt_obligation.family_on_wire:
+  # not_required` honest: without it the registry quietly becomes runtime
+  # infrastructure that consumers pin at different versions, and version skew
+  # turns into divergent classification with no failure signal.
+  classification_only: >
+    family is classification metadata only; consumers MUST NOT infer
+    enforcement behavior solely from family membership.
 
-  # Load-bearing decisions intentionally left unspecified in this
-  # stub. Listed so the lead-author has a complete-enough surface
-  # to react to.
-  decisions_owed_to_lead:
-    - exhaustive cap membership per family (which existing implementer caps land in `narrow`, which in `redirect`, which split off into new families)
-    - namespacing convention (`narrow.<cap>` / `redirect.<cap>` prefix vs sibling enums vs another shape)
-    - receipt-layer obligations (must `family` appear in emitted events, or only the resolved cap type?)
-    - whether `redirect`-family receipts carry observability fields (was the substitute route reached, what was its actual cost) at the canonical layer or stay implementation-defined
-    - family membership for unclassified caps (priority-bump, model-fallback, tool-retry shapes)
-    - how a runtime that exposes BOTH families' caps in a single decision composes them at the wire
+  # A new cap family requires TWO independently implemented examples OR an
+  # explicit incubation rationale recorded in-file.
+  minting_rule: >
+    new cap families require two independently implemented examples or an
+    explicit incubation rationale.
+
+  # `narrow` is minted on its OWN merits: two independent implementers (Cycles
+  # native `Caps` + SpendGuard `degrade` kinds). `redirect` does NOT yet meet
+  # the minting_rule — it has a single implementer (SpendGuard `model_alias`;
+  # no Cycles cap lands there) — so it is admitted as single-implementer
+  # INCUBATION (see `redirect.axis_status` below) under the explicit
+  # incubation-rationale arm of the minting_rule, NOT exempted by a
+  # founding-pair framing. `temperature` is the closest comparison and is
+  # likewise declined as a single-implementer family (stays unclassified).
+
+  # Both groundings are PUBLICLY VERIFIABLE per CONTRIBUTING.md "Evidence
+  # standards": each is an open-source repo pinned to an immutable commit SHA +
+  # locator (not a moving file head), so a reviewer can re-verify byte-level.
+  # Neither rests on principal attestation.
+  grounded_in:
+    - implementer: Cycles
+      verification_method: publicly_verifiable
+      source: "cycles-protocol-v0.yaml#/components/schemas/Caps"
+      pinned: "runcycles/cycles-protocol@62146e1 — cycles-protocol-v0.yaml L818-851"
+      ref: https://github.com/aeoess/agent-passport-system/issues/25
+    - implementer: SpendGuard
+      verification_method: publicly_verifiable
+      source: "agentic-spendguard docs/contract-dsl-spec-v1alpha1.md §11 (degrade effect mutation_kinds)"
+      pinned: "m24927605/agentic-spendguard@8519814 — docs/contract-dsl-spec-v1alpha1.md §11"
+      ref: https://github.com/aeoess/agent-governance-vocabulary/issues/98
+
+  # Decision 2 — namespacing. A `family` DISCRIMINATOR carried as
+  # crosswalk metadata, NOT a wire-key rename. The canonical cap identity
+  # IS the implementer's native field name (`max_tokens`, `model_alias`),
+  # never `narrow.max_tokens`. CONTRIBUTING "Out of scope" forbids
+  # renaming live signed field values, and these caps ride in signed
+  # receipts/envelopes; `family` is derivable metadata layered over them.
+  namespacing:
+    convention: family_discriminator
+    canonical_key: implementer_native_field_name
+    family_field: family
+    rejected:
+      - "`narrow.<cap>` / `redirect.<cap>` key prefixing — renames signed wire fields (CONTRIBUTING out-of-scope)"
+      - "sibling enums per family — fragments the single cap list implementers already emit"
+
+  # Decision 1 — membership. `narrow` has cross-implementer evidence (Cycles +
+  # SpendGuard); `redirect` currently has one member, SpendGuard `model_alias`,
+  # admitted under the single-implementer incubation rationale (axis_status below).
+  families:
+    narrow:
+      intent: |
+        Caps that constrain the original action surface without
+        redirecting. The action still targets its declared
+        route / model / tool; the caps reduce what it may do.
+      implementers: [Cycles, SpendGuard]
+      members:
+        - cap: max_tokens
+          implementer: Cycles
+          params: { value: { type: integer, min: 0 } }
+          note: caps the token budget the action may consume.
+        - cap: max_steps_remaining
+          implementer: Cycles
+          params: { value: { type: integer, min: 0 } }
+          note: caps remaining agent steps.
+        - cap: tool_allowlist
+          implementer: Cycles
+          params: { value: { type: array, items: string } }
+          note: positive tool filter — only listed tools permitted.
+        - cap: tool_denylist
+          implementer: Cycles
+          params: { value: { type: array, items: string } }
+          note: >
+            negative tool filter — listed tools forbidden. A non-empty
+            allowlist takes precedence (Cycles Caps precedence rules).
+        - cap: cooldown_ms
+          implementer: Cycles
+          params: { value: { type: integer, min: 0 } }
+          note: minimum pacing interval before the next action.
+        - cap: max_output_tokens
+          implementer: SpendGuard
+          via: "degrade.mutation_kinds[max_output_tokens]"
+          params: { value: { type: integer, min: 0 } }
+          note: >
+            caps generated output tokens — corroborates the narrow
+            family from a second independent implementer.
+        - cap: reasoning_effort
+          implementer: SpendGuard
+          via: "degrade.mutation_kinds[reasoning_effort]"
+          params: { value: { type: enum, note: implementer-defined effort levels } }
+          note: lowers the reasoning-effort level on the original action.
+    redirect:
+      intent: |
+        Caps that substitute the action's target route / model / tool.
+        The action does not run against its declared target; it runs
+        against the substitute.
+      implementers: [SpendGuard]
+      # Single-implementer INCUBATION: redirect does not yet meet the
+      # two-implementer minting_rule (only SpendGuard model_alias; no Cycles
+      # cap lands here). It stays a named family under the incubation rationale,
+      # and founds first-class only when a second independent implementer ships
+      # a target-substituting cap.
+      axis_status: incubating
+      single_implementer: true
+      founds_when: a second independent implementer emits a target-substituting (redirect-class) cap
+      review_by: 2026-09-11   # re-verify by the file's domain_incubation sunset
+      members:
+        - cap: model_alias
+          implementer: SpendGuard
+          via: "degrade.mutation_kinds[model_alias]"
+          params: { value: { type: string, note: alias of the substitute model } }
+          note: >
+            substitutes the target model. The illustrative `route_to` /
+            `model_to` names from #98 map to this shipped field.
+          observability:
+            substitute_target: the `model_alias` value (the model actually run)
+            note: >
+              redirect receipts CAN surface the substitute target — it is
+              the cap's own param. Downstream cost / reached-confirmation
+              fields stay implementation-defined until a second redirect
+              implementer converges (decision 4).
+      note: >
+        No Cycles cap lands here — Cycles v0 `Caps` is entirely narrow.
+        SpendGuard's `degrade.model_alias` is the sole current member.
+
+  # Caps outside the narrow/redirect axis. Listed explicitly
+  # (honest-gap) rather than forced into a family.
+  unclassified:
+    - cap: temperature
+      implementer: SpendGuard
+      via: "degrade.mutation_kinds[temperature]"
+      rationale: >
+        A sampling-parameter adjustment — it neither narrows the action
+        surface nor substitutes the target. No `tune.*` family is minted
+        for a single single-implementer member; if parameter-tuning caps
+        converge across implementers, a family can be proposed then.
+
+  # Decisions 3-6.
+  decisions:
+    receipt_obligation:               # decision 3
+      family_on_wire: not_required
+      rationale: >
+        `family` is derivable from cap identity by any consumer of this
+        file; requiring it in signed bytes adds an obligation for a value
+        that is already a pure function of the cap type. Implementers MAY
+        emit it; the canonical layer does not require it for v0.2.
+    redirect_observability:           # decision 4
+      status: partially_grounded
+      grounded: the substitute target is the redirect cap's own param (e.g. the `model_alias` value)
+      deferred: downstream cost / reached-confirmation fields — implementation-defined until a second redirect implementer
+    param_shapes:                     # decision 5
+      basis: implementer_native
+      rationale: >
+        each cap's `params` mirrors its native field type verbatim; no
+        canonical reshaping (descriptive_only).
+    composition:                      # decision 6
+      within_family:
+        narrow: most_restrictive_wins   # intersect bounds; a non-empty allowlist overrides a denylist (Cycles precedence)
+      cross_family:
+        # Intra-decision execution order ACROSS families is intentionally NOT
+        # specified here, and carries NO structured order field. No cited
+        # implementer ships a normative intra-decision order: SpendGuard's §10
+        # defines per-cap MERGE across multiple decisions but is silent on
+        # intra-decision order, and the sidecar emits the mutation patch without
+        # an order guarantee. The mutation_kinds were byte-verified; their
+        # execution order was NOT — so recording an order, even as a proposal,
+        # would describe behavior nobody runs and read as registry content a
+        # consumer could build against. An order will be added later, scoped as
+        # DESCRIPTIVE of a specific SpendGuard spec revision once one fixes it,
+        # pinned to that ref. (Prose only, not a rule: a runtime MAY resolve a
+        # redirect kind before a narrow kind so narrowing applies to the
+        # substituted action — but a consuming spec must state whatever order it
+        # uses; the registry imposes none.)
+        unclassified_composition: >
+          composition over unclassified caps (e.g. temperature) is
+          implementation-defined; absent an implementer-stated order it falls
+          back to wire order.
 
 # Verb status convention follows vocabulary.yaml: `candidate` = two
 # production implementations under this canonical name (allowing for
@@ -563,13 +726,30 @@ stewardship:
     - https://github.com/x402-foundation/x402/issues/2176
     - https://github.com/second-state/payment-skill/issues/31
 
-# Promotion path. File promotes from `domain_incubation` to canonical
-# when:
-#   1. A third production implementation of the budget-reservation domain
-#      surfaces (x402-foundation/x402#2176, OpenClaw SpendEnvelope at
-#      second-state/payment-skill#31, or a new entrant).
-#   2. Each `proposed` verb gains a second implementer.
-#   3. Each `proposed` lifecycle profile gains a second implementer
-#      (or both consolidate into a single canonical profile).
-# On promotion, file moves to the standard signal_types shape and
-# enters full validator coverage.
+# Promotion path — codified as the required `promotion_criteria:` field below
+# (CONTRIBUTING `domain_incubation` gate). Conditions are all-of: every one
+# must hold before the file leaves incubation.
+promotion_criteria:
+  # All-of: every condition must hold before the file leaves incubation.
+  conditions:
+    - id: third_production_implementation
+      condition: >-
+        A third production implementation of the budget-reservation domain
+        surfaces beyond Cycles and goodmeta (candidates:
+        x402-foundation/x402#2176, OpenClaw SpendEnvelope at
+        second-state/payment-skill#31, or a new entrant).
+    - id: proposed_verbs_second_implementer
+      condition: >-
+        Each `proposed` verb gains a second independent implementer.
+    - id: proposed_lifecycle_profiles_second_implementer
+      condition: >-
+        Each `proposed` lifecycle profile gains a second implementer, or the
+        profiles consolidate into a single canonical profile.
+    - id: cap_vocabulary_convergence
+      condition: >-
+        The v0.2 `cap_vocabulary` narrow/redirect families gain >=2 independent
+        implementations that agree on the cap shapes (the block is
+        `descriptive_only_pending_convergence` until then).
+  on_promotion: >-
+    File moves to the standard signal_types shape and enters full validator
+    coverage.

@@ -92,13 +92,14 @@ cap_vocabulary:
     new cap families require two independently implemented examples or an
     explicit incubation rationale.
 
-  # narrow / redirect are the FOUNDING axis pair — minted together to define
-  # the receipt-consumer axis. That is what legitimizes `redirect` carrying a
-  # single current member (`model_alias`): it is half the founding axis, NOT a
-  # new single-member family seeking minting. `temperature` WOULD be exactly
-  # such a new family (a `tune.*` axis), so it stays unclassified until a
-  # second tuning implementer converges — the asymmetry is intentional.
-  founding_axis: [narrow, redirect]
+  # `narrow` is minted on its OWN merits: two independent implementers (Cycles
+  # native `Caps` + SpendGuard `degrade` kinds). `redirect` does NOT yet meet
+  # the minting_rule — it has a single implementer (SpendGuard `model_alias`;
+  # no Cycles cap lands there) — so it is admitted as single-implementer
+  # INCUBATION (see `redirect.axis_status` below) under the explicit
+  # incubation-rationale arm of the minting_rule, NOT exempted by a
+  # founding-pair framing. `temperature` is the closest comparison and is
+  # likewise declined as a single-implementer family (stays unclassified).
 
   # Both groundings are PUBLICLY VERIFIABLE per CONTRIBUTING.md "Evidence
   # standards": each is an open-source repo pinned to an immutable commit SHA +
@@ -130,8 +131,9 @@ cap_vocabulary:
       - "`narrow.<cap>` / `redirect.<cap>` key prefixing — renames signed wire fields (CONTRIBUTING out-of-scope)"
       - "sibling enums per family — fragments the single cap list implementers already emit"
 
-  # Decision 1 — membership. Two families, both populated, with
-  # cross-implementer evidence on each side.
+  # Decision 1 — membership. `narrow` has cross-implementer evidence (Cycles +
+  # SpendGuard); `redirect` currently has one member, SpendGuard `model_alias`,
+  # admitted under the single-implementer incubation rationale (axis_status below).
   families:
     narrow:
       intent: |
@@ -180,6 +182,15 @@ cap_vocabulary:
         The action does not run against its declared target; it runs
         against the substitute.
       implementers: [SpendGuard]
+      # Single-implementer INCUBATION: redirect does not yet meet the
+      # two-implementer minting_rule (only SpendGuard model_alias; no Cycles
+      # cap lands here). It stays a named family under the incubation rationale,
+      # and founds first-class only when a second independent implementer ships
+      # a target-substituting cap.
+      axis_status: incubating
+      single_implementer: true
+      founds_when: a second independent implementer emits a target-substituting (redirect-class) cap
+      review_by: 2026-09-11   # re-verify by the file's domain_incubation sunset
       members:
         - cap: model_alias
           implementer: SpendGuard
@@ -233,30 +244,24 @@ cap_vocabulary:
       within_family:
         narrow: most_restrictive_wins   # intersect bounds; a non-empty allowlist overrides a denylist (Cycles precedence)
       cross_family:
-        status: live
-        # NOT a universal execution-order rule. "redirect before narrow" is
-        # DESCRIPTIVE of the cited implementations only: a runtime that treats
-        # alias resolution as policy routing can coherently evaluate
-        # narrow-first, and the two orders produce different outcomes on the
-        # same bytes. Consuming specifications adopt the order EXPLICITLY; the
-        # registry does not impose it. The mutation_kinds were verified
-        # byte-level but their execution order was NOT, so the order is
-        # recorded as a proposed interpretation until a SpendGuard spec
-        # revision fixes it normatively.
-        order: proposed_interpretation
-        order_rule_scope: descriptive_of_cited_implementations
+        # Intra-decision execution order ACROSS families is intentionally NOT
+        # specified here, and carries NO structured order field. No cited
+        # implementer ships a normative intra-decision order: SpendGuard's §10
+        # defines per-cap MERGE across multiple decisions but is silent on
+        # intra-decision order, and the sidecar emits the mutation patch without
+        # an order guarantee. The mutation_kinds were byte-verified; their
+        # execution order was NOT — so recording an order, even as a proposal,
+        # would describe behavior nobody runs and read as registry content a
+        # consumer could build against. An order will be added later, scoped as
+        # DESCRIPTIVE of a specific SpendGuard spec revision once one fixes it,
+        # pinned to that ref. (Prose only, not a rule: a runtime MAY resolve a
+        # redirect kind before a narrow kind so narrowing applies to the
+        # substituted action — but a consuming spec must state whatever order it
+        # uses; the registry imposes none.)
         unclassified_composition: >
           composition over unclassified caps (e.g. temperature) is
           implementation-defined; absent an implementer-stated order it falls
           back to wire order.
-        worked_example: >
-          SpendGuard's single `degrade` decision can mutate BOTH a narrow
-          kind (max_output_tokens) AND a redirect kind (model_alias) at
-          once. Proposed interpretation (NOT a universal rule): classify and
-          apply per mutation-kind — redirect resolves first (it determines
-          what will actually run), then narrow constrains the substituted
-          action. A consuming spec that adopts a different order is conformant
-          so long as it states the order it uses.
 
 # Verb status convention follows vocabulary.yaml: `candidate` = two
 # production implementations under this canonical name (allowing for

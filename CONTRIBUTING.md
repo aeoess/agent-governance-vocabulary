@@ -62,6 +62,52 @@ Adding a new entry to `vocabulary.yaml` is a higher bar than a crosswalk, becaus
    this requirement may add the missing attributes in a follow-up PR.
 5. **Descriptor enum extensions sequenced.** If your term requires a descriptor value not currently in the schema, the descriptor extension PR should land first, with the new term following against the updated schema.
 
+## Signal-type lifecycle and status
+
+Every signal type in `vocabulary.yaml` carries an explicit `status`. Status records how
+much independent production evidence stands behind the term, not how useful it is. Four
+states:
+
+- `canonical` - two or more independent implementations (independent maintainership,
+  independent codebases, compatible emitted-artifact shapes). The only state a consumer
+  should treat as a stable naming commitment.
+- `proposed` - exactly one independent production implementation, with the implementing
+  crosswalk cited. Carries `review_by: YYYY-MM-DD` and a `promotion_trigger`. The sunset is
+  validator-enforced the same way `domain_incubation` is: the entry fails validation after
+  `review_by` unless promoted to `canonical` or re-dated with fresh evidence.
+- `reserved` - zero production implementations. Holds the name and definition only;
+  registry presence is not evidence anything implements it. Carries `review_by`. Default
+  action at sunset is removal from `vocabulary.yaml` unless a production implementation has
+  surfaced.
+- `deprecated` - marked with a reference to the deprecation issue, removed in a later update.
+
+A term with no `status` is treated as `proposed` by the validator and flagged. Absence of a
+status is never a path to implicit `canonical`.
+
+**What counts as an independent implementation.** A second implementation qualifies a term
+for `canonical` only when it has (1) independent maintainership from the first, (2) an
+independent codebase, (3) an emitted artifact whose shape is compatible under the canonical
+definition, and (4) a published fixture or conformance vector a third party can check.
+Fixture-only or crosswalk-only declarations without a production-emitted artifact do not count.
+
+## Definition purity
+
+A canonical definition describes the abstract property the term names. It contains no
+implementation artifacts: no specific key ids, endpoint URLs, kid strings, or algorithm
+choices belonging to one implementer. Those live in that implementer's
+`crosswalk/<system>.yaml`. A definition that must name a specific implementer's artifact to
+be understood is a description of that implementer, not a canonical term, and is held until
+it can be stated neutrally.
+
+## No self-grounding exemption
+
+A term's own author or implementer may not exempt their contribution from the rules above by
+how they frame it. A single-implementer term lands as `proposed` with a `review_by` and a
+`promotion_trigger`, never as `canonical`, `founding`, or `foundational`, and never by being
+declared half of a pair "minted together." The bars apply to the author's own term exactly as
+to everyone else's. This is structural, not a judgment of intent: good-faith self-grounding
+produces this shape, which is why the file forbids it rather than relying on a reviewer to catch it.
+
 ## Proposing descriptor schema changes
 
 Changes to the descriptor dimensions schema itself (new dimensions, modified enum values) affect every existing crosswalk. These are discussed as issues first, not as PRs. Once the direction is clear, a PR can follow.

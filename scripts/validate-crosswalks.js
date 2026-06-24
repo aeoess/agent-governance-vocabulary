@@ -164,6 +164,55 @@ function validateDomainIncubation(doc, file) {
   }
 }
 
+// Signal-type lifecycle status enforcement on vocabulary.yaml itself. Every
+// signal type carries an explicit status recording how much independent
+// production evidence stands behind the term. Mirrors the domain_incubation
+// sunset style (Date.parse against now), but the deadline is the entry's own
+// absolute review_by date rather than a fixed offset. See CONTRIBUTING.md
+// "Signal-type lifecycle and status".
+const VALID_SIGNAL_STATUS = new Set(['canonical', 'proposed', 'reserved', 'deprecated'])
+// Implementer-specific artifact heuristic: a kid token, an http(s) endpoint, an
+// `-ed25519-` key-id fragment, or a >=32-char hex string (a hash) embedded in a
+// canonical definition belongs in a crosswalk, not the definition.
+const IMPLEMENTER_ARTIFACT_RE = /\bkid\b|https?:\/\/|-ed25519-|[0-9a-f]{32,}/i
+
+function validateSignalStatus(vocab) {
+  const signalTypes = (vocab && vocab.signal_types) || {}
+  for (const [name, entry] of Object.entries(signalTypes)) {
+    if (!entry || typeof entry !== 'object') continue
+    const status = entry.status
+    if (status === undefined || status === null || status === '') {
+      warn(VOCAB_PATH, `signal_types.${name}: no status field; treat as proposed and assign one`)
+    } else if (!VALID_SIGNAL_STATUS.has(status)) {
+      err(VOCAB_PATH, `signal_types.${name}: invalid status "${status}" (allowed: ${[...VALID_SIGNAL_STATUS].join(', ')})`)
+    } else if (status === 'canonical') {
+      const issuers = (entry.issuers_in_production || []).length
+      if (issuers < 2) {
+        err(VOCAB_PATH, `signal_types.${name}: canonical requires >=2 independent implementations, found ${issuers}`)
+      }
+    } else if (status === 'proposed' || status === 'reserved') {
+      const reviewBy = entry.review_by
+      // js-yaml turns a bare ISO date into a Date object; accept both forms.
+      const reviewStr = reviewBy instanceof Date ? reviewBy.toISOString().slice(0, 10) : reviewBy
+      if (reviewBy === undefined || reviewBy === null || reviewBy === '') {
+        err(VOCAB_PATH, `signal_types.${name}: ${status} requires review_by (ISO date)`)
+      } else if (Number.isNaN(Date.parse(reviewStr))) {
+        err(VOCAB_PATH, `signal_types.${name}: ${status} review_by "${reviewStr}" is not a parseable ISO date`)
+      } else if (Date.parse(reviewStr) < Date.now()) {
+        err(VOCAB_PATH, `signal_types.${name}: review_by ${reviewStr} passed; promote/re-date (proposed) or remove (reserved)`)
+      }
+      if (status === 'proposed' && (entry.promotion_trigger === undefined || entry.promotion_trigger === null || entry.promotion_trigger === '')) {
+        warn(VOCAB_PATH, `signal_types.${name}: proposed missing promotion_trigger`)
+      }
+    }
+    // Definition purity (all statuses). WARN ONLY this round: it documents the
+    // step-C cleanup TODO without breaking the build.
+    if (typeof entry.definition === 'string' && IMPLEMENTER_ARTIFACT_RE.test(entry.definition)) {
+      warn(VOCAB_PATH, `signal_types.${name}: definition embeds an implementer-specific artifact (kid/endpoint/hash); move to crosswalk`)
+    }
+  }
+}
+
 function validateSignalTypes(doc, file) {
   for (const [key, entry] of Object.entries(doc.signal_types)) {
     if (!entry || typeof entry !== 'object') continue
@@ -419,6 +468,11 @@ for (const file of files) {
 }
 
 checkNegativeFixtures()
+
+// Vocabulary-level lifecycle check: every signal type in vocabulary.yaml must
+// carry a valid status with the evidence its status implies. Runs once, after
+// the per-crosswalk signal/system checks.
+validateSignalStatus(vocab)
 
 if (warnings.length > 0) {
   console.log('')

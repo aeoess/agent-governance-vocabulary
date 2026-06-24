@@ -17,32 +17,44 @@ status: "draft - open for WG review"
 # ─────────────────────────────────────────────────
 signal_types:
   wallet_state:
+    status: proposed
+    review_by: "2026-09-23"
+    promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
     definition: "Foundation-layer wallet attestation: balances, on-chain holdings, identity attachments."
     issuers_in_production: ["InsumerAPI"]
 
   behavioral_trust:
+    status: canonical
     definition: "Scored trust assessment derived from observed agent behavior over time."
     issuers_in_production: ["MolTrust", "AgentLair"]
     notes: "Per @douglasborthwick-crypto: canonical name is `behavioral_trust`, NOT `behavioral_fingerprint`. Fingerprint implies passive observation; trust implies scored assessment. Distinct primitives."
 
   wallet_intelligence:
+    status: reserved
+    review_by: "2026-09-23"
+    note: 'No production implementation. Default action at review_by: removal unless a production implementation surfaces.'
     definition: "Behavioral classification of wallet activity (sybil signals, volume patterns, sanctions proximity)."
     issuers_in_production: []
     notes: "RNWY removed 2026-05-02 — RNWY's crosswalk (`crosswalk/rnwy.yaml`, maintainer-confirmed 2026-04-14) maps `peer_review` only, not `wallet_intelligence`. No verified production issuer remains. Canonical status under review per the 2-implementation threshold in CONTRIBUTING.md."
 
   reasoning_integrity:
-    status: proposed
+    status: reserved
+    review_by: "2026-09-23"
+    note: 'No production implementation. Default action at review_by: removal unless a production implementation surfaces.'
     definition: "Attestation surface = the action, not the actor. Wallet-agnostic by design."
     issuers_in_production: []
     notes: "Day 79 audit (2026-05-05): ThoughtProof removed from issuers_in_production. No GitHub issue, PR, or thread engagement on this repo. No crosswalk file. Status downgraded from canonical to proposed per CONTRIBUTING.md 2-implementation threshold; will be canonicalized when verifiable production issuers surface."
 
   compliance_risk:
-    status: proposed
+    status: reserved
+    review_by: "2026-09-23"
+    note: 'No production implementation. Default action at review_by: removal unless a production implementation surfaces.'
     definition: "Scored exposure assessment (counterparty flagged or clean). NOT a positive credential."
     issuers_in_production: []
     notes: "Per @douglasborthwick-crypto: distinct from `compliance_credential`. Credential = holder possesses X. Risk = scored exposure. Keep both as distinct terms; do not collapse. Day 79 audit (2026-05-05): Revettr removed from issuers_in_production. PR #4 explicitly descoped Revettr from wallet_state earlier; no engagement on compliance_risk after that. No crosswalk file. Status downgraded to proposed per CONTRIBUTING.md 2-implementation threshold."
 
   governance_attestation:
+    status: canonical
     definition: "Signed attestation that an agent or action satisfied a declared governance requirement (policy, delegation scope, compliance check, etc.). Distinct from compliance_risk (scored exposure) and trust_verification (identity layer status)."
     issuers_in_production: ["AgentNexus", "Nobulex", "SINT", "APS"]
     notes: "Canonicalized Apr 15 after 3 independent implementations surfaced. Per CONTRIBUTING.md threshold (2+ implementations). APS added Apr 17 as 4th production issuer via Build D2 signed trust profile endpoint (gateway.aeoess.com/api/v1/public/trust/:agentId, verified against gateway JWKS)."
@@ -56,29 +68,41 @@ signal_types:
 
   passport_grade:
     status: proposed
+    review_by: "2026-09-23"
+    promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
     definition: "Composite trust grade from agent passport issuance evidence."
     issuers_in_production: ["APS"]
     notes: "Single-issuer (APS) as of 2026-05-02. Status downgraded from canonical to proposed per CONTRIBUTING.md 2-implementation threshold; will be canonicalized when a second independent implementation surfaces. APS implementation: passport-grade primitive in agent-passport-system v2 with grade levels 1-3."
 
   trust_verification:
+    status: canonical
     definition: "Identity layer verification status (Grade 1-3, KYC presence, principal endorsement)."
     issuers_in_production: ["AgentID", "APS"]
 
   security_posture:
+    status: proposed
+    review_by: "2026-09-23"
+    promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
     definition: "Wallet-discoverable: signed subject is the artifact (repo, commit, output), wallet is lookup key."
     issuers_in_production: ["AgentGraph"]
 
   job_performance:
-    status: proposed
+    status: reserved
+    review_by: "2026-09-23"
+    note: 'No production implementation. Default action at review_by: removal unless a production implementation surfaces.'
     definition: "Wallet-bound assessment of completed task outcomes."
     issuers_in_production: []
     notes: "Day 79 audit (2026-05-05): Maiat removed from issuers_in_production. PR #3 (issuer attribution swap) referenced Maiat in passing but no direct engagement, no crosswalk file, no issues or PRs filed by them. Status downgraded to proposed per CONTRIBUTING.md 2-implementation threshold."
 
   settlement_witness:
+    status: proposed
+    review_by: "2026-09-23"
+    promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
     definition: "Wallet-discoverable: outcome attestations bound to action artifacts. Wallet-bound for post-upgrade receipts under kid `sar-prod-ed25519-03` (counterparty now inside signed bytes)."
     issuers_in_production: ["SAR"]
 
   peer_review:
+    status: canonical
     definition: >
       Task-completion attestation signed by a delegating agent after a
       service agent completes work. Answers: did this agent actually do
@@ -113,6 +137,7 @@ signal_types:
       "two independent implementations" threshold applied per-primitive.
 
   completion_ratio:
+    status: canonical
     definition: >
       Issuer-computed ratio of completed task delegations over a declared
       observation window. Answers: does this agent finish what it starts?
@@ -154,6 +179,8 @@ signal_types:
 
   entity_continuity:
     status: proposed
+    review_by: "2026-09-23"
+    promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
     proposed_by: ["SBR Protocol (crosswalk/soulboundrobots.yaml)"]
     definition: >
       Cryptographic proof that the same agent identity persists across an
@@ -181,7 +208,9 @@ signal_types:
       measurement_point: mutation_boundary
 
   cognitive_attestation:
-    status: proposed
+    status: reserved
+    review_by: "2026-09-23"
+    note: 'No production implementation. Default action at review_by: removal unless a production implementation surfaces.'
     proposed_by: ["AEOESS"]
     definition: >
       Signed commitment to a structural property of an agent's reasoning

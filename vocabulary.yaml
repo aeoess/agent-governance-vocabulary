@@ -98,8 +98,28 @@ signal_types:
     status: proposed
     review_by: "2026-09-23"
     promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
-    definition: "Wallet-discoverable: outcome attestations bound to action artifacts. Wallet-bound for post-upgrade receipts under kid `sar-prod-ed25519-03` (counterparty now inside signed bytes)."
+    definition: >
+      Signed post-execution attestation that a settlement (a payment or value
+      exchange for a delivered resource or task) occurred and was verified
+      against its expected terms, carrying the outcome verdict. The attested
+      subject is the settlement event, not the actor. Distinct from
+      completion_ratio (aggregate completed-task metric over a window) and
+      wallet_state (holdings, not a settlement event).
+    descriptor_dimensions:
+      enforcement_class: advisory
+      validity_temporal: at_issuance
+      refusal_authority: consumer_policy
+      invariant_survival: post_action
+      replay_class: full_replay
+      governed_action_class: compose
     issuers_in_production: ["SAR"]
+    notes: |
+      Single-issuer (SAR) as of 2026-06-23. Proposed per CONTRIBUTING.md
+      2-implementation threshold; canonicalized when a second independent
+      implementation surfaces. SAR implementation: DefaultVerifier /
+      SettlementWitness signed receipts (see crosswalk/sar.yaml). This is an
+      AEOESS vocabulary term; the implementer-specific signing key and receipt
+      schema live in the crosswalk, not in this definition.
 
   peer_review:
     status: canonical

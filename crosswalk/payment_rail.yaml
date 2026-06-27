@@ -1,0 +1,407 @@
+# crosswalk/payment_rail.yaml
+#
+# Payment Rail — canonical settlement-layer verb mapping across the five
+# major agent payment protocols (x402, AP2, ACP, MPP, UCP).
+#
+# Purpose: provide a single lookup table for implementers building
+# multi-rail agent payment infrastructure. Each protocol uses different
+# names for overlapping operations; this file maps them to a shared
+# settlement vocabulary and notes where protocols diverge structurally.
+#
+# Key design decision: this crosswalk maps SETTLEMENT-LAYER operations
+# (money movement). It does NOT map authorization-layer operations
+# (mandate creation, delegation, budget reservation). Those belong in
+# crosswalk/budget_reservation.yaml and the passport layer respectively.
+#
+# Not all protocols are settlement protocols. AP2 is an authorization
+# layer; ACP and UCP are checkout orchestration layers that delegate
+# settlement to merchant PSPs. The crosswalk reflects this honestly —
+# empty cells and "out_of_scope" markers are findings, not gaps to fill.
+#
+# Upstream specs:
+#   x402:  github.com/x402-foundation/x402 (v2 spec + schemes)
+#   AP2:   github.com/google-agentic-commerce/AP2 (specification.md)
+#   ACP:   github.com/agentic-commerce-protocol/agentic-commerce-protocol
+#   MPP:   github.com/tempoxyz/mpp-specs (draft-httpauth-payment-00)
+#   UCP:   github.com/Universal-Commerce-Protocol/ucp (checkout + order specs)
+#
+# Author:  @Ectsang (goodmeta)
+#
+# License: Apache-2.0
+
+crosswalk_type: domain_incubation
+status: INCUBATING
+
+verified_at:
+  x402: 2026-05-26    # v2 spec + exact/upto/auth-capture/batch-settlement schemes
+  ap2:  2026-05-26    # v0.2 (released 2026-04-28) specification.md + flows.md + mandate types
+  acp:  2026-05-26    # 2026-04-17 OpenAPI + OpenRPC + delegate_payment RFC
+  mpp:  2026-05-26    # draft-httpauth-payment-00 + charge intent
+  ucp:  2026-05-26    # checkout + order specs (REST + MCP)
+
+upstream_references:
+  - https://github.com/x402-foundation/x402
+  - https://github.com/google-agentic-commerce/AP2
+  - https://github.com/agentic-commerce-protocol/agentic-commerce-protocol
+  - https://github.com/tempoxyz/mpp-specs
+  - https://github.com/Universal-Commerce-Protocol/ucp
+
+# ──────────────────────────────────────────────────────────────────────
+# Protocol classification
+# ──────────────────────────────────────────────────────────────────────
+#
+# Not every protocol belongs on every row. Forcing 1:1 equivalence
+# where it doesn't exist is more harmful than documenting the gap.
+
+protocol_layers:
+  x402:
+    layer: settlement
+    schemes: [exact, upto, auth-capture, batch-settlement]
+    settlement_actor: facilitator
+    note: >
+      Facilitator executes on-chain transaction on behalf of resource
+      server. Client signs EIP-3009 transferWithAuthorization; facilitator
+      submits it. Settlement is server-side, not client-initiated.
+
+  ap2:
+    layer: authorization
+    settlement_actor: none
+    note: >
+      AP2 creates cryptographic mandates (SD-JWT VCs) proving principal
+      authorization. It does not move money — settlement is delegated
+      entirely to the merchant's existing payment processor. AP2
+      operates at the authorization layer; its verbs are mandate verbs
+      (sign, bind, constrain), not settlement verbs, so most settlement
+      rows show absent. AP2 appears at the authorize row because its
+      mandates serve as authorization evidence consumed by settlement-
+      layer protocols.
+
+  acp:
+    layer: checkout_orchestration
+    settlement_actor: merchant_psp
+    note: >
+      ACP orchestrates the checkout flow (cart → complete → order).
+      completeCheckoutSession triggers payment on the merchant's own
+      PSP (Stripe, Adyen, etc.). ACP does not define what happens after
+      the PSP processes the charge.
+
+  mpp:
+    layer: settlement
+    schemes: [charge]
+    draft_intents: [authorize, subscription, session]
+    settlement_actor: server
+    note: >
+      HTTP-native 402 challenge/credential/receipt. Each exchange is
+      stateless. The charge intent bundles authorize+settle into one
+      round-trip. Draft authorize intent (PR #226) would separate them
+      but is not merged to main.
+
+  ucp:
+    layer: checkout_orchestration
+    settlement_actor: merchant_psp
+    note: >
+      Structurally similar to ACP. complete_checkout triggers payment
+      via the merchant's payment handler (Google Pay, Shop Pay, cards).
+      Supports AP2 mandates as extension (dev.ucp.shopping.ap2_mandate)
+      and split payments across multiple instruments as of May 2026
+      (dev.ucp.shopping.split_payments). Split payments don't change
+      the settlement verb surface — complete_checkout remains the
+      charge operation regardless of instrument count.
+
+# ──────────────────────────────────────────────────────────────────────
+# Settlement verb mapping
+# ──────────────────────────────────────────────────────────────────────
+#
+# Canonical verbs are drawn from the budget_reservation.yaml verb set
+# where they overlap (reserve, commit, release, refund). Settlement-
+# specific verbs (charge, settle, verify) are added here.
+#
+# Mapping status (per-protocol, per-verb). These describe how each
+# protocol relates to a canonical settlement verb. Distinct from
+# vocabulary.yaml's verb-maturity statuses (candidate/proposed), which
+# track convergence across implementations.
+#
+#   mapped    = verb exists in protocol under a different name
+#   bundled   = verb exists but is combined with another operation
+#   draft     = verb exists in unmerged PR / draft spec only
+#   absent    = protocol has no equivalent; not a gap to fill
+#   delegated = operation exists but is handled outside protocol scope
+
+verbs:
+
+  normative_force: descriptive_only_pending_convergence
+  # Content is descriptive until each protocol's verb mapping gains a
+  # second independent implementer; tracks content force, not the
+  # section's promotion lifecycle (see top-level `status`).
+
+  charge:
+    canonical_meaning: >
+      Initiate a payment — the operation that starts money moving from
+      payer to payee.
+    mappings:
+      x402_exact:
+        verb: settle
+        endpoint: "POST /settle"
+        status: mapped
+        sync: true_initiates_async
+        note: >
+          Client signs transferWithAuthorization; facilitator calls
+          /settle which submits on-chain tx. "Settle" in x402 exact
+          IS the charge — there is no separate initiation step.
+      x402_auth_capture:
+        verb: authorize
+        params: "autoCapture: true"
+        status: bundled
+        note: >
+          With autoCapture=true, authorize+capture happen atomically.
+          Equivalent to charge. Without autoCapture, this is pre-auth
+          only (see authorize row).
+      ap2:
+        status: absent
+        note: >
+          AP2 does not charge. Merchant "initiates payment" on its own
+          rail using the mandate as authorization evidence.
+      acp:
+        verb: completeCheckoutSession
+        endpoint: "POST /checkout_sessions/{id}/complete"
+        mcp_tool: complete_checkout_session
+        status: mapped
+        sync: true
+        note: >
+          Triggers payment on merchant's PSP. Bundles authorize+capture
+          from the protocol's perspective (no separate pre-auth flow).
+      mpp:
+        verb: "Authorization: Payment credential"
+        status: bundled
+        sync: true
+        note: >
+          Client sends fulfilled payment credential in Authorization
+          header. Server verifies and settles in one exchange. Charge
+          and settle are bundled into a single HTTP round-trip.
+      ucp:
+        verb: complete_checkout
+        endpoint: "POST /checkout-sessions/{id}/complete"
+        mcp_tool: complete_checkout
+        status: mapped
+        sync: true
+        note: >
+          Same pattern as ACP. Triggers payment on merchant's payment
+          handler.
+
+  authorize:
+    canonical_meaning: >
+      Pre-approve a payment without moving money. Reserves funds or
+      creates a binding commitment that a future charge will succeed.
+    mappings:
+      x402_exact:
+        status: bundled
+        note: >
+          No separate authorize step. The client's EIP-3009 signature
+          IS authorization, but it's consumed atomically at settle time.
+      x402_auth_capture:
+        verb: AUTHORIZE
+        params: "autoCapture: false"
+        status: mapped
+        note: >
+          On-chain escrow lock. Funds move to escrow contract, not to
+          payee. Requires separate CAPTURE to finalize.
+      ap2:
+        verb: "Sign Mandate (Payment Mandate)"
+        status: mapped
+        note: >
+          Cryptographic credential (SD-JWT VC) proving principal
+          authorized this spend. Does not reserve funds — the mandate
+          is evidence, not a hold. Structurally different from card-rail
+          pre-auth.
+      acp:
+        verb: delegatePayment
+        endpoint: "POST /agentic_commerce/delegate_payment"
+        status: mapped
+        note: >
+          Creates a scoped payment token with Allowance constraints
+          (max_amount, merchant_id, expires_at). Constrains a card
+          token, does not reserve funds on the rail.
+      mpp:
+        status: draft
+        note: >
+          authorize intent exists in PR #226 (not merged). Would add
+          spending-cap pre-auth with delayed capture. On main, only
+          charge intent exists — authorize and settle are bundled.
+      ucp:
+        status: delegated
+        note: >
+          UCP supports AP2 mandates as extension
+          (dev.ucp.shopping.ap2_mandate). Authorization semantics are
+          AP2's, not UCP's own.
+
+  settle:
+    canonical_meaning: >
+      Finalize a previously authorized payment. Move money from payer
+      to payee. Distinct from charge only when a separate authorize
+      step preceded it.
+    mappings:
+      x402_exact:
+        status: bundled
+        note: Charge and settle are the same operation (POST /settle).
+      x402_auth_capture:
+        verb: CAPTURE
+        status: mapped
+        note: >
+          captureAuthorizer finalizes escrowed funds to receiver.
+          Only exists in two-phase flow (autoCapture: false).
+      ap2:
+        status: absent
+        note: Settlement delegated to merchant's payment processor.
+      acp:
+        status: delegated
+        note: >
+          Merchant's PSP settles after completeCheckoutSession. ACP
+          receives confirmation via order_create webhook.
+      mpp:
+        status: bundled
+        note: >
+          Server settles upon verifying the Authorization: Payment
+          credential. Confirmation returned as Payment-Receipt header.
+      ucp:
+        status: delegated
+        note: >
+          Payment handler settles after complete_checkout. UCP receives
+          order state via webhooks.
+
+  refund:
+    canonical_meaning: >
+      Return funds to payer after settlement. Partial or full reversal
+      of a completed charge.
+    mappings:
+      x402_exact:
+        status: absent
+        note: No refund mechanism in exact scheme. Settlement is final.
+      x402_auth_capture:
+        verb: REFUND
+        status: mapped
+        note: >
+          captureAuthorizer returns funds within refundDeadline.
+          Also: VOID (pre-capture release) and RECLAIM (client
+          retrieves escrow after captureDeadline). Three distinct
+          reversal operations for different lifecycle states.
+      ap2:
+        status: absent
+        note: >
+          Disputes use mandate + receipt chain as non-repudiable
+          evidence. No refund verb — refund is a rail-layer concern.
+      acp:
+        status: delegated
+        note: >
+          Refunds surface in webhook order_events as adjustments[]
+          with type "refund". No API endpoint to initiate refund.
+          Spec explicitly states refund semantics are out of scope.
+      mpp:
+        status: absent
+        note: >
+          Core spec defines no refund mechanism. Refunds delegated
+          to payment method specifications.
+      ucp:
+        status: delegated
+        note: >
+          Post-purchase modifications delegated to business via
+          permalink_url. No refund endpoint or MCP tool.
+
+  query:
+    canonical_meaning: >
+      Check the current state of a payment or checkout session.
+    mappings:
+      x402_exact:
+        status: absent
+        note: >
+          No post-settlement status query. POST /verify exists but is
+          a pre-settlement validity check (does this payload meet
+          requirements?), not a state query. GET /supported is
+          capability discovery, not transaction status.
+      x402_auth_capture:
+        status: absent
+        note: >
+          No query endpoint for escrow state. On-chain state is
+          readable directly but not via facilitator API.
+      ap2:
+        status: absent
+        note: No payment status query. Mandate state is in the VC itself.
+      acp:
+        verb: getCheckoutSession
+        endpoint: "GET /checkout_sessions/{id}"
+        mcp_tool: get_checkout_session
+        status: mapped
+        sync: true
+        note: Returns current checkout session state including payment status.
+      mpp:
+        status: absent
+        note: >
+          Stateless per-request protocol. No session ID to query.
+          Each 402 exchange is independent.
+      ucp:
+        verb: get_checkout / get_order
+        endpoint: "GET /checkout-sessions/{id} / GET /orders/{id}"
+        mcp_tool: get_checkout / get_order
+        status: mapped
+        sync: true
+        note: >
+          Both checkout and order state are queryable. Richest status
+          query surface of the five protocols.
+
+# ──────────────────────────────────────────────────────────────────────
+# Structural findings
+# ──────────────────────────────────────────────────────────────────────
+
+findings:
+  - id: F1
+    finding: >
+      Only x402 auth-capture has all five settlement operations
+      (charge, authorize, settle, refund, query). Every other protocol
+      or scheme has at least one absent or delegated operation.
+
+  - id: F2
+    finding: >
+      Refund is the largest gap. x402 exact, AP2, and MPP charge have
+      no refund mechanism. ACP and UCP surface refund data in webhooks
+      but provide no API to initiate one.
+
+  - id: F3
+    finding: >
+      "Authorize" means structurally different things: on-chain escrow
+      lock (x402), cryptographic mandate credential (AP2), scoped
+      payment token (ACP), HTTP spending cap (MPP draft). A multi-rail
+      agent treating these as equivalent will mishandle fund reservation.
+
+  - id: F4
+    finding: >
+      ACP and UCP are structurally near-identical at the settlement
+      layer (both: create session → complete → webhooks for order state).
+      The difference is in authorization: ACP uses Allowance tokens,
+      UCP can consume AP2 mandates.
+
+  - id: F5
+    finding: >
+      MPP charge is the only fully stateless settlement protocol.
+      No session, no transaction ID to query after the fact. Every
+      other protocol maintains state across the lifecycle.
+
+# ──────────────────────────────────────────────────────────────────────
+# Relationship to budget_reservation.yaml
+# ──────────────────────────────────────────────────────────────────────
+#
+# budget_reservation.yaml defines the AUTHORIZATION layer verbs
+# (reserve/commit/release/refund/query_budget/query_reservation) that
+# sit ABOVE the settlement layer mapped here.
+#
+# Composition: a budget authority calls `reserve` (budget_reservation
+# layer) → if ALLOW, the agent calls `charge` or `authorize` (this
+# payment_rail layer) → the rail settles.
+#
+# The two crosswalks are complementary, not overlapping.
+
+related_crosswalks:
+  - file: budget_reservation.yaml
+    relationship: >
+      budget_reservation defines the authorization/enforcement layer
+      above this settlement layer. reserve (budget) precedes charge
+      (rail). The refund verb appears in both: budget_reservation.refund
+      releases held budget; payment_rail.refund returns settled funds.

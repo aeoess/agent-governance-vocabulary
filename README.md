@@ -30,7 +30,7 @@ flowchart TD
     V --> D["Verifiers and tooling<br/>compose signals across systems<br/>without learning each one's dialect"]
 ```
 
-Current corpus: 32 crosswalk files from independent contributors, mapped against 15 canonical signal types. The full system-by-signal grid is at [`docs/generated/crosswalk-matrix.md`](./docs/generated/crosswalk-matrix.md).
+Current corpus: 32 crosswalk files mapped against 15 canonical signal types. The full system-by-signal grid is at [`docs/generated/crosswalk-matrix.md`](./docs/generated/crosswalk-matrix.md).
 
 **Precedent:** the IANA JWT claim registry and JSON-LD `@context`. Each system keeps its internal code and its production envelope values. This repo provides the shared reference and the per-system mappings.
 
@@ -42,7 +42,7 @@ Current corpus: 32 crosswalk files from independent contributors, mapped against
 
 ## Status
 
-v0.1 draft. Open for Working Group review. Co-authored:
+v0.2.0 draft. Open for Working Group review. Co-authored:
 
 - [@aeoess](https://github.com/aeoess) - APS
 - [@QueBallSharken](https://github.com/QueBallSharken) - descriptor dimensions, BBIS-aligned distinctions
@@ -71,16 +71,23 @@ Committed contributors so far:
 - `crosswalk/a2a.yaml` - @rnwy
 - `crosswalk/aeoess-aps.yaml` - @aeoess (renamed from aps.yaml)
 - `crosswalk/agent-did.yaml` - @edisonduran
+- `crosswalk/agentgraph.yaml` - @kenneives
+- `crosswalk/agentid.yaml` - @haroldmalikfrimpong-ops
 - `crosswalk/agentlair.yaml` - @piiiico
 - `crosswalk/agentnexus.yaml` - @kevinkaylie
+- `crosswalk/aps-acta.yaml` - @aeoess (APS / ACTA receipt composition; ACTA-side review pending)
 - `crosswalk/asqav.yaml` - @jagmarques
+- `crosswalk/budget_reservation.yaml` - cap-type vocabulary, lead-authored by @amavashev (Cycles); Track B domain incubation
 - `crosswalk/continuity-analyzer.yaml` - @nutstrut
+- `crosswalk/cursor-hooks.yaml` - @aeoess (third-party crosswalk; authored by the maintainer, not by Cursor)
+- `crosswalk/cycles.yaml` - @amavashev
 - `crosswalk/dcp-ai.yaml` - @lktron00
 - `crosswalk/fidelity-spec.yaml` - @lowkey-divine
 - `crosswalk/insumerapi.yaml` - @douglasborthwick-crypto
 - `crosswalk/jep.yaml` - @schchit
 - `crosswalk/logpose.yaml` - @rkaushik29
 - `crosswalk/moltrust.yaml` - @MoltyCel
+- `crosswalk/mycelium-trails.yaml` - @giskard09 (Mycelium Trails / argentum-core; aeoess-drafted, Track B)
 - `crosswalk/nobulex.yaml` - @arian-gogani
 - `crosswalk/pathcourse-health.yaml` - @alex-pathcourse
 - `crosswalk/pic.yaml` - @madeinplutofabio

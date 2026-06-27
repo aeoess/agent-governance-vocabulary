@@ -1,6 +1,6 @@
 # Crosswalk Matrix
 
-Auto-generated on 2026-05-02. 15 systems × 13 canonical signal types.
+Auto-generated on 2026-06-27. 20 systems × 15 canonical signal types.
 
 Cell legend:
 
@@ -14,58 +14,65 @@ Cell legend:
 
 ## Matrix
 
-| System            | wallet_state | behavioral_trust | wallet_intelligence | reasoning_integrity | compliance_risk | governance_attestation | passport_grade | trust_verification | security_posture | job_performance | settlement_witness | peer_review | entity_continuity |
-| ----------------- | ------------ | ---------------- | ------------------- | ------------------- | --------------- | ---------------------- | -------------- | ------------------ | ---------------- | --------------- | ------------------ | ----------- | ----------------- |
-| Agent-Did         | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | 🟡                |
-| Agentlair         | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                 |
-| Agentnexus        | ·            | —                | —                   | —                   | —               | ·                      | —              | —                  | —                | —               | —                  | —           | —                 |
-| APS               | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | ✅                      | ✅              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | 🟡                |
-| ASQAV             | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                 |
-| DCP-Ai            | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ✅                      | 🔵             | ✅                  | ⚪                | ⚪               | ⚪                  | 🟡          | 🟡                |
-| Fidelity-Spec     | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | 🟡                |
-| Insumerapi        | ✅            | ⚪                | ⚪                   | ⚪                   | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | —           | —                 |
-| Moltrust          | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                 |
-| Nobulex           | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                 |
-| Pathcourse-Health | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                 |
-| PIC               | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                 |
-| Signet            | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | ·           | —                 |
-| SINT              | 🟡           | 🟡               | ⚪                   | ⚪                   | ⚪               | ✅                      | 🟡             | 🟡                 | 🟡               | 🟡              | 🟡                 | ⚪           | 🟠                |
-| Veritasacta       | ⚪            | ⚪                | ⚪                   | 🟡                  | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | 🟠                 | —           | —                 |
+| System            | wallet_state | behavioral_trust | wallet_intelligence | reasoning_integrity | compliance_risk | governance_attestation | passport_grade | trust_verification | security_posture | job_performance | settlement_witness | peer_review | completion_ratio | entity_continuity | cognitive_attestation |
+| ----------------- | ------------ | ---------------- | ------------------- | ------------------- | --------------- | ---------------------- | -------------- | ------------------ | ---------------- | --------------- | ------------------ | ----------- | ---------------- | ----------------- | --------------------- |
+| Agent-Did         | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     |
+| Agentgraph        | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ✅                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | —                     |
+| Agentid           | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | ✅                | 🟡                | —                     |
+| Agentlair         | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     |
+| Agentnexus        | ·            | —                | —                   | —                   | —               | ·                      | —              | —                  | —                | —               | —                  | —           | —                | —                 | —                     |
+| APS               | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | ✅                      | ✅              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     |
+| ASQAV             | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                | —                 | —                     |
+| Cursor-Hooks      | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | 🟡               | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     |
+| Cycles            | ⚪            | —                | —                   | —                   | ⚪               | 🟡                     | —              | —                  | —                | —               | ⚪                  | —           | —                | —                 | —                     |
+| DCP-Ai            | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ✅                      | 🔵             | ✅                  | ⚪                | ⚪               | ⚪                  | 🟡          | —                | 🟡                | —                     |
+| Fidelity-Spec     | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     |
+| Insumerapi        | ✅            | ⚪                | ⚪                   | ⚪                   | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | —           | —                | —                 | —                     |
+| Moltrust          | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     |
+| Mycelium-Trails   | ⚪            | ⚪                | —                   | —                   | ⚪               | 🟡                     | —              | —                  | —                | —               | ⚪                  | —           | —                | —                 | —                     |
+| Nobulex           | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                | —                 | —                     |
+| Pathcourse-Health | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     |
+| PIC               | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     |
+| Signet            | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | ·           | —                | —                 | —                     |
+| SINT              | 🟡           | 🟡               | ⚪                   | ⚪                   | ⚪               | ✅                      | 🟡             | 🟡                 | 🟡               | 🟡              | 🟡                 | ⚪           | —                | 🟠                | —                     |
+| Veritasacta       | ⚪            | ⚪                | ⚪                   | 🟡                  | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | 🟠                 | —           | —                | —                 | —                     |
 
 ## Coverage
 
-- Systems represented: 15
-- Canonical signal types: 13
+- Systems represented: 20
+- Canonical signal types: 15
 
 ### Per-signal coverage
 
 | Signal type | Systems mapped | Coverage |
 |---|---|---|
-| `wallet_state` | 15 / 15 | 100% |
-| `behavioral_trust` | 14 / 15 | 93% |
-| `compliance_risk` | 14 / 15 | 93% |
-| `job_performance` | 14 / 15 | 93% |
-| `passport_grade` | 14 / 15 | 93% |
-| `reasoning_integrity` | 14 / 15 | 93% |
-| `security_posture` | 14 / 15 | 93% |
-| `settlement_witness` | 14 / 15 | 93% |
-| `trust_verification` | 14 / 15 | 93% |
-| `wallet_intelligence` | 14 / 15 | 93% |
-| `governance_attestation` | 13 / 15 | 87% |
-| `peer_review` | 10 / 15 | 67% |
-| `entity_continuity` | 7 / 15 | 47% |
+| `wallet_state` | 20 / 20 | 100% |
+| `compliance_risk` | 19 / 20 | 95% |
+| `settlement_witness` | 19 / 20 | 95% |
+| `behavioral_trust` | 18 / 20 | 90% |
+| `governance_attestation` | 18 / 20 | 90% |
+| `job_performance` | 17 / 20 | 85% |
+| `passport_grade` | 17 / 20 | 85% |
+| `reasoning_integrity` | 17 / 20 | 85% |
+| `security_posture` | 17 / 20 | 85% |
+| `trust_verification` | 17 / 20 | 85% |
+| `wallet_intelligence` | 17 / 20 | 85% |
+| `peer_review` | 13 / 20 | 65% |
+| `entity_continuity` | 10 / 20 | 50% |
+| `completion_ratio` | 2 / 20 | 10% |
+| `cognitive_attestation` | 0 / 20 | 0% |
 
 ### Top-3 most-mapped
 
-- `wallet_state` — 15/15 (100%)
-- `behavioral_trust` — 14/15 (93%)
-- `compliance_risk` — 14/15 (93%)
+- `wallet_state` — 20/20 (100%)
+- `compliance_risk` — 19/20 (95%)
+- `settlement_witness` — 19/20 (95%)
 
 ### Top-3 least-mapped
 
-- `entity_continuity` — 7/15 (47%)
-- `peer_review` — 10/15 (67%)
-- `governance_attestation` — 13/15 (87%)
+- `cognitive_attestation` — 0/20 (0%)
+- `completion_ratio` — 2/20 (10%)
+- `entity_continuity` — 10/20 (50%)
 
 ---
 
@@ -74,6 +81,8 @@ Auto-generated by `scripts/generate-crosswalk-matrix.js`. Do not edit. Re-run af
 ## Alternative-format crosswalks not represented in this matrix
 
 - `crosswalk/a2a.yaml` — no signal_types block (alternative crosswalk format)
+- `crosswalk/aps-acta.yaml` — no signal_types block (alternative crosswalk format)
+- `crosswalk/budget_reservation.yaml` — no signal_types block (alternative crosswalk format)
 - `crosswalk/continuity-analyzer.yaml` — no signal_types block (alternative crosswalk format)
 - `crosswalk/jep.yaml` — no signal_types block (alternative crosswalk format)
 - `crosswalk/logpose.yaml` — no signal_types block (alternative crosswalk format)

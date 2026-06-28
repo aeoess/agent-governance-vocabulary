@@ -157,16 +157,14 @@ signal_types:
          below.
 
       Signing semantics: the CyclesEvidence envelope — JCS-canonicalized
-      (RFC 8785), sha256 content-addressed, Ed25519-signed — is now the
-      normative spec runcycles/cycles-protocol cycles-evidence-v0.2.yaml
-      (promoted out of `drafts/` in runcycles/cycles-protocol#118), a Cycles
-      server emits it in production, and a cross-system consumer (APS,
-      aeoess/agent-passport-system#47) verifies it end to end. The top-level
-      `system_attributes` block is populated accordingly
-      (signature_capability / canonicalization_profile / hash_family), per the
-      v0.2 follow-up at runcycles/cycles-protocol#94. The envelope carries the
-      cross-system content-addressed join described in
-      aeoess/agent-passport-system#25.
+      (RFC 8785), sha256 content-addressed, Ed25519-signed — is normatively
+      specified at runcycles/cycles-protocol cycles-evidence-v0.2.yaml
+      (promoted out of `drafts/` in runcycles/cycles-protocol#118). The
+      top-level `system_attributes` block is populated from that normative
+      envelope format (signature_capability / canonicalization_profile /
+      hash_family), per the v0.2 follow-up at runcycles/cycles-protocol#94.
+      The envelope carries the cross-system content-addressed join described
+      in aeoess/agent-passport-system#25.
     issuers_in_production:
       - "runcycles (Cycles server v0, https://github.com/runcycles/cycles-protocol)"
       - "langchain-runcycles SDK (https://github.com/runcycles/langchain-runcycles)"
@@ -258,22 +256,30 @@ descriptor_dimensions:
       usage). The invariant survives to the post-execution settlement, at
       which point the debit is durable on the Cycles ledger.
 
-    replay_class: full_replay
+    replay_class: decision_replay
     note_replay: >
-      Bumped from decision_replay to full_replay (runcycles/cycles-protocol#94):
-      all three promotion conditions now hold. (1) The CyclesEvidence envelope
-      is a normative spec — runcycles/cycles-protocol cycles-evidence-v0.2.yaml,
-      promoted out of `drafts/` in runcycles/cycles-protocol#118; (2) a Cycles
-      server emits envelopes in production (synchronous evidence_id on the
-      response plus the getEvidenceJwks signer key set); and (3) a cross-system
-      consumer (APS, aeoess/agent-passport-system#47) has verified the
-      standalone replay path end to end against the published JWKS. Because the
-      envelope is content-addressed (sha256 over RFC 8785 JCS bytes) and
-      Ed25519-signed, a recorded envelope is standalone-verifiable without the
-      server's live ledger state. A Cycles decision also remains replayable in
-      the original sense (same subject, action, and idempotency key → identical
-      response); idempotency keys (per-call UUID with optional namespace) still
-      protect replay-on-retry from double-debiting.
+      A Cycles decision can be replayed in the sense that, given the same
+      subject, action, and idempotency key, the server returns an identical
+      response. But replay from recorded evidence alone (the on-wire JSON)
+      requires the server's ledger state at decision time — the response is
+      not standalone-verifiable. Idempotency keys (per-call UUID with optional
+      namespace) protect replay-on-retry from double-debiting.
+
+      Promotion to full_replay (tracked at runcycles/cycles-protocol#94):
+      condition 1 — the CyclesEvidence envelope is now a NORMATIVE spec
+      (runcycles/cycles-protocol cycles-evidence-v0.2.yaml, promoted out of
+      `drafts/` in runcycles/cycles-protocol#118) — is met, and the envelope
+      is content-addressed (sha256 over RFC 8785 JCS bytes) and Ed25519-signed,
+      i.e. designed to be standalone-verifiable without the server's live
+      ledger. Two conditions remain open per CONTRIBUTING.md's evidence bar
+      and gate the bump: (2) a PRODUCTION-emitted CyclesEvidence envelope
+      observable outside the project (fixtures/golden vectors + a live JWKS
+      establish the verification path and key infrastructure but do not
+      themselves count), and (3) a cross-system consumer with maintainership
+      INDEPENDENT of Cycles verifying the standalone envelope end to end (a
+      second codebase under the same maintainer does not clear it). Clearing
+      EITHER (2) or (3) satisfies the gate; until then decision_replay is the
+      accurate value.
 
     governed_action_class: ["read", "write", "transfer", "delegate", "publish", "compose"]
     note_governed: >

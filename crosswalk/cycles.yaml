@@ -277,8 +277,12 @@ descriptor_dimensions:
       establish the verification path and key infrastructure but do not
       themselves count), and (3) a cross-system consumer with maintainership
       INDEPENDENT of Cycles verifying the standalone envelope end to end (a
-      second codebase under the same maintainer does not clear it). Clearing
-      EITHER (2) or (3) satisfies the gate; until then decision_replay is the
+      second codebase under the same maintainer does not clear it). BOTH (2)
+      and (3) must hold — together with the met condition 1 — before the bump;
+      they cover different risks (a production-emitted artifact vs independent
+      maintainership), and requiring both prevents a single trust domain from
+      promoting its own row off its own emission with no independent verifier
+      ever exercising the replay path. Until then decision_replay is the
       accurate value.
 
     governed_action_class: ["read", "write", "transfer", "delegate", "publish", "compose"]

@@ -17,7 +17,7 @@
 #
 # Home: https://github.com/carlsonchik/larone (monorepo, SDK + docs)
 # Spec: https://github.com/google/A2A/issues/2014 (extension proposal)
-# Production: merged into LiteLLM (PR#31295) as per-request provenance_key
+# Production: LAR-1 v0.3 specification published; provenance_key conformance — pending
 # License: Apache-2.0
 
 system:
@@ -31,7 +31,7 @@ system:
     provenance_semantic (observation|inference — how the content was
     produced). Does not issue trust signals; layers alongside them.
   verification_principle: "ECDSA-signed attestation, JWKS-verifiable, bound to the message lifecycle"
-  production: "LiteLLM PR#31295 (merged) — provenance_key in per-request metadata"
+  production: "LAR-1 v0.3 spec published (github.com/carlsonchik/larone); provenance_key conformance — pending"
 
 maintainer:
   github: cloudiaspecula
@@ -163,7 +163,5 @@ notes: >
   enables verifiers to reconcile the two without collapsing this
   distinction.
 
-  Implementation anchor: LiteLLM PR#31295 (merged). provenance_key
-  flows through per-request metadata alongside LiteLLM's budget and
-  reservation primitives. Planned: publish conformance fixture and
-  crosswalk validation vectors per CONTRIBUTING.md.
+  Implementation anchor: LAR-1 v0.3 specification (github.com/carlsonchik/larone).
+  provenance_key conformance fixture and crosswalk validation vectors — pending.

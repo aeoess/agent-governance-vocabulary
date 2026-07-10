@@ -312,13 +312,24 @@ verbs:
       Return unspent reservation to budget before commit. Pre-commit
       only. Reservation cancelled, headroom restored.
     implementations:
-      goodmeta: '-'                  # not first-class; folded into refund
+      goodmeta: release (self-attested)
       cycles: release
+    evidence:
+      goodmeta:
+        verification_method: principal_attestation
+        verified_at: 2026-06-12
+        reverify_after: 2026-09-10
     notes: |
-      One production implementation (cycles). Pre-commit audit state.
-      Profile note: implementations declaring the `ledger-fidelity`
-      profile carry both `release` and `refund` first-class; the
-      `minimal` profile carries one.
+      Two implementations recorded: cycles (`release`, source-pinned) and
+      goodmeta (`release`, self-attested, no public artifact). goodmeta
+      added first-class `release` in v0.5 (POST /v1/release), distinct from
+      post-commit `refund`. Pre-commit audit state. Candidate promotion
+      held pending a public stable artifact or an independent counterparty
+      attestation; goodmeta's self-attested cell is weightless for
+      promotion arithmetic (only cycles, source-pinned, counts). Carrying
+      both `release` and `refund` first-class does not by itself assign the
+      `ledger-fidelity` profile (the `minimal` profile carries one); profile
+      selection stays pending per #98.
 
   refund:
     status: proposed

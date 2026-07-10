@@ -61,6 +61,20 @@ function walkYaml(dir) {
   return out.sort()
 }
 
+// Mirror of walkYaml for negative fixtures: recurse into subdirectories and
+// collect ONLY `_`-prefixed YAML fixtures. Nested fixtures (e.g.
+// crosswalk/<subdir>/_bad.yaml) were previously invisible because the negative
+// fixture scan only read the top-level crosswalk/ directory.
+function walkNegativeFixtures(dir) {
+  const out = []
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) out.push(...walkNegativeFixtures(full))
+    else if ((entry.name.endsWith('.yaml') || entry.name.endsWith('.yml')) && entry.name.startsWith('_')) out.push(full)
+  }
+  return out.sort()
+}
+
 const errors = []
 const warnings = []
 
@@ -439,14 +453,11 @@ console.log('')
 // or the fixture has drifted. (Issue #111: the fixture used to run in the main
 // pass, which made `npm run validate` exit non-zero on production crosswalks.)
 function checkNegativeFixtures() {
-  let names = []
+  let fixtures = []
   try {
-    names = fs.readdirSync(CROSSWALK_DIR)
-      .filter(n => n.startsWith('_') && (n.endsWith('.yaml') || n.endsWith('.yml')))
-      .sort()
+    fixtures = walkNegativeFixtures(CROSSWALK_DIR)
   } catch { return }
-  for (const name of names) {
-    const file = path.join(CROSSWALK_DIR, name)
+  for (const file of fixtures) {
     const eBefore = errors.length
     const wBefore = warnings.length
     validateFile(file)

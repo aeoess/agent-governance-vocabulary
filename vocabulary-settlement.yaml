@@ -13,11 +13,20 @@
 # public URL for orientation. No claim of equivalence is made between
 # a canonical verb and an anchored operation.
 #
+# This verb set is one decomposition of settlement, not a determination
+# that charge/authorize/settle/refund/query are the settlement model.
+# Alternatives exist (reserve/capture, intent/mandate,
+# transfer/finalization). Mappings produced through this model do not
+# count as evidence that the model has converged.
+#
 # License: Apache-2.0. Copyright 2026 Tymofii Pidlisnyi.
 
 status: INCUBATING
 normative_force: descriptive_only_pending_convergence
 proposed_by: "@Ectsang (goodmeta), PR #100"
+model_scope: experimental_decomposition
+may_be_used_as_promotion_evidence: false
+model_objections: []
 
 verbs:
 

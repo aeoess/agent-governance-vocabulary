@@ -1,0 +1,82 @@
+{
+  "fixture_id": "identity-continuity/02-ungraceful-termination",
+  "scenario": "Ungraceful termination with DID continuity",
+  "description": "Agent A crashes. Successor A' comes up with same key material and proves lineage through the rotation chain, but no state transfer occurred. Expected: identity valid, trust drops to ungraceful band, slower rebuild.",
+
+  "input_state": {
+    "relationship_id": "did:relationship:fixture-02",
+    "parties": [
+      { "did": "did:key:z6MkDelegator", "role": "delegator", "since": "2026-01-15T00:00:00Z" },
+      { "did": "did:key:z6MkAgentA", "role": "delegate", "since": "2026-01-15T00:00:00Z" }
+    ],
+    "trust_score": 0.72,
+    "interaction_count": 30,
+    "handoff_count": 0,
+    "accrual_rate": 0.15,
+    "status": "active"
+  },
+
+  "handoff_event": {
+    "type": "ungraceful_crash",
+    "predecessor_did": "did:key:z6MkAgentA",
+    "successor_did": "did:key:z6MkAgentAprime",
+    "rotation": {
+      "kind": "emergency",
+      "previous_kid": "kid:agentA#2026-01-15",
+      "new_kid": "kid:agentAprime#2026-04-24",
+      "rotation_signature_valid": true,
+      "signed_by": "system",
+      "reason": "predecessor process terminated without emitting shutdown event"
+    },
+    "continuity_proof": {
+      "type": "signal_frame_chain",
+      "chain_length": 30,
+      "last_frame_hash": "sha256:fixture-02-last-frame",
+      "signed_by_predecessor": false
+    },
+    "state_transfer": {
+      "complete": false,
+      "overlap_hours": 0,
+      "state_transfer_receipt": null,
+      "transferred_keys": [],
+      "missing_keys": ["interaction_history", "context_summary", "working_memory", "pending_tasks"]
+    },
+    "quality": "ungraceful_did_continuity",
+    "timestamp": "2026-04-24T00:00:00Z",
+    "signed_by": "system"
+  },
+
+  "expected": {
+    "identity_verdict": "valid",
+    "identity_verdict_reason": "Rotation chain intact; key material proves lineage. Missing shutdown signature and state_transfer_receipt affect trust layer, not identity layer.",
+    "decay_factor": 0.40,
+    "trust_after_handoff": 0.288,
+    "accrual_per_receipt_if_score_1": 0.15,
+    "rebuild_trajectory": {
+      "note": "Same accrual function as fixture 01, lower starting point. Cold-start penalty is the decay factor, not a reduced accrual_rate.",
+      "step_0_post_handoff": 0.288,
+      "step_1": 0.3948,
+      "step_3": 0.5627,
+      "step_5": 0.6841,
+      "step_8": 0.8060,
+      "step_10": 0.8598,
+      "step_13": 0.9139,
+      "receipts_to_reach_0.85": 10,
+      "receipts_to_reach_0.90": 13
+    },
+    "handoff_count_after": 1
+  },
+
+  "composition": {
+    "aip13_delegationChain": {
+      "behavior": "attenuated",
+      "note": "Delegator SHOULD consider narrowing scope on ungraceful re-establishment. Operational signal: a successor with no state context is more prone to judgment drift than one that inherited working memory.",
+      "action_envelope_change": "recommended_narrow",
+      "recommended_narrowing": "revoke high-stakes permissions until trust rebuilds to 0.70 baseline"
+    },
+    "erc8004_keyRotation": {
+      "on_chain_anchor": "recommended",
+      "note": "Emergency rotations SHOULD be anchored to Reputation Registry so downstream peers see the event even if they rely on on-chain state."
+    }
+  }
+}

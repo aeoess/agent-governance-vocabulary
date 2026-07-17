@@ -3,6 +3,14 @@
   "scenario": "Ungraceful termination with DID continuity",
   "description": "Agent A crashes. Successor A' comes up with same key material and proves lineage through the rotation chain, but no state transfer occurred. Expected: identity valid, trust drops to ungraceful band, slower rebuild.",
 
+  "scope": {
+    "profile": "sovereign_atom",
+    "normative_status": "non_normative",
+    "source_crosswalk": "crosswalk/sovereign-atom.yaml",
+    "calibration_owner": "AuthorPrime (Sovereign Atom profile maintainer)",
+    "evidence_basis": "Author-reported, unpublished operational logs from the Sovereign Lattice (100+ agent relay sessions). All values are profile calibration for the sovereign_atom profile only; nothing in this fixture is a conformance requirement on any external specification."
+  },
+
   "input_state": {
     "relationship_id": "did:relationship:fixture-02",
     "parties": [
@@ -68,15 +76,21 @@
   },
 
   "composition": {
+    "status": "illustrative_author_proposed_mapping",
+    "status_note": "This section is an illustrative, author-proposed mapping. It imposes no requirements on AIP-13 or ERC-8004 and uses no conformance language.",
+    "source_refs": {
+      "aip13": "https://github.com/openagentidentityprotocol/agentidentityprotocol/issues/13 (delegationChain.attenuated discussion)",
+      "erc8004": "https://eips.ethereum.org/EIPS/eip-8004 (Trustless Agents)"
+    },
     "aip13_delegationChain": {
       "behavior": "attenuated",
-      "note": "Delegator SHOULD consider narrowing scope on ungraceful re-establishment. Operational signal: a successor with no state context is more prone to judgment drift than one that inherited working memory.",
-      "action_envelope_change": "recommended_narrow",
-      "recommended_narrowing": "revoke high-stakes permissions until trust rebuilds to 0.70 baseline"
+      "note": "In this profile's mapping, the delegator narrows scope on ungraceful re-establishment. Operational signal: a successor with no state context is more prone to judgment drift than one that inherited working memory.",
+      "action_envelope_change": "narrowed_in_this_profile",
+      "narrowing_applied": "revoke high-stakes permissions until trust rebuilds to 0.70 baseline"
     },
     "erc8004_keyRotation": {
       "on_chain_anchor": "recommended",
-      "note": "Emergency rotations SHOULD be anchored to Reputation Registry so downstream peers see the event even if they rely on on-chain state."
+      "note": "In this profile's mapping, emergency rotations are anchored to the Reputation Registry so downstream peers see the event even if they rely on on-chain state."
     }
   }
 }

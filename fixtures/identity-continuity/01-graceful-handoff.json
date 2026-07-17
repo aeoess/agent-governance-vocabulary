@@ -3,6 +3,14 @@
   "scenario": "Graceful handoff with full state transfer",
   "description": "Agent A signs shutdown event, transfers state to A'. A' presents same DID with rotation proof and a state_transfer_receipt. Expected: identity valid, trust drops to upper decay band (0.85 * 0.85 = 0.7225 at default accrual_rate=0.15), and rebuilds to 0.95 in ~11 receipts on ideal interactions. Rebuild speed is consumer-configurable via accrual_rate.",
 
+  "scope": {
+    "profile": "sovereign_atom",
+    "normative_status": "non_normative",
+    "source_crosswalk": "crosswalk/sovereign-atom.yaml",
+    "calibration_owner": "AuthorPrime (Sovereign Atom profile maintainer)",
+    "evidence_basis": "Author-reported, unpublished operational logs from the Sovereign Lattice (100+ agent relay sessions). All values are profile calibration for the sovereign_atom profile only; nothing in this fixture is a conformance requirement on any external specification."
+  },
+
   "input_state": {
     "relationship_id": "did:relationship:fixture-01",
     "parties": [
@@ -66,6 +74,12 @@
   },
 
   "composition": {
+    "status": "illustrative_author_proposed_mapping",
+    "status_note": "This section is an illustrative, author-proposed mapping. It imposes no requirements on AIP-13 or ERC-8004 and uses no conformance language.",
+    "source_refs": {
+      "aip13": "https://github.com/openagentidentityprotocol/agentidentityprotocol/issues/13 (delegationChain.attenuated discussion)",
+      "erc8004": "https://eips.ethereum.org/EIPS/eip-8004 (Trustless Agents)"
+    },
     "aip13_delegationChain": {
       "behavior": "attenuated",
       "note": "Successor inherits predecessor's action envelope as a ceiling. Because trust was high pre-handoff (0.85), delegator may elect not to narrow scope on this rotation. Trust rebuilds inside the existing ceiling.",
@@ -73,7 +87,7 @@
     },
     "erc8004_keyRotation": {
       "on_chain_anchor": "optional",
-      "note": "Reputation Registry may record rotation event for audit; not required for trust evaluation."
+      "note": "Reputation Registry may record rotation event for audit; the trust evaluation in this profile does not depend on it."
     }
   }
 }

@@ -1,7 +1,15 @@
 {
   "fixture_id": "identity-continuity/05-impersonation",
   "scenario": "Impersonation attempt without valid rotation proof",
-  "description": "Agent B presents Agent A's DID without a valid rotation chain. Expected: identity rejected at APS signature verification layer. Trust evaluation does not run. Existing A-delegator relationship state unchanged.",
+  "description": "Agent B presents Agent A's DID without a valid rotation chain. Expected: identity rejected at rotation-signature verification. Trust evaluation does not run. Existing A-delegator relationship state unchanged.",
+
+  "scope": {
+    "profile": "sovereign_atom",
+    "normative_status": "non_normative",
+    "source_crosswalk": "crosswalk/sovereign-atom.yaml",
+    "calibration_owner": "AuthorPrime (Sovereign Atom profile maintainer)",
+    "evidence_basis": "Author-reported, unpublished operational logs from the Sovereign Lattice (100+ agent relay sessions). All values are profile calibration for the sovereign_atom profile only; nothing in this fixture is a conformance requirement on any external specification."
+  },
 
   "input_state": {
     "relationship_id": "did:relationship:fixture-05",
@@ -35,6 +43,7 @@
   "expected": {
     "identity_verdict": "rejected",
     "identity_verdict_code": "KEY_ROTATION_INVALID",
+    "identity_verdict_code_note": "Profile-defined code for the sovereign_atom profile; not an error code defined by APS or any external specification.",
     "identity_verdict_reason": "Rotation signature does not verify against the claimed previous key. Request rejected at the cryptographic layer before trust evaluation runs.",
     "decay_factor": null,
     "decay_behavior": "not_evaluated",
@@ -42,17 +51,28 @@
     "trust_after_handoff": 0.75,
     "trust_after_handoff_note": "Unchanged. The impersonation attempt does not touch the legitimate A-delegator relationship state.",
     "rebuild_trajectory": null,
-    "handoff_count_after": 0,
-    "side_effects": {
-      "audit_log_entry": "impersonation_attempt",
-      "recommended_delegator_action": "Alert legitimate Agent A via out-of-band channel. Consider proactive rotation if claimant demonstrates knowledge of internal identifiers."
-    }
+    "handoff_count_after": 0
+  },
+
+  "illustrative": {
+    "note": "Non-normative examples only — not part of the expected outputs and not portable requirements. Local verifier side effects are consumer policy.",
+    "example_side_effects": [
+      "Local audit-log entry recording the failed attempt (log format and entry naming are local to the verifier).",
+      "Out-of-band alert to the legitimate Agent A.",
+      "Proactive rotation if the claimant demonstrates knowledge of internal identifiers."
+    ]
   },
 
   "composition": {
+    "status": "illustrative_author_proposed_mapping",
+    "status_note": "This section is an illustrative, author-proposed mapping. It imposes no requirements on AIP-13 or ERC-8004 and uses no conformance language.",
+    "source_refs": {
+      "aip13": "https://github.com/openagentidentityprotocol/agentidentityprotocol/issues/13 (delegationChain.attenuated discussion)",
+      "erc8004": "https://eips.ethereum.org/EIPS/eip-8004 (Trustless Agents)"
+    },
     "aip13_delegationChain": {
       "behavior": "not_invoked",
-      "note": "Delegation chain evaluation does not run. Impersonation fails at APS signature layer before delegationChain resolution.",
+      "note": "Delegation chain evaluation does not run. Impersonation fails at rotation-signature verification before delegationChain resolution.",
       "action_envelope_change": "none"
     },
     "erc8004_keyRotation": {

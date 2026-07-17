@@ -3,6 +3,14 @@
   "scenario": "Stale re-establishment after extended dormancy",
   "description": "Agent A terminates. Thirty days pass with no interactions. Successor A' re-establishes the relationship with valid rotation proof. Expected: identity valid but attestationFreshness flagged stale; passive time decay applied; rebuild continues with reduced accrual until fresh attestation is presented.",
 
+  "scope": {
+    "profile": "sovereign_atom",
+    "normative_status": "non_normative",
+    "source_crosswalk": "crosswalk/sovereign-atom.yaml",
+    "calibration_owner": "AuthorPrime (Sovereign Atom profile maintainer)",
+    "evidence_basis": "Author-reported, unpublished operational logs from the Sovereign Lattice (100+ agent relay sessions). All values are profile calibration for the sovereign_atom profile only; nothing in this fixture is a conformance requirement on any external specification."
+  },
+
   "input_state": {
     "relationship_id": "did:relationship:fixture-04",
     "parties": [
@@ -57,7 +65,7 @@
     "decay_factor_note": "exp(-ln(2)/30 * 30) = exp(-ln(2)) = 0.5 exactly. The 0.02310 lambda figure is the displayed-rounded value; the analytical decay is 0.5.",
     "trust_after_handoff": 0.4400,
     "accrual_rate_post_stale": 0.10,
-    "accrual_rate_reason": "Stale re-establishment SHOULD reduce accrual_rate until attestationFreshness returns to fresh via N successful interactions. Models the fact that rebuilding after dormancy is slower than rebuilding after a tracked handoff.",
+    "accrual_rate_reason": "In this profile, stale re-establishment reduces accrual_rate until attestationFreshness returns to fresh via N successful interactions. Models the fact that rebuilding after dormancy is slower than rebuilding after a tracked handoff.",
     "rebuild_trajectory": {
       "note": "trust_{n+1} = trust_n + accrual_rate * (1 - trust_n) * 1.0. Accrual_rate = 0.10 for steps 1-5 (stale), 0.15 from step 6 (freshness restored).",
       "step_0_post_handoff": 0.4400,
@@ -74,14 +82,20 @@
   },
 
   "composition": {
+    "status": "illustrative_author_proposed_mapping",
+    "status_note": "This section is an illustrative, author-proposed mapping. It imposes no requirements on AIP-13 or ERC-8004 and uses no conformance language.",
+    "source_refs": {
+      "aip13": "https://github.com/openagentidentityprotocol/agentidentityprotocol/issues/13 (delegationChain.attenuated discussion)",
+      "erc8004": "https://eips.ethereum.org/EIPS/eip-8004 (Trustless Agents)"
+    },
     "aip13_delegationChain": {
       "behavior": "attenuated",
-      "note": "Stale re-establishment MAY trigger scope review by delegator. The world changes over 30 days; permissions granted under old context may no longer be appropriate.",
+      "note": "In this profile's mapping, stale re-establishment can trigger scope review by the delegator. The world changes over 30 days; permissions granted under old context may no longer be appropriate.",
       "action_envelope_change": "delegator_review_recommended"
     },
     "erc8004_keyRotation": {
       "on_chain_anchor": "optional",
-      "note": "Dormancy detection is local to the relationship. On-chain anchor not required unless relationship is registered on the Reputation Registry."
+      "note": "Dormancy detection is local to the relationship. In this mapping an on-chain anchor is only relevant if the relationship is registered on the Reputation Registry."
     }
   }
 }

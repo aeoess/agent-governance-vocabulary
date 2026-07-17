@@ -1,0 +1,86 @@
+{
+  "fixture_id": "identity-continuity/03-fork-detection",
+  "scenario": "Fork detection: two successors claim the same lineage",
+  "description": "Agent A terminates. Both A' and A'' present valid-looking rotation proofs claiming succession from A. Expected: identity layer flags ambiguity, trust score frozen (neither decayed nor accrued) until external resolution.",
+
+  "scope": {
+    "profile": "sovereign_atom",
+    "normative_status": "non_normative",
+    "source_crosswalk": "crosswalk/sovereign-atom.yaml",
+    "calibration_owner": "AuthorPrime (Sovereign Atom profile maintainer)",
+    "evidence_basis": "Author-reported, unpublished operational logs from the Sovereign Lattice (100+ agent relay sessions). All values are profile calibration for the sovereign_atom profile only; nothing in this fixture is a conformance requirement on any external specification."
+  },
+
+  "input_state": {
+    "relationship_id": "did:relationship:fixture-03",
+    "parties": [
+      { "did": "did:key:z6MkDelegator", "role": "delegator", "since": "2026-01-15T00:00:00Z" },
+      { "did": "did:key:z6MkAgentA", "role": "delegate", "since": "2026-01-15T00:00:00Z" }
+    ],
+    "trust_score": 0.80,
+    "interaction_count": 25,
+    "handoff_count": 0,
+    "accrual_rate": 0.15,
+    "status": "active"
+  },
+
+  "handoff_event": {
+    "type": "ambiguous_fork",
+    "predecessor_did": "did:key:z6MkAgentA",
+    "claimant_1": {
+      "successor_did": "did:key:z6MkAgentAprime",
+      "rotation_kid": "kid:agentAprime#2026-04-24T08:00Z",
+      "rotation_signature_valid": true
+    },
+    "claimant_2": {
+      "successor_did": "did:key:z6MkAgentAdoubleprime",
+      "rotation_kid": "kid:agentAdoubleprime#2026-04-24T08:15Z",
+      "rotation_signature_valid": true
+    },
+    "rotation_chain_divergence_detected_at": "kid:agentA#2026-01-15",
+    "timestamp": "2026-04-24T08:15:00Z"
+  },
+
+  "expected": {
+    "identity_verdict": "ambiguous",
+    "identity_verdict_code": "KEY_ROTATION_AMBIGUOUS",
+    "identity_verdict_code_note": "Profile-defined code for the sovereign_atom profile; not an error code defined by APS or any external specification.",
+    "identity_verdict_reason": "Two valid rotation signatures reference the same parent key. This profile treats more than one claimed successor for the same rotation event as unresolved ambiguity.",
+    "decay_factor": null,
+    "decay_behavior": "frozen",
+    "trust_after_handoff": 0.80,
+    "trust_behavior": "Trust score locked at pre-fork value until ambiguity resolves. Neither claimant accrues trust. Delegator-side reputation queries return FROZEN status with both candidates listed.",
+    "rebuild_trajectory": null,
+    "resolution_required": true,
+    "handoff_count_after": 0,
+    "handoff_count_note": "Handoff is not considered complete until ambiguity resolves."
+  },
+
+  "illustrative": {
+    "note": "Non-normative examples only — not part of the expected outputs and not portable requirements. How ambiguity resolves is consumer policy.",
+    "example_resolution_paths": [
+      "Predecessor out-of-band attestation designates the legitimate successor.",
+      "External arbiter (delegator, registry, or governance body) elects one claimant.",
+      "Both claimants voluntarily withdraw and a new rotation is initiated.",
+      "Timeout after a consumer-configured number of days without resolution collapses the relationship to revoked."
+    ]
+  },
+
+  "composition": {
+    "status": "illustrative_author_proposed_mapping",
+    "status_note": "This section is an illustrative, author-proposed mapping. It imposes no requirements on AIP-13 or ERC-8004 and uses no conformance language.",
+    "source_refs": {
+      "aip13": "https://github.com/openagentidentityprotocol/agentidentityprotocol/issues/13 (delegationChain.attenuated discussion)",
+      "erc8004": "https://eips.ethereum.org/EIPS/eip-8004 (Trustless Agents)"
+    },
+    "aip13_delegationChain": {
+      "behavior": "suspended",
+      "note": "In this profile's mapping, delegation-chain resolution blocks on ambiguous rotation. Accepting actions from either claimant before resolution risks double-authorization.",
+      "action_envelope_change": "suspended_all"
+    },
+    "erc8004_keyRotation": {
+      "on_chain_anchor": "anchored_in_this_profile",
+      "note": "In this profile's mapping, fork events are anchored. The on-chain audit trail is how downstream peers detect they need to suspend interactions with either claimant."
+    }
+  }
+}

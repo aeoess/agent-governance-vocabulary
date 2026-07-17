@@ -1,0 +1,93 @@
+{
+  "fixture_id": "identity-continuity/01-graceful-handoff",
+  "scenario": "Graceful handoff with full state transfer",
+  "description": "Agent A signs shutdown event, transfers state to A'. A' presents same DID with rotation proof and a state_transfer_receipt. Expected: identity valid, trust drops to upper decay band (0.85 * 0.85 = 0.7225 at default accrual_rate=0.15), and rebuilds to 0.95 in ~11 receipts on ideal interactions. Rebuild speed is consumer-configurable via accrual_rate.",
+
+  "scope": {
+    "profile": "sovereign_atom",
+    "normative_status": "non_normative",
+    "source_crosswalk": "crosswalk/sovereign-atom.yaml",
+    "calibration_owner": "AuthorPrime (Sovereign Atom profile maintainer)",
+    "evidence_basis": "Author-reported, unpublished operational logs from the Sovereign Lattice (100+ agent relay sessions). All values are profile calibration for the sovereign_atom profile only; nothing in this fixture is a conformance requirement on any external specification."
+  },
+
+  "input_state": {
+    "relationship_id": "did:relationship:fixture-01",
+    "parties": [
+      { "did": "did:key:z6MkDelegator", "role": "delegator", "since": "2026-01-15T00:00:00Z" },
+      { "did": "did:key:z6MkAgentA", "role": "delegate", "since": "2026-01-15T00:00:00Z" }
+    ],
+    "trust_score": 0.85,
+    "interaction_count": 47,
+    "handoff_count": 0,
+    "accrual_rate": 0.15,
+    "status": "active"
+  },
+
+  "handoff_event": {
+    "type": "graceful_shutdown",
+    "predecessor_did": "did:key:z6MkAgentA",
+    "successor_did": "did:key:z6MkAgentAprime",
+    "rotation": {
+      "kind": "scheduled",
+      "previous_kid": "kid:agentA#2026-01-15",
+      "new_kid": "kid:agentAprime#2026-04-24",
+      "rotation_signature_valid": true
+    },
+    "continuity_proof": {
+      "type": "signal_frame_chain",
+      "chain_length": 47,
+      "last_frame_hash": "sha256:fixture-01-last-frame",
+      "signed_by_predecessor": true
+    },
+    "state_transfer": {
+      "complete": true,
+      "overlap_hours": 24,
+      "state_transfer_receipt": "sha256:fixture-01-state-receipt",
+      "transferred_keys": ["interaction_history", "context_summary", "working_memory", "pending_tasks"],
+      "missing_keys": []
+    },
+    "quality": "graceful_full",
+    "timestamp": "2026-04-24T00:00:00Z",
+    "signed_by": "predecessor"
+  },
+
+  "expected": {
+    "identity_verdict": "valid",
+    "identity_verdict_reason": "Rotation chain continuous, predecessor signed the shutdown event, state_transfer_receipt present.",
+    "decay_factor": 0.85,
+    "trust_after_handoff": 0.7225,
+    "accrual_per_receipt_if_score_1": 0.15,
+    "rebuild_trajectory": {
+      "note": "trust_{n+1} = trust_n + 0.15 * (1 - trust_n) * 1.0 (ideal receipts; interaction_score = 1.0 each step).",
+      "step_0_post_handoff": 0.7225,
+      "step_1": 0.7641,
+      "step_2": 0.7995,
+      "step_3": 0.8296,
+      "step_5": 0.8769,
+      "step_7": 0.9110,
+      "step_11": 0.9536,
+      "receipts_to_reach_0.90": 7,
+      "receipts_to_reach_0.95": 11
+    },
+    "handoff_count_after": 1
+  },
+
+  "composition": {
+    "status": "illustrative_author_proposed_mapping",
+    "status_note": "This section is an illustrative, author-proposed mapping. It imposes no requirements on AIP-13 or ERC-8004 and uses no conformance language.",
+    "source_refs": {
+      "aip13": "https://github.com/openagentidentityprotocol/agentidentityprotocol/issues/13 (delegationChain.attenuated discussion)",
+      "erc8004": "https://eips.ethereum.org/EIPS/eip-8004 (Trustless Agents)"
+    },
+    "aip13_delegationChain": {
+      "behavior": "attenuated",
+      "note": "Successor inherits predecessor's action envelope as a ceiling. Because trust was high pre-handoff (0.85), delegator may elect not to narrow scope on this rotation. Trust rebuilds inside the existing ceiling.",
+      "action_envelope_change": "unchanged"
+    },
+    "erc8004_keyRotation": {
+      "on_chain_anchor": "optional",
+      "note": "Reputation Registry may record rotation event for audit; the trust evaluation in this profile does not depend on it."
+    }
+  }
+}

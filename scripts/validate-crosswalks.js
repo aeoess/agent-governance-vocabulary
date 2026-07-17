@@ -9,7 +9,10 @@ const fs = require('fs')
 const path = require('path')
 const yaml = require('js-yaml')
 
-const ROOT = path.resolve(__dirname, '..')
+// Optional positional argument: validate a different tree with THIS validator's
+// rules (used by the trusted CI job to run base-branch code against PR data).
+const targetArg = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : null
+const ROOT = targetArg ? path.resolve(targetArg) : path.resolve(__dirname, '..')
 const VOCAB_PATH = path.join(ROOT, 'vocabulary.yaml')
 const CROSSWALK_DIR = path.join(ROOT, 'crosswalk')
 const verbose = process.argv.includes('--verbose')
@@ -495,29 +498,34 @@ function walkFixtures(dir) {
   if (!fs.existsSync(dir)) return
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name)
-    if (entry.isDirectory()) {
-      // Two directories predate the scope convention and are excluded by
-      // name, deliberately visible here rather than hidden in config:
-      // - validator-vectors: internal test inputs for scripts/validators/,
-      //   not claim-carrying profile packs.
-      // - interop-week-1: cross-implementation exchange vectors from the
-      //   interop week; provenance lives in the exchange threads, and the
-      //   five-key scope shape written for profile packs misdescribes
-      //   multi-system vectors. A second interop pack gets its own scope
-      //   shape decided at review time.
-      // Every new fixture directory is covered by the check.
-      if (entry.name === 'validator-vectors' || entry.name === 'interop-week-1') continue
-      walkFixtures(full); continue
-    }
+    if (entry.isDirectory()) { walkFixtures(full); continue }
     if (entry.name.endsWith('.json')) fixtureFiles.push(full)
   }
 }
+
+// Exact files that predate the scope convention, allowlisted by path.
+// Any NEW file anywhere under fixtures/, including inside these directories,
+// must pass the scope check. Adding a validator vector or interop artifact
+// means amending this list in the same PR, which keeps the exemption
+// reviewed instead of implicit. (Hostile-review finding, 2026-07-17.)
+const LEGACY_FIXTURES = new Set([
+  'fixtures/validator-vectors/pdr-drifting-agent.json',
+  'fixtures/validator-vectors/pdr-improving-agent.json',
+  'fixtures/validator-vectors/pdr-invalid-out-of-range.json',
+  'fixtures/validator-vectors/pdr-stable-agent.json',
+  'fixtures/interop-week-1/entity-continuity-continuity-analyzer.json',
+  'fixtures/interop-week-1/settlement-witness-sar.json',
+  'fixtures/interop-week-1/step-2-agentnexus.json',
+  'fixtures/interop-week-1/step-2-asqav.json',
+  'fixtures/interop-week-1/trust-verification-agentid.json'
+])
 
 function validateFixtures() {
   walkFixtures(FIXTURES_DIR)
   const SCOPE_KEYS = ['profile', 'normative_status', 'source_crosswalk', 'calibration_owner', 'evidence_basis']
   for (const full of fixtureFiles) {
     const rel = path.relative(ROOT, full)
+    if (LEGACY_FIXTURES.has(rel)) continue
     let doc
     try {
       doc = JSON.parse(fs.readFileSync(full, 'utf8'))
@@ -532,6 +540,7 @@ function validateFixtures() {
     }
     for (const key of SCOPE_KEYS) {
       if (!(key in scope)) err(rel, `scope.${key} missing`)
+      else if (typeof scope[key] !== 'string' || scope[key].trim() === '') err(rel, `scope.${key} must be a nonempty string`)
     }
     if ('normative_status' in scope && scope.normative_status !== 'non_normative') {
       err(rel, `scope.normative_status is '${scope.normative_status}'; fixtures are non_normative. A normative fixture set is a deliberate registry decision and requires changing this check in the same PR.`)

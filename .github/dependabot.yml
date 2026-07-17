@@ -12,6 +12,8 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     groups:
-      github-actions:
+      # Only the codeql-action family is version-paired; grouping everything
+      # couples unrelated updates (hostile-review finding 6, 2026-07-17).
+      codeql-action:
         patterns:
-          - "*"
+          - "github/codeql-action*"

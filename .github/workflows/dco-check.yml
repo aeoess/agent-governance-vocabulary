@@ -20,11 +20,20 @@ jobs:
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          bad=$(git log --no-merges --format='%H%x09%(trailers:key=Signed-off-by,valueonly)' "$BASE..$HEAD" | awk -F'\t' 'NF<2 || $2==""{print $1}')
+          # A sign-off must match the commit author exactly (Name <email>),
+          # probot-dco semantics. This is a self-attestation of the right to
+          # submit, not identity verification; CONTRIBUTING.md says so.
+          bad=""
+          for sha in $(git rev-list --no-merges "$BASE..$HEAD"); do
+            author=$(git log -1 --format='%an <%ae>' "$sha")
+            match=$(git log -1 --format='%(trailers:key=Signed-off-by,valueonly)' "$sha" | grep -Fx "$author" || true)
+            if [ -z "$match" ]; then bad="$bad $sha"; fi
+          done
           if [ -n "$bad" ]; then
-            echo "Commits missing Signed-off-by:"; echo "$bad"
+            echo "Commits without a Signed-off-by matching the commit author (Name <email>):"
+            for s in $bad; do echo "  $s  author: $(git log -1 --format='%an <%ae>' $s)"; done
             echo "Fix: git rebase --signoff and push again."
             echo "Single-commit PR: git commit --amend -s, then force-push the branch."
             exit 1
           fi
-          echo "All commits signed off."
+          echo "All commits carry an author-matching sign-off."

@@ -408,7 +408,7 @@ signal_types:
 # ──────────────────────────────────────────────────────────────
 # CHANCERY-SPECIFIC TERMS (canonical-gap candidates)
 #
-# Primitives in production in Chancery that no current canonical
+# Primitives implemented in Chancery that no current canonical
 # signal_type captures. Listed as grounded evidence for future
 # vocabulary candidates, per the repo's preference for terms backed
 # by implementations rather than proposed in the abstract.

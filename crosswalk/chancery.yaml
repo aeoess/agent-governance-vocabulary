@@ -92,7 +92,7 @@ system_attributes:
 #   governance_attestation — capability leases + audit events
 #   trust_verification     — identity documents
 #   security_posture       — server pins + confinement manifests
-#   decision_lineage       — hash-chained audit trail + writ chains
+#   decision_lineage       — hash-chained audit trail (writ chain: adjacent evidence)
 # The scored/reputation/wallet signal types resolve to no_mapping:
 # Chancery is an actuator (identity, authority, enforcement,
 # revocation), not a detector — it deliberately produces no scored
@@ -136,7 +136,7 @@ signal_types:
       standalone artifacts; (c) the canonical primitive presumes
       attestations meant to travel between parties, while Chancery's
       artifacts are scoped to one self-hosted trust domain.
-    issuers_in_production: ["Chancery (per-deployment issuer)"]
+    issuers_in_production: []
     signed_payload_fields:
       # capability lease claims (internal/service/lease.go)
       - wid   # writ id
@@ -187,7 +187,7 @@ signal_types:
       point-in-time registry fact, not a durable credential;
       (c) documents are bearer in the MVP (published as gap G1 in
       SECURITY.md; proof-of-possession is the v1 path).
-    issuers_in_production: ["Chancery (per-deployment issuer)"]
+    issuers_in_production: []
     signed_payload_fields:
       - sub        # spiffe://<trust-domain>/agent/<name>
       - ver        # content-addressed version digest
@@ -234,8 +234,12 @@ signal_types:
       the attested subject here (the tool's code identity) matches
       the canonical "signed subject is the artifact" framing more
       closely than a pure config declaration does. Changes go through
-      `chancery mcp repin`: explicit, audited.
-    issuers_in_production: ["Chancery (per-deployment registry)"]
+      `chancery mcp repin`: explicit, audited. For the scheduled
+      review of this proposed term: Chancery emits no signed posture
+      artifact or fixture compatible with the canonical envelope, so
+      this mapping does NOT count toward security_posture's
+      promotion trigger.
+    issuers_in_production: []
     signed_payload_fields:
       # server_pins registry row (internal/store/store.go)
       - namespace
@@ -256,32 +260,29 @@ signal_types:
 
   decision_lineage:
     canonical: decision_lineage
-    internal: "hash-chained audit trail (RFC-006) + writ block chain (RFC-002)"
-    match: structural
+    internal: "hash-chained audit trail (RFC-006)"
+    match: partial
     notes: >
-      Two content-addressable ordered sequences, matching the
-      canonical shape ("each entry references its predecessor by
-      content hash so the lineage can be replayed and verified end to
-      end") with different field names.
+      The audit trail is a content-addressable ordered sequence:
+      every event carries prev_hash and hash (SHA-256), and
+      `chancery audit verify` replays the full chain end to end,
+      detecting any edit, deletion, or reorder.
 
-      (1) The audit trail: every event carries prev_hash and hash
-      (SHA-256); `chancery audit verify` replays the full chain and
-      detects any edit, deletion, or reorder. It is the decision
-      sequence for the whole deployment, filterable per agent.
+      Match is partial because the canonical primitive is a sequence
+      of decisions affecting a SINGLE agent, while Chancery's chain
+      is deployment-wide — one chain for the whole trust domain,
+      filterable per agent but not per-agent-addressed. The shape
+      (predecessor-by-content-hash, replayable) matches; the scope
+      does not.
 
-      (2) The writ chain: each ES256-signed block embeds a SHA-256
-      prefix hash over the serialized chain before it, so splice,
-      reorder, and cross-writ substitution are rejected at
-      verification. It is the lineage of AUTHORITY (user -> agent ->
-      sub-agent), embedded in the credential that acts.
-
-      Match is structural rather than exact because: (a) the audit
-      chain is per-deployment with per-entry chain hashes, not
-      per-agent envelopes each individually signed; (b) the canonical
-      scheme is implementation-specific by design in v0.1, and
-      Chancery's addressing (prev_hash rows; JWS prefix hashes) is
-      exactly that.
-    issuers_in_production: ["Chancery (per-deployment)"]
+      Adjacent evidence, not part of this mapping: the writ chain
+      (RFC-002) is also content-addressable — each ES256-signed block
+      embeds a SHA-256 prefix hash over the serialized chain before
+      it, so splice, reorder, and cross-writ substitution are
+      rejected at verification. It records AUTHORITY lineage
+      (user -> agent -> sub-agent), not decisions, so it is not
+      graded under this term.
+    issuers_in_production: []
     signed_payload_fields:
       # audit_events row (internal/store/store.go)
       - seq
@@ -433,9 +434,8 @@ chancery_specific_terms:
       authority artifact itself — delegated scope as a signed,
       monotonically-narrowing chain. governance_attestation attests
       that a scope was satisfied; nothing names the scope object.
-      Precedents with the same shape: Macaroons (caveats), Biscuit
-      tokens (attenuation blocks) — suggesting the primitive
-      generalizes beyond one implementation.
+      The case for canonical adoption is argued in the companion
+      issue, not here.
     mapping_status: aps_gap
 
   - term: "capability_lease"
@@ -468,6 +468,8 @@ chancery_specific_terms:
       chain for agent TOOLING (the thing MCP made universal) has no
       vocabulary: nothing names "the artifact this agent is about to
       hand its arguments to is the code the operator approved."
-      security_posture is the nearest term and describes the actor's
-      runtime posture, not the callee's identity.
+      security_posture is the nearest term, but its canonical
+      definition makes the signed subject the artifact itself (repo,
+      commit, output) — it does not name the identity of the tool a
+      governed agent is about to call, verified at spawn.
     mapping_status: aps_gap

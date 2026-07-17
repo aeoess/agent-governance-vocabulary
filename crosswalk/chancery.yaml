@@ -1,0 +1,473 @@
+# crosswalk/chancery.yaml
+#
+# Maps Chancery's governance primitives — agent identity documents,
+# writs (signed attenuating delegation chains), per-call in-path
+# enforcement, capability leases, server pinning + confinement
+# manifests, and the hash-chained audit trail — onto the canonical
+# Agent Governance Vocabulary.
+#
+# Chancery (github.com/chanceryhq/chancery) is a self-hosted identity
+# provider and enforcement plane for AI agents: single Go binary,
+# Apache-2.0, MCP-first. It is deliberately an ACTUATOR, not a
+# detector: it issues identity, holds delegated authority, enforces
+# per call, and revokes — it ships no trust scoring, no reputation,
+# and no semantic judgment. That design choice is why most scored
+# signal types below resolve to honest no_mapping rather than
+# stretched partials.
+#
+# First-party crosswalk authored by the system maintainer. Every
+# mapped claim cites an RFC or source path in the Chancery repo;
+# design decisions are locked as RFCs at
+# github.com/chanceryhq/chancery/tree/main/rfcs.
+#
+# License: Apache-2.0
+
+system:
+  name: chancery
+  home: https://github.com/chanceryhq/chancery
+  spec_version: "v0.1.x (pre-alpha; RFC-000..018 locked; APIs may move)"
+  role: >
+    Self-hosted identity provider + in-path enforcement plane for AI
+    agents. Identity has three layers (agent -> immutable
+    content-addressed version -> revocable runtime instance, RFC-001).
+    Authority is a writ (RFC-002): an ordered chain of ES256-signed
+    blocks where block 0 grants capabilities and every later block may
+    only add caveats — widening is structurally unrepresentable (the
+    delegation block format has no capability field). Enforcement is an
+    out-of-process proxy (`chancery mcp wrap`, RFC-005) that decides
+    every tool call against fresh registry state, so revocation lands
+    on the next call rather than the next token expiry. Credentials are
+    AEAD-sealed and injected into the tool server's environment, never
+    the agent's context (RFC-003). The audit trail is hash-chained and
+    metadata-only by schema — no prompts, payloads, or tool arguments
+    are storable (RFC-006). The callee side is governed too: server
+    identity pinning with drift refusal (RFC-016) and manifest-bounded
+    OS confinement (RFC-018).
+  identity_layer: >
+    Chancery-issued ES256 identity documents (JWT) over
+    SPIFFE-compatible URIs (spiffe://<trust-domain>/agent/<name>),
+    registry-born and owner-attributed; a cryptographically valid
+    document is never sufficient — issuance state is re-checked
+    in-path (RFC-001).
+  source_urls:
+    repo: "https://github.com/chanceryhq/chancery"
+    rfcs: "https://github.com/chanceryhq/chancery/tree/main/rfcs"
+    threat_model: "https://github.com/chanceryhq/chancery/blob/main/rfcs/009-threat-model.md"
+    security_gaps: "https://github.com/chanceryhq/chancery/blob/main/SECURITY.md"
+    concepts: "https://github.com/chanceryhq/chancery/blob/main/docs/concepts.md"
+
+license: Apache-2.0
+
+maintainer:
+  github: anee769
+  confirmed_at: "2026-07-17"
+  third_party_authored: false
+
+issuer: >
+  The Chancery control plane of a single trust domain (self-hosted;
+  one ES256 issuer key per deployment). There is no central Chancery
+  service — every deployment is its own issuer.
+
+
+# ──────────────────────────────────────────────────────────────
+# SYSTEM ATTRIBUTES (per vocabulary.yaml > system_attributes)
+# ──────────────────────────────────────────────────────────────
+# All signed artifacts (identity documents, writ blocks, capability
+# leases) are ES256 (ECDSA P-256) compact JWS via golang-jwt; the
+# signed bytes are the JWS payload itself, so no separate JSON
+# canonicalization pass is applied (hence implementation-defined
+# rather than jcs-rfc-8785). Chain integrity (writ prefix hashes,
+# audit chain) uses SHA-256. Verifiers accept ECDSA only: alg:none
+# and HS256 key-confusion are rejected, locked by adversarial tests
+# (rfcs/009-threat-model.md §8).
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# Closest canonical fits:
+#   governance_attestation — capability leases + audit events
+#   trust_verification     — identity documents
+#   security_posture       — server pins + confinement manifests
+#   decision_lineage       — hash-chained audit trail + writ chains
+# The scored/reputation/wallet signal types resolve to no_mapping:
+# Chancery is an actuator (identity, authority, enforcement,
+# revocation), not a detector — it deliberately produces no scored
+# assessments. Where a detector is wanted, Chancery exposes a socket
+# for an external one (RFC-017) rather than shipping judgment.
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "capability lease (RFC-015) + audit event (RFC-006)"
+    match: partial
+    notes: >
+      Two Chancery primitives cover the canonical question ("signed
+      attestation that an agent or action satisfied a declared
+      governance requirement").
+
+      (1) Capability lease (rfcs/015-call-lifecycle-and-leases.md).
+      When enabled (`mcp wrap --lease`), every ADMITTED tool call is
+      stamped with a short-lived ES256 JWS in the MCP frame's
+      params._meta["chancery/lease"]: claims {wid, blk, agt, res,
+      non, iat, exp}, 30-second TTL. It attests that this specific
+      call, by this agent, on this resource, under this writ block,
+      passed the full policy stack at admission time. A cooperating
+      server verifies it via POST /v1/leases/verify immediately
+      before committing the side effect; verification re-checks writ
+      and block liveness, so a revocation landing mid-flight fails
+      the lease even inside its TTL.
+
+      (2) Audit event (rfcs/006-audit-and-attribution.md). Every
+      decision (allow AND deny) is recorded with embedded
+      attribution — agent, version, instance, writ, verb:resource,
+      decision, layer — in a hash-chained log; on the enforcement
+      path, failure to audit fails the call (deny-on-audit-failure).
+
+      Match is partial because: (a) the lease is a portable signed
+      envelope but deliberately NOT offline-sufficient — its validity
+      contract includes a live registry liveness check, which is the
+      feature (instant revocation), not a gap; (b) audit events are
+      chain-verified platform records, not individually-signed
+      standalone artifacts; (c) the canonical primitive presumes
+      attestations meant to travel between parties, while Chancery's
+      artifacts are scoped to one self-hosted trust domain.
+    issuers_in_production: ["Chancery (per-deployment issuer)"]
+    signed_payload_fields:
+      # capability lease claims (internal/service/lease.go)
+      - wid   # writ id
+      - blk   # acting writ block id
+      - agt   # agent name
+      - res   # resource (namespace/tool)
+      - non   # nonce
+      - iat
+      - exp   # iat + 30s
+    endpoints:
+      lease_verify: "POST /v1/leases/verify -> {valid, reason, resource}"
+      audit_export: "chancery audit --json (NDJSON), chancery audit verify (chain check)"
+    envelope:
+      alg: "ES256 (compact JWS)"
+      proof_type: "JWS (lease); SHA-256 hash chain (audit)"
+      canonicalization: "JWS payload bytes; no separate JCS pass"
+      jwks_uri: "per-deployment issuer key; no central JWKS"
+    ttl:
+      default_ttl_seconds: 30
+      stale_action: "lease invalid on expiry; server refuses to commit"
+    revocation:
+      strategy: >
+        Live-state re-check at verification: writ revocation, block
+        subtree revocation, agent/instance revocation, and expiry all
+        invalidate an already-minted lease on its next verification.
+        Revocations are monotonic, so no epoch counter is needed.
+    transport:
+      lease: 'stamped into MCP params._meta["chancery/lease"] on the forwarded frame'
+      verify: "HTTP POST to the deployment's control plane"
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "identity document (RFC-001)"
+    match: partial
+    notes: >
+      Chancery issues short-lived (default 5 min, max 60) ES256
+      identity documents binding subject (SPIFFE-compatible URI),
+      version digest, instance id, and accountable owner principal.
+      This is identity-layer verification with principal endorsement
+      (every agent has a named human/team owner; ownerless agents are
+      blocked from issuance until transferred, RFC-007). Match is
+      partial because: (a) the canonical grades (Grade 1-3, KYC) have
+      no analog — Chancery verifies registration and liveness, not
+      the human's real-world identity; (b) a valid signature is never
+      sufficient: `chancery token verify` and every in-path check
+      also require live registry state (agent active, version and
+      instance not revoked), so the verification status is a
+      point-in-time registry fact, not a durable credential;
+      (c) documents are bearer in the MVP (published as gap G1 in
+      SECURITY.md; proof-of-possession is the v1 path).
+    issuers_in_production: ["Chancery (per-deployment issuer)"]
+    signed_payload_fields:
+      - sub        # spiffe://<trust-domain>/agent/<name>
+      - ver        # content-addressed version digest
+      - inst       # instance id
+      - owner      # accountable principal, e.g. user:a@acme.com
+      - iat
+      - exp
+    endpoints:
+      issue: "chancery instance start --agent <name> (or POST /v1/instances)"
+      verify: "chancery token verify <jwt> — signature AND registry state"
+    envelope:
+      alg: "ES256 (compact JWS)"
+      proof_type: "JWT identity document + live registry check"
+    ttl:
+      default_ttl_seconds: 300
+      stale_action: "refused at verification and in-path"
+    revocation:
+      strategy: "instance/version/agent revocation in the registry takes effect on the next in-path check — no CRL, no cache"
+
+  security_posture:
+    canonical: security_posture
+    internal: "server pin + confinement manifest (RFC-016/018)"
+    match: partial
+    notes: >
+      Chancery records and enforces the runtime posture of the TOOL
+      SERVER an agent talks to — the callee, where the canonical
+      vocabulary's other signals describe the actor. A pin binds a
+      server namespace to a code identity at three tiers (strongest
+      applicable wins): container image digest (image@sha256:...),
+      Merkle hash of the whole install tree, or the resolved binary's
+      SHA-256. Every spawn re-verifies and REFUSES on drift — a
+      poisoned node_modules file refuses to start
+      (rfcs/016-server-pinning.md). The pin also carries a
+      confinement manifest — egress (hosts the server process may
+      reach; empty = no network) and writable (paths; empty =
+      read-only) — which `mcp wrap --confine` applies as an OS
+      boundary: loopback-only outbound through an auditing allow-list
+      proxy plus a filesystem sandbox; where the sandbox layer is
+      unavailable the spawn refuses rather than run unconfined
+      (rfcs/018-frozen-installs-and-confinement.md). Match is partial
+      for the same reason as other enforcement-plane systems: the
+      posture is a registry-recorded declaration enforced at spawn,
+      not a portable signed attestation about the artifact — though
+      the attested subject here (the tool's code identity) matches
+      the canonical "signed subject is the artifact" framing more
+      closely than a pure config declaration does. Changes go through
+      `chancery mcp repin`: explicit, audited.
+    issuers_in_production: ["Chancery (per-deployment registry)"]
+    signed_payload_fields:
+      # server_pins registry row (internal/store/store.go)
+      - namespace
+      - kind        # binary | tree | digest
+      - path
+      - sha256
+      - egress      # host allow-list (confinement manifest)
+      - writable    # path allow-list (confinement manifest)
+    endpoints:
+      pin: "first `chancery mcp wrap` pins; `chancery mcp install <pkg>@<exact-version>` = frozen tree-pinned install"
+      repin: "chancery mcp repin <ns> [--egress ... --writable ...] -- <cmd> (audited)"
+      preflight: "chancery mcp wrap --dry-run (pin status, manifest, effective authority; zero side effects)"
+    envelope:
+      alg: "n/a (registry row; drift and changes are audited events in the hash chain)"
+      proof_type: "spawn-time re-verification, fail-closed"
+    revocation:
+      strategy: "n/a — a pin is not a credential; drift refuses the spawn until a deliberate repin"
+
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "hash-chained audit trail (RFC-006) + writ block chain (RFC-002)"
+    match: structural
+    notes: >
+      Two content-addressable ordered sequences, matching the
+      canonical shape ("each entry references its predecessor by
+      content hash so the lineage can be replayed and verified end to
+      end") with different field names.
+
+      (1) The audit trail: every event carries prev_hash and hash
+      (SHA-256); `chancery audit verify` replays the full chain and
+      detects any edit, deletion, or reorder. It is the decision
+      sequence for the whole deployment, filterable per agent.
+
+      (2) The writ chain: each ES256-signed block embeds a SHA-256
+      prefix hash over the serialized chain before it, so splice,
+      reorder, and cross-writ substitution are rejected at
+      verification. It is the lineage of AUTHORITY (user -> agent ->
+      sub-agent), embedded in the credential that acts.
+
+      Match is structural rather than exact because: (a) the audit
+      chain is per-deployment with per-entry chain hashes, not
+      per-agent envelopes each individually signed; (b) the canonical
+      scheme is implementation-specific by design in v0.1, and
+      Chancery's addressing (prev_hash rows; JWS prefix hashes) is
+      exactly that.
+    issuers_in_production: ["Chancery (per-deployment)"]
+    signed_payload_fields:
+      # audit_events row (internal/store/store.go)
+      - seq
+      - event
+      - agent_id
+      - instance_id
+      - writ_id
+      - verb
+      - resource
+      - decision
+      - reason      # metadata only — schema has no column for prompts, payloads, or tool arguments
+      - prev_hash
+      - hash
+    endpoints:
+      replay: "chancery audit --json (NDJSON export); chancery audit verify (end-to-end chain verification)"
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: >
+      Chancery computes no scored trust assessment from observed
+      behavior — deliberately. Authority comes from explicit grants
+      that only narrow, not from earned scores. A deployment wanting
+      behavioral judgment plugs a detector into the per-call intent
+      socket (rfcs/017-intent-socket.md), where its verdict is
+      veto-only: an external score can deny a call but can never
+      widen authority.
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: >
+      No aggregate completed/total metric is computed. The audit
+      trail distinguishes admitted from committed per call
+      (mcp.call_result, RFC-015), which a consumer could aggregate,
+      but Chancery itself issues no windowed ratio.
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: >
+      Delegating agents do not sign post-completion attestations
+      about executors. Delegation in Chancery is pre-action authority
+      (a caveat block on the writ), not post-action review.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: >
+      No assessed task outcomes. Events record decisions and results
+      (committed/failed), not quality.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: >
+      No composite grades. The nearest concept — the identity
+      document — is a liveness-checked binding, not a graded
+      credential.
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: >
+      Adjacent but honestly distinct: Chancery's version chain
+      (content-addressed prompt/config/tool digests, RFC-001) answers
+      "did this agent CHANGE since we reviewed it?" — the canonical
+      primitive answers "is this the SAME agent across an
+      infrastructure change?". Chancery issues no migration
+      attestation linking old and new keys; key rotation is a
+      published gap (G8, SECURITY.md).
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      Not a payments or settlement layer. The capability lease is
+      pre-commit admission evidence, not a post-execution settlement
+      receipt.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: >
+      Wallet-agnostic; no on-chain anything. Identity anchors to a
+      self-hosted registry and an accountable owner principal, not a
+      wallet.
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: >
+      No wallet behavioral classification (see wallet_state).
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: >
+      No scored counterparty exposure. Policy answers are boolean
+      per-call verdicts with a stated deciding layer, not risk
+      scores.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: >
+      Chancery governs actions, not cognition — stated as a scope
+      line in the threat model (RFC-009 Addendum A, ASI06). It never
+      sees reasoning: the audit schema cannot store prompts, and the
+      enforcement plane reads only the JSON-RPC envelope.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: >
+      Same scope line as reasoning_integrity: no commitments about
+      reasoning state are produced. The closest artifact — the
+      writ's task field (`writ grant --task`, RFC-017) — is an
+      operator-declared purpose handed to intent checkers, not a
+      model-derived decomposition of latent state.
+
+
+# ──────────────────────────────────────────────────────────────
+# CHANCERY-SPECIFIC TERMS (canonical-gap candidates)
+#
+# Primitives in production in Chancery that no current canonical
+# signal_type captures. Listed as grounded evidence for future
+# vocabulary candidates, per the repo's preference for terms backed
+# by implementations rather than proposed in the abstract.
+# ──────────────────────────────────────────────────────────────
+chancery_specific_terms:
+
+  - term: "attenuating_delegation"
+    internal: "writ (RFC-002)"
+    definition: >
+      A signed, ordered delegation chain in which authority can only
+      narrow: block 0 grants capabilities under a named principal's
+      authority; every later block may only add caveats. Widening is
+      structurally unrepresentable — the delegation block format has
+      no capability field, so no signer, including the issuer, can
+      express an escalation. Effective authority = grant
+      intersected with every caveat. The chain doubles as lineage
+      (user -> agent -> sub-agent) embedded in the credential that
+      acts; revoking any block kills its whole subtree on the next
+      action.
+    why_not_canonical: >
+      The vocabulary names attestations ABOUT agents (trust, review,
+      compliance) and decision records, but has no primitive for the
+      authority artifact itself — delegated scope as a signed,
+      monotonically-narrowing chain. governance_attestation attests
+      that a scope was satisfied; nothing names the scope object.
+      Precedents with the same shape: Macaroons (caveats), Biscuit
+      tokens (attenuation blocks) — suggesting the primitive
+      generalizes beyond one implementation.
+    mapping_status: aps_gap
+
+  - term: "capability_lease"
+    internal: "lease (RFC-015)"
+    definition: >
+      A short-TTL signed admission artifact minted per allowed call
+      and verified against LIVE revocation state by the receiving
+      tool right before the side effect commits — separating
+      "admitted" from "committed" so a revocation landing mid-flight
+      fails at the server instead of landing.
+    why_not_canonical: >
+      Canonical validity_temporal values describe when validity is
+      established (at_issuance, windowed, continuously...), but no
+      signal type names a deliberately non-portable, liveness-coupled
+      admission receipt. It inverts the usual attestation contract:
+      the artifact is designed to be RE-CHECKED, not trusted.
+    mapping_status: aps_gap
+
+  - term: "callee_identity"
+    internal: "server pin (RFC-016/018)"
+    definition: >
+      Pinned code identity of the TOOL a governed agent calls
+      (binary hash, install-tree Merkle hash, or image digest), with
+      drift refusal at spawn and an operator-declared confinement
+      manifest (egress hosts, writable paths) enforced as an OS
+      boundary. Two authorities by design: the delegation bounds each
+      call; the manifest bounds the process.
+    why_not_canonical: >
+      Every current signal type describes the agent side. Supply
+      chain for agent TOOLING (the thing MCP made universal) has no
+      vocabulary: nothing names "the artifact this agent is about to
+      hand its arguments to is the code the operator approved."
+      security_posture is the nearest term and describes the actor's
+      runtime posture, not the callee's identity.
+    mapping_status: aps_gap

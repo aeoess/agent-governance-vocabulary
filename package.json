@@ -24,6 +24,6 @@
   },
   "homepage": "https://github.com/aeoess/agent-governance-vocabulary#readme",
   "devDependencies": {
-    "js-yaml": "^4.1.1"
+    "js-yaml": "^5.2.1"
   }
 }

@@ -485,6 +485,68 @@ checkNegativeFixtures()
 // the per-crosswalk signal/system checks.
 validateSignalStatus(vocab)
 
+// Fixture packs: fixtures/**/*.json. Convention set in the PR #116 review:
+// a fixture that can travel alone must carry its own scope and claim
+// boundaries in machine-readable form.
+const FIXTURES_DIR = path.join(ROOT, 'fixtures')
+const fixtureFiles = []
+
+function walkFixtures(dir) {
+  if (!fs.existsSync(dir)) return
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      // Two directories predate the scope convention and are excluded by
+      // name, deliberately visible here rather than hidden in config:
+      // - validator-vectors: internal test inputs for scripts/validators/,
+      //   not claim-carrying profile packs.
+      // - interop-week-1: cross-implementation exchange vectors from the
+      //   interop week; provenance lives in the exchange threads, and the
+      //   five-key scope shape written for profile packs misdescribes
+      //   multi-system vectors. A second interop pack gets its own scope
+      //   shape decided at review time.
+      // Every new fixture directory is covered by the check.
+      if (entry.name === 'validator-vectors' || entry.name === 'interop-week-1') continue
+      walkFixtures(full); continue
+    }
+    if (entry.name.endsWith('.json')) fixtureFiles.push(full)
+  }
+}
+
+function validateFixtures() {
+  walkFixtures(FIXTURES_DIR)
+  const SCOPE_KEYS = ['profile', 'normative_status', 'source_crosswalk', 'calibration_owner', 'evidence_basis']
+  for (const full of fixtureFiles) {
+    const rel = path.relative(ROOT, full)
+    let doc
+    try {
+      doc = JSON.parse(fs.readFileSync(full, 'utf8'))
+    } catch (e) {
+      err(rel, `invalid JSON: ${e.message}`)
+      continue
+    }
+    const scope = doc.scope
+    if (!scope || typeof scope !== 'object') {
+      err(rel, 'missing top-level `scope` object; every fixture carries its own scope and claim boundaries')
+      continue
+    }
+    for (const key of SCOPE_KEYS) {
+      if (!(key in scope)) err(rel, `scope.${key} missing`)
+    }
+    if ('normative_status' in scope && scope.normative_status !== 'non_normative') {
+      err(rel, `scope.normative_status is '${scope.normative_status}'; fixtures are non_normative. A normative fixture set is a deliberate registry decision and requires changing this check in the same PR.`)
+    }
+    if (typeof scope.source_crosswalk === 'string' && !fs.existsSync(path.join(ROOT, scope.source_crosswalk))) {
+      err(rel, `scope.source_crosswalk '${scope.source_crosswalk}' does not exist in the repository`)
+    }
+  }
+  if (verbose && fixtureFiles.length > 0) {
+    console.log(`checked ${fixtureFiles.length} fixture file(s) under fixtures/`)
+  }
+}
+
+validateFixtures()
+
 if (warnings.length > 0) {
   console.log('')
   for (const w of warnings) console.log(w)
@@ -494,10 +556,10 @@ if (errors.length > 0) {
   console.log('')
   for (const e of errors) console.log(e)
   console.log('')
-  console.log(`FAIL: ${errors.length} error(s), ${warnings.length} warning(s) across ${files.length} file(s)`)
+  console.log(`FAIL: ${errors.length} error(s), ${warnings.length} warning(s) across ${files.length + fixtureFiles.length} file(s)`)
   process.exit(1)
 }
 
 console.log('')
-console.log(`PASS: 0 errors, ${warnings.length} warning(s) across ${files.length} file(s)`)
+console.log(`PASS: 0 errors, ${warnings.length} warning(s) across ${files.length + fixtureFiles.length} file(s)`)
 process.exit(0)

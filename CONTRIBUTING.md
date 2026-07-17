@@ -163,7 +163,8 @@ Every PR is evaluated against five questions, applied to every contributor equal
 
 - **Maintainer:** [@aeoess](https://github.com/aeoess) (Tymofii Pidlisnyi)
 - **Review timing:** most PRs receive an initial response within 24 hours during active weeks. If a PR has had no response after 5 business days, ping it — the notification may have been missed.
-- **CLA / DCO:** no CLA is required. Contributions are accepted on the understanding that the submitter has the right to contribute under the stated file license. Signed-off-by commits are welcome but not required.
+- **CLA / DCO:** no CLA is required. As of 2026-07-17, every commit in a PR carries a `Signed-off-by` line ([Developer Certificate of Origin](https://developercertificate.org/)): `git commit -s` when authoring, or `git rebase --signoff` to fix an open PR. The registry publishes provenance claims about real systems; the sign-off is the contributor's attestation of the right to submit. PRs opened before this date just need the same one-line fix.
+- **Automated checks:** every PR runs the crosswalk validator (`npm run validate`, which includes the `fixtures/` scope checks) plus a DCO check and contributor reputation triage. CodeQL and OSSF Scorecard watch the repository itself. A red check always states its exact fix in the output.
 - **Security issues:** open a private security advisory via GitHub rather than a public issue.
 - **Code of Conduct:** Contributor Covenant 2.1 — see [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md).
 

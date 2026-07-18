@@ -17,6 +17,44 @@ const VOCAB_PATH = path.join(ROOT, 'vocabulary.yaml')
 const CROSSWALK_DIR = path.join(ROOT, 'crosswalk')
 const verbose = process.argv.includes('--verbose')
 
+// Data-root containment (trusted-oracle hardening follow-up, 2026-07-18).
+// Git delivers symbolic links as ordinary tree entries, and readFileSync
+// follows them. Without this check a PR could point a data path at bytes
+// outside its own tree (for example at the trusted base checkout that sits
+// next to it in CI), and the oracle would validate bytes that are not the
+// bytes being merged. Rule: data files must be regular files that resolve
+// inside the data root. Applies to every read this validator performs on
+// ROOT-relative paths.
+const ROOT_REAL = fs.realpathSync(ROOT)
+
+function containmentError(file) {
+  let st
+  try {
+    st = fs.lstatSync(file)
+  } catch (e) {
+    return `cannot stat: ${e.message}`
+  }
+  if (st.isSymbolicLink()) {
+    return 'symbolic link; data files must be regular files inside the data root'
+  }
+  let real
+  try {
+    real = fs.realpathSync(file)
+  } catch (e) {
+    return `cannot resolve: ${e.message}`
+  }
+  if (real !== ROOT_REAL && !real.startsWith(ROOT_REAL + path.sep)) {
+    return 'resolves outside the data root'
+  }
+  return null
+}
+
+const vocabContainment = containmentError(VOCAB_PATH)
+if (vocabContainment) {
+  console.log(`FAIL: vocabulary.yaml: ${vocabContainment}`)
+  process.exit(1)
+}
+
 const vocab = yaml.load(fs.readFileSync(VOCAB_PATH, 'utf8'))
 const canonicalSignalTypes = new Set(Object.keys(vocab.signal_types || {}))
 const canonicalMatchTypes = new Set(Object.keys(vocab.crosswalk_match_types || {}))
@@ -54,6 +92,7 @@ function walkYaml(dir) {
   const out = []
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name)
+    if (entry.isSymbolicLink()) { err(full, 'symbolic link; data files must be regular files inside the data root'); continue }
     if (entry.isDirectory()) out.push(...walkYaml(full))
     // `_`-prefixed files are non-production fixtures (for example the
     // _test-invalid.yaml negative fixture). They are excluded from the main
@@ -72,6 +111,7 @@ function walkNegativeFixtures(dir) {
   const out = []
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name)
+    if (entry.isSymbolicLink()) continue // already reported by walkYaml over the same tree
     if (entry.isDirectory()) out.push(...walkNegativeFixtures(full))
     else if ((entry.name.endsWith('.yaml') || entry.name.endsWith('.yml')) && entry.name.startsWith('_')) out.push(full)
   }
@@ -374,6 +414,11 @@ function validateReverify(node, file, dotPath) {
 }
 
 function validateFile(file) {
+  const contained = containmentError(file)
+  if (contained) {
+    err(file, contained)
+    return
+  }
   let doc
   try {
     doc = yaml.load(fs.readFileSync(file, 'utf8'))
@@ -498,6 +543,7 @@ function walkFixtures(dir) {
   if (!fs.existsSync(dir)) return
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name)
+    if (entry.isSymbolicLink()) { err(full, 'symbolic link; data files must be regular files inside the data root'); continue }
     if (entry.isDirectory()) { walkFixtures(full); continue }
     if (entry.name.endsWith('.json')) fixtureFiles.push(full)
   }
@@ -525,6 +571,11 @@ function validateFixtures() {
   const SCOPE_KEYS = ['profile', 'normative_status', 'source_crosswalk', 'calibration_owner', 'evidence_basis']
   for (const full of fixtureFiles) {
     const rel = path.relative(ROOT, full)
+    const contained = containmentError(full)
+    if (contained) {
+      err(full, contained)
+      continue
+    }
     if (LEGACY_FIXTURES.has(rel)) continue
     let doc
     try {

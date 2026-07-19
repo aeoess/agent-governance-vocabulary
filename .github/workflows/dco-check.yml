@@ -26,6 +26,10 @@ jobs:
           bad=""
           for sha in $(git rev-list --no-merges "$BASE..$HEAD"); do
             author=$(git log -1 --format='%an <%ae>' "$sha")
+            # GitHub App bot commits are exempt, matching upstream probot-dco:
+            # a bot cannot self-certify the right to submit, and dependabot's
+            # sign-off email never equals its author email.
+            case "$author" in (*'[bot]'*'@users.noreply.github.com>') continue ;; esac
             match=$(git log -1 --format='%(trailers:key=Signed-off-by,valueonly)' "$sha" | grep -Fx "$author" || true)
             if [ -z "$match" ]; then bad="$bad $sha"; fi
           done

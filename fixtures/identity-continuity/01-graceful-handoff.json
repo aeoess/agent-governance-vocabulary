@@ -53,6 +53,7 @@
   },
 
   "expected": {
+    "model": { "id": "static_decay_then_rebuild", "version": "1.0.0" },
     "identity_verdict": "valid",
     "identity_verdict_reason": "Rotation chain continuous, predecessor signed the shutdown event, state_transfer_receipt present.",
     "decay_factor": 0.85,

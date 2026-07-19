@@ -21,7 +21,10 @@ jobs:
         with:
           node-version: "20"
       - run: npm ci
-      - run: npm run validate
+      # `npm test` is validate + the validator unit tests + the fixture math
+      # check. Previously this step ran `npm run validate` alone, so
+      # scripts/validators/test-entity-continuity-pdr.js never executed in CI.
+      - run: npm test
 
   # Trusted oracle (hostile-review finding 2, 2026-07-17): a PR can edit the
   # validator it is checked by, so this job runs the BASE branch's validator,
@@ -47,3 +50,18 @@ jobs:
       - run: npm ci --ignore-scripts
         working-directory: trusted
       - run: node trusted/scripts/validate-crosswalks.js "$GITHUB_WORKSPACE/pr-data"
+      # Same oracle property for the fixture math: the base branch's checker
+      # recomputes the PR's fixture values, so a PR cannot land drifted numbers
+      # by relaxing the checker in the same commit.
+      #
+      # The existence guard is only load-bearing for the commit that introduces
+      # the checker (base has no copy yet). It is not a weakening: the path is
+      # read from the BASE checkout, which a pull request cannot modify.
+      - name: fixture math (trusted oracle)
+        run: |
+          CHECKER=trusted/scripts/validators/check-handoff-decay-fixtures.js
+          if [ -f "$CHECKER" ]; then
+            node "$CHECKER" "$GITHUB_WORKSPACE/pr-data"
+          else
+            echo "base branch has no fixture checker yet; skipping"
+          fi

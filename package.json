@@ -8,7 +8,9 @@
   },
   "scripts": {
     "validate": "node scripts/validate-crosswalks.js",
-    "test": "node scripts/validate-crosswalks.js",
+    "test": "npm run validate && npm run test:validators && npm run check:fixtures",
+    "test:validators": "node scripts/validators/test-entity-continuity-pdr.js",
+    "check:fixtures": "node scripts/validators/check-handoff-decay-fixtures.js",
     "generate:matrix": "node scripts/generate-crosswalk-matrix.js"
   },
   "repository": {

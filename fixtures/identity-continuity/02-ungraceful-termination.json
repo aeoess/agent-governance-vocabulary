@@ -55,6 +55,7 @@
   },
 
   "expected": {
+    "model": { "id": "static_decay_then_rebuild", "version": "1.0.0" },
     "identity_verdict": "valid",
     "identity_verdict_reason": "Rotation chain intact; key material proves lineage. Missing shutdown signature and state_transfer_receipt affect trust layer, not identity layer.",
     "decay_factor": 0.40,

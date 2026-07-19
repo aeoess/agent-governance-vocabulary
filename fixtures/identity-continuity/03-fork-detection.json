@@ -42,6 +42,7 @@
   },
 
   "expected": {
+    "model": { "id": "no_decay", "version": "1.0.0" },
     "identity_verdict": "ambiguous",
     "identity_verdict_code": "KEY_ROTATION_AMBIGUOUS",
     "identity_verdict_code_note": "Profile-defined code for the sovereign_atom profile; not an error code defined by APS or any external specification.",

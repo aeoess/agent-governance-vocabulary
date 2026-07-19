@@ -53,6 +53,7 @@
   },
 
   "expected": {
+    "model": { "id": "passive_time_decay_then_staged_rebuild", "version": "1.0.0", "half_life_days": 30, "reduced_accrual_until_step": 5 },
     "identity_verdict": "valid",
     "identity_verdict_qualifier": "stale",
     "identity_verdict_reason": "Rotation chain valid and predecessor-signed, but attestationFreshness flags dormancy exceeding configured threshold.",

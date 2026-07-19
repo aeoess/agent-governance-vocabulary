@@ -98,6 +98,53 @@ function containmentError(file) {
   return null
 }
 
+// Read a fixture through a single file descriptor.
+//
+// Checking a path and then opening it separately is a check-then-use race
+// (CodeQL js/file-system-race), and it matters more here than in most places:
+// the check *is* the containment guarantee, so anything that can change the
+// entry between the check and the read defeats it. Opening once and deriving
+// both the type check and the contents from that descriptor removes the window.
+//
+// O_NOFOLLOW makes the symlink rejection atomic — the open itself fails with
+// ELOOP rather than resolving a link we later have to reason about. The realpath
+// check remains for the case O_NOFOLLOW does not cover: a *parent* component
+// that resolves out of the data root.
+function readContainedFile(file) {
+  const noFollow = fs.constants.O_NOFOLLOW || 0
+  if (!noFollow) {
+    // Platform without O_NOFOLLOW; fall back to the lstat check.
+    const pre = containmentError(file)
+    if (pre) return { error: pre }
+  }
+  let fd
+  try {
+    fd = fs.openSync(file, fs.constants.O_RDONLY | noFollow)
+  } catch (e) {
+    if (e.code === 'ELOOP') {
+      return { error: 'symbolic link; data files must be regular files inside the data root' }
+    }
+    return { error: `cannot open: ${e.message}` }
+  }
+  try {
+    if (!fs.fstatSync(fd).isFile()) {
+      return { error: 'not a regular file' }
+    }
+    let real
+    try {
+      real = fs.realpathSync(file)
+    } catch (e) {
+      return { error: `cannot resolve: ${e.message}` }
+    }
+    if (real !== ROOT_REAL && !real.startsWith(ROOT_REAL + path.sep)) {
+      return { error: 'resolves outside the data root' }
+    }
+    return { text: fs.readFileSync(fd, 'utf8') }
+  } finally {
+    fs.closeSync(fd)
+  }
+}
+
 // ---------------------------------------------------------------------------
 // The contract. Base-owned: what the published corpus must contain for a green
 // run to mean anything. Adding a fixture means adding an entry here; weakening
@@ -332,19 +379,15 @@ function run() {
     const full = path.join(FIXTURE_DIR, file)
     console.log(`\n# ${rel}`)
 
-    const contained = containmentError(full)
-    if (contained) {
-      fail(rel, contained)
-      continue
-    }
-    if (!fs.statSync(full).isFile()) {
-      fail(rel, 'not a regular file')
+    const read = readContainedFile(full)
+    if (read.error) {
+      fail(rel, read.error)
       continue
     }
 
     let fx
     try {
-      fx = JSON.parse(fs.readFileSync(full, 'utf8'))
+      fx = JSON.parse(read.text)
     } catch (e) {
       fail(rel, `cannot parse: ${e.message}`)
       continue

@@ -1,0 +1,167 @@
+# crosswalk/lar-1.yaml
+#
+# Maps LAR-1 (Latent Agent Register) provenance primitives to the
+# canonical agent-governance vocabulary.
+#
+# LAR-1 is a message-layer semantic overlay, not a trust signal issuer.
+# It answers "how is this one message situated" — observation vs inference,
+# live vs recalled, bound to which provenance context — rather than
+# "is this agent trustworthy." Per A2A#1628 alignment discussion:
+#   - trust.signals[] = AgentCard-level, TTL-bound agent trust
+#   - LAR-1 = message-bound provenance annotation
+#
+# Same verification philosophy, different lifecycle and subject.
+# This crosswalk enables verifiers to reconcile LAR-1 annotations with
+# the shared subject_binding model without embedding the mapping in
+# either spec.
+#
+# Home: https://github.com/carlsonchik/larone (monorepo, SDK + docs)
+# Spec: https://github.com/google/A2A/issues/2014 (extension proposal)
+# Production: LAR-1 v0.3 specification published; provenance_key conformance — pending
+# License: Apache-2.0
+
+system:
+  name: "LAR-1 (Latent Agent Register)"
+  version: "0.3"
+  home: "https://github.com/carlsonchik/larone"
+  extension_proposal: "https://github.com/google/A2A/issues/2014"
+  role: >
+    Message-layer semantic overlay for A2A. Annotates each message with
+    a provenance_key (DID-bound agent identity at message time) and
+    provenance_semantic (observation|inference — how the content was
+    produced). Does not issue trust signals; layers alongside them.
+  verification_principle: "ECDSA-signed attestation, JWKS-verifiable, bound to the message lifecycle"
+  production: "LAR-1 v0.3 spec published (github.com/carlsonchik/larone); provenance_key conformance — pending"
+
+maintainer:
+  github: cloudiaspecula
+  confirmed_at: "2026-07-02"
+
+# ─────────────────────────────────────────────────
+# GRANULARITY: provenance_key ↔ subject_binding
+# ─────────────────────────────────────────────────
+# Maps LAR-1's provenance_key DID method + chain context onto the A2A
+# subject_binding three-state model (wallet_bound / wallet_acknowledged /
+# reference) defined in A2A#1628. Each row maps a provenance_key pattern
+# to its canonical binding class.
+#
+# Unlike signal-type crosswalks that map a system's named signals onto
+# canonical signal_types, this crosswalk maps a message annotation field
+# onto a binding-model dimension. It lives in crosswalk/ rather than
+# vocabulary.yaml because it is a mapping artifact, not a new canonical
+# term.
+
+mappings:
+
+  - canonical: subject_binding
+    internal: provenance_key
+    match: structural
+    notes: >
+      LAR-1's provenance_key expresses the agent identity binding at
+      message time. The DID method + chain context determine the binding
+      class under the A2A subject_binding model. Mapping is structural
+      because both systems independently arrived at a three-state binding
+      model through different architectural paths.
+
+    mapping_rows:
+
+      - lar_1_pattern: "did:pkh:eip155:*"
+        canonical_value: wallet_bound
+        match: exact
+        notes: >
+          CAIP-10-style did:pkh with an EIP-155 chain id indicates the
+          message is cryptographically bound to a specific wallet.
+          Maps directly to wallet_bound in the subject_binding model.
+
+      - lar_1_pattern: "did:pkh:*"
+        canonical_value: wallet_acknowledged
+        match: partial
+        notes: >
+          did:pkh without a specific chain context binds to a public key
+          hash but not to a specific chain or wallet. Treated as
+          wallet_acknowledged: the agent acknowledges a wallet association
+          without a verifiable chain-anchored binding.
+
+      - lar_1_pattern: "did:key:*"
+        canonical_value: reference
+        match: exact
+        notes: >
+          did:key carries no chain or wallet context — it is a pure
+          cryptographic reference. Maps directly to reference in the
+          subject_binding model.
+
+      - lar_1_pattern: "did:web:*"
+        canonical_value: reference
+        match: partial
+        notes: >
+          did:web carries organizational identity but no wallet or chain
+          binding. Mapped as reference because the binding is
+          server-authoritative, not wallet-authoritative. Third-party
+          verifiers may treat this as wallet_acknowledged if the DID
+          document references an on-chain identity.
+
+      - lar_1_pattern: "provenance_key absent" | "provenance_key: null"
+        canonical_value: reference
+        match: partial
+        notes: >
+          Absence of provenance_key means no binding claim is made.
+          Treated as reference by default per A2A#1628 fallback rule.
+          Equivalent to no-mapping in signal-type crosswalks — the
+          absence is itself a meaningful governance signal.
+
+  - canonical: reasoning_integrity
+    internal: provenance_semantic
+    match: structural
+    notes: >
+      LAR-1's provenance_semantic field classifies the cognitive stance
+      of the message content: observation (content is a report of what
+      was observed) vs inference (content is a derived conclusion). This
+      is structurally analogous to reasoning_integrity but at the message
+      level rather than the agent level. The canonical reasoning_integrity
+      signal type (reserved per vocabulary.yaml) answers "was this action
+      produced by reasoning" while LAR-1 answers "what kind of reasoning
+      produced this message." The two are complementary and should be
+      composed in multi-layer verification.
+
+    mapping_rows:
+
+      - lar_1_value: observation
+        canonical_value: reasoning_integrity
+        match: partial
+        notes: >
+          observation maps to the attestation-of-fact face of
+          reasoning_integrity. A verifier composing both signals reads
+          the LAR-1 annotation as "this message reports observed data"
+          and trust.signals reasoning_integrity as "this agent is
+          capable of reasoning-based action."
+
+      - lar_1_value: inference
+        canonical_value: reasoning_integrity
+        match: partial
+        notes: >
+          inference maps to the attestation-of-reasoning face of
+          reasoning_integrity. Together with trust.signals they form
+          a layered picture: the agent can reason, and this specific
+          message is a product of that reasoning.
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+  enforcement_class: advisory
+  validity_temporal: message_instant
+  refusal_authority: consumer_policy
+  invariant_survival: pre_action
+  replay_class: full_replay
+  governed_action_class: compose
+
+notes: >
+  LAR-1 annotations live and die with the message — they have no
+  TTL separate from the message lifecycle. This is the key architectural
+  difference from trust signals: a signal carries a TTL against wallet
+  state; a message annotation is bound to the message. The crosswalk
+  enables verifiers to reconcile the two without collapsing this
+  distinction.
+
+  Implementation anchor: LAR-1 v0.3 specification (github.com/carlsonchik/larone).
+  provenance_key conformance fixture and crosswalk validation vectors — pending.

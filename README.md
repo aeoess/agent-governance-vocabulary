@@ -36,7 +36,7 @@ flowchart TD
     V --> D["Verifiers and tooling<br/>compose signals across systems<br/>without learning each one's dialect"]
 ```
 
-Current corpus: 32 crosswalk files mapped against 15 canonical signal types. The full system-by-signal grid is at [`docs/generated/crosswalk-matrix.md`](./docs/generated/crosswalk-matrix.md).
+Current corpus: 34 crosswalk files, 21 of which declare signal types and render in the grid against the 15 canonical signal types. The remainder use an alternative crosswalk format. Full grid at [`docs/generated/crosswalk-matrix.md`](./docs/generated/crosswalk-matrix.md).
 
 **Precedent:** the IANA JWT claim registry and JSON-LD `@context`. Each system keeps its internal code and its production envelope values. This repo provides the shared reference and the per-system mappings.
 

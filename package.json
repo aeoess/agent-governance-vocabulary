@@ -1,8 +1,8 @@
 {
   "name": "agent-governance-vocabulary",
   "version": "1.0.0",
+  "private": true,
   "description": "Canonical names for governance primitives across multi-issuer agent ecosystems.",
-  "main": "index.js",
   "directories": {
     "doc": "docs"
   },

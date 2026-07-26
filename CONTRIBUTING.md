@@ -40,9 +40,23 @@ A crosswalk file maps your governance system's internal naming to the canonical 
 **A crosswalk PR will be merged when:**
 
 1. **The system is publicly inspectable and implemented.** Public spec or repository, plus a working implementation or live endpoint with public documentation, and a named maintainer.
-2. **The mapping is field-level precise.** Each canonical term either maps to a specific field with a cited source path, or carries an explicit `no_mapping` entry with a technical rationale.
-3. **Gaps are explicit.** If your system does not implement a canonical signal type, use `no_mapping` with a technical rationale rather than forcing a partial mapping.
+2. **The mapping is field-level precise.** Each canonical term carries one of three evidence states: `present` with a cited source path, `inferable` with its derivation stated, or `no_mapping` with a technical rationale. See [Mapping evidence states](#mapping-evidence-states).
+3. **Gaps are explicit, and so is inference.** If your system does not implement a canonical signal type, use `no_mapping` with a technical rationale rather than forcing a partial mapping. If the value is recoverable from fields you do emit but your artifact never asserts it, use `inferable` rather than claiming a mapping.
 4. **Format is consistent with merged crosswalks.** New structural sections are welcome when they document primitives the existing shapes don't capture (verification patterns, derivation lineage, identity methods).
+
+---
+
+## Mapping evidence states
+
+A crosswalk entry records how strongly the emitting artifact supports a canonical term. Three states:
+
+- `present` requires `source_path` and a one-line `basis`. The artifact emits the value as a field, and a verifier reads it without computing anything.
+- `inferable` requires `inferred_from` naming the emitted fields, `inference_basis` stating the derivation, and a note on why the entry is neither present nor absent. The value is recoverable from what the artifact carries, but the issuer never asserts it, so the value is the consumer's computation rather than the issuer's claim.
+- `no_mapping` requires a technical rationale. The value is neither carried nor derivable, so a holder of the artifact alone cannot obtain it.
+
+`inferable` is not a weaker mapping. It is a different claim. Collapsing it into either neighbour loses the distinction a reader most needs, which is whether the issuer stands behind the value or the consumer worked it out. A crosswalk that records an inferable value as `present` reads as stronger than the system it describes.
+
+Worked example with a real emitted artifact: [`fixtures/mapping-evidence-states/`](fixtures/mapping-evidence-states/).
 
 ---
 
@@ -88,7 +102,7 @@ status is never a path to implicit `canonical`.
 for `canonical` only when it has (1) independent maintainership from the first, (2) an
 independent codebase, (3) an emitted artifact whose shape is compatible under the canonical
 definition, and (4) a published fixture or conformance vector a third party can check.
-Fixture-only or crosswalk-only declarations without a production-emitted artifact do not count.
+Fixture-only or crosswalk-only declarations without a production-emitted artifact do not count. An `inferable` entry does not satisfy (3): a value the consumer computes is not an emitted artifact, so it is not evidence that the implementation emits the term.
 
 ## Definition purity
 

@@ -25,6 +25,13 @@ const BADGE = {
 }
 const NOT_ADDRESSED = '—' // — em dash, signal absent from crosswalk
 const UNGRADED = '·'      // mapped but no `match` field declared
+// Evidence qualifiers. `emitted` is unmarked because it is the reading a bare
+// badge already implies; the marks exist for the states a reader would
+// otherwise over-read.
+const EVIDENCE_MARK = {
+  inferable:  '\u02b0', // superscript h, "computed by the consumer, not asserted"
+  referenced: '\u02b3', // superscript r, "resolved out of band"
+}
 
 function walkYaml(dir) {
   const out = []
@@ -109,7 +116,11 @@ function main() {
       const canonical = (entry && entry.canonical) || key
       if (!canonicalSignals.includes(canonical)) continue
       const m = entry && entry.match
-      cells[canonical] = typeof m === 'string' ? m : '__ungraded__'
+      const ev = entry && entry.evidence
+      cells[canonical] = {
+        match: typeof m === 'string' ? m : '__ungraded__',
+        evidence: typeof ev === 'string' ? ev : null,
+      }
     }
 
     systems.push({
@@ -127,11 +138,16 @@ function main() {
   for (const sys of systems) {
     const row = [sys.label]
     for (const sig of canonicalSignals) {
-      const m = sys.cells[sig]
-      if (!m) row.push(NOT_ADDRESSED)
-      else if (m === '__ungraded__') row.push(UNGRADED)
-      else if (BADGE[m]) row.push(BADGE[m])
-      else row.push(m) // unknown match value, render as-is
+      const cell = sys.cells[sig]
+      if (!cell) { row.push(NOT_ADDRESSED); continue }
+      const m = cell.match
+      let base
+      if (m === '__ungraded__') base = UNGRADED
+      else if (BADGE[m]) base = BADGE[m]
+      else base = m // unknown match value, render as-is
+      // The evidence qualifier travels with the claim. A mapping that is exact in
+      // shape but not carried by the artifact must never render as a bare exact.
+      row.push(base + (EVIDENCE_MARK[cell.evidence] || ''))
     }
     rows.push(row)
   }
@@ -147,7 +163,7 @@ function main() {
   for (const sig of canonicalSignals) coverage[sig] = 0
   for (const sys of systems) {
     for (const sig of canonicalSignals) {
-      if (sys.cells[sig]) coverage[sig] += 1
+      if (sys.cells[sig]) coverage[sig] += 1 // presence, not strength; unchanged by the evidence axis
     }
   }
   const sortedByCoverage = canonicalSignals
@@ -168,6 +184,8 @@ function main() {
   lines.push(`- ${BADGE.partial} \`partial\` — overlapping but not identical scope`)
   lines.push(`- ${BADGE.non_equivalent_similar_label} \`non_equivalent_similar_label\` — different question entirely`)
   lines.push(`- ${BADGE.no_mapping} \`no_mapping\` — explicit gap with technical rationale`)
+  lines.push(`- ${EVIDENCE_MARK.inferable} suffix: \`evidence: inferable\`, the consumer computes the value and the issuer never asserts it`)
+  lines.push(`- ${EVIDENCE_MARK.referenced} suffix: \`evidence: referenced\`, resolved out of band against state the artifact does not carry`)
   lines.push(`- ${UNGRADED} mapped but no \`match\` strength declared (legacy schema)`)
   lines.push(`- ${NOT_ADDRESSED} not addressed by this crosswalk`)
   lines.push('')

@@ -597,16 +597,35 @@ crosswalk_match_types:
 
 # Evidence state is ORTHOGONAL to match type. Match type answers how closely the
 # target primitive corresponds. Evidence state answers whether the emitting
-# artifact carries the value or the consumer must compute it. A mapping can be
-# `exact` in shape and still `inferable` in evidence.
-# Applies only when match is not `no_mapping`. Optional; absent means unspecified.
+# artifact carries the value, computes it, or points elsewhere for it.
+# A mapping can be `exact` in shape and still `inferable` in evidence.
+#
+# Applies only when match is not `no_mapping`. Optional; absent means
+# `unspecified`, and unspecified is never upgraded to `emitted` by a reader.
+# Entries written before this axis existed keep their original meaning; nothing
+# is retroactively reinterpreted.
+#
+# status: proposed. This axis is introduced from a single implementation, so it
+# lands under the same bar this registry applies to any single-implementation
+# term. It is additive: consumers MUST treat an unknown evidence value as
+# `unspecified` rather than failing, so later states can be added without a
+# breaking change.
 crosswalk_evidence_states:
-  emitted:
-    definition: "The artifact emits the value as a field. A verifier reads it without computing anything."
-    requires: ["source_path"]
-  inferable:
-    definition: "Recoverable from emitted fields by computation, never asserted by the issuer. The value is the consumer's computation rather than the issuer's claim."
-    requires: ["inferred_from", "inference_basis"]
+  status: proposed
+  review_by: "2026-11-30"
+  promotion_trigger: >
+    Two or more crosswalks from independently maintained systems declare an
+    evidence state, and at least one declares a state other than `emitted`.
+  states:
+    emitted:
+      definition: "The artifact carries the value as a field. A verifier reads it without computing anything or fetching anything."
+      requires: ["source_path"]
+    inferable:
+      definition: "Recoverable by computation over fields the artifact does carry. The issuer never asserts the result, so the value is the consumer's computation."
+      requires: ["inferred_from", "inference_basis"]
+    referenced:
+      definition: "The artifact carries a pointer rather than the value. A verifier resolves it against state the artifact does not contain, so the answer can change without the artifact changing."
+      requires: ["resolution_path", "resolution_note"]
 
 # ─────────────────────────────────────────────────
 # DECISION TRAJECTORY (per @nanookclaw, contributed from PDR Section 8)

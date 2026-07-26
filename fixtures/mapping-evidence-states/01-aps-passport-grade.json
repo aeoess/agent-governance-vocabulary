@@ -1,0 +1,74 @@
+{
+  "scope": {
+    "profile": "mapping_evidence_states",
+    "normative_status": "non_normative",
+    "source_crosswalk": "crosswalk/aeoess-aps.yaml",
+    "calibration_owner": "aeoess (Agent Passport System maintainer)",
+    "evidence_basis": "Artifact emitted 2026-07-26 by the agent-passport-system SDK using ephemeral keys generated for this fixture and used nowhere else. Not a production passport. The finding below concerns this repository's own crosswalk entry and nothing else.",
+    "canonical_term": "passport_grade",
+    "purpose": "Worked example of the `evidence` axis on one real canonical term. The example is a correction to the maintainer's own crosswalk entry, which claimed a field that does not exist in the emitting implementation."
+  },
+  "artifact": {
+    "passport": {
+      "version": "1.0.0",
+      "publicKey": "c4a738b57ef5eec87276491358817d4ccaf8cbf360a8d6162b3d875d47f73475",
+      "capabilities": [
+        "read:public"
+      ],
+      "createdAt": "2026-07-26T22:02:34.539Z",
+      "expiresAt": "2027-07-26T22:02:34.539Z",
+      "voteWeight": 1,
+      "reputation": {
+        "overall": 1,
+        "collaborationsCompleted": 0,
+        "proposalsSubmitted": 0,
+        "proposalsApproved": 0,
+        "tokensContributed": 0,
+        "tasksCompleted": 0,
+        "lastUpdated": "2026-07-26T22:02:34.539Z"
+      },
+      "delegations": [],
+      "metadata": {}
+    },
+    "signature": "50f4b8662d5bd1f7f5beb328d339e47f61594149fb7a5d636d6836e81c7051b0560cce80e951f7fd70d5973fcdeb81b1fd6c060911550b83a144aaa104a8ca0f",
+    "signedAt": "2026-07-26T22:02:34.540Z"
+  },
+  "finding": {
+    "term": "passport_grade",
+    "crosswalk_claimed": {
+      "match": "exact",
+      "aps_field": "passport.grade",
+      "signed_shape_excerpt": "Grade is embedded in the signed passport envelope"
+    },
+    "observed": {
+      "passport_fields": [
+        "version",
+        "publicKey",
+        "capabilities",
+        "createdAt",
+        "expiresAt",
+        "voteWeight",
+        "reputation",
+        "delegations",
+        "metadata"
+      ],
+      "grade_field_present": false,
+      "grade_field_in_any_passport_type": false,
+      "how_the_value_is_obtained": "computePassportGrade(evidence, options) in src/core/attestation.ts derives it from an issuance evidence record and four boolean conditions."
+    },
+    "conclusion": "The cited field does not exist. The grade is computed, never carried. Recorded as a bare `exact` the entry reads as though the issuer emits a grade. Recorded as `no_mapping` it would understate a value a consumer can obtain. The accurate record keeps the match type and adds the evidence qualifier."
+  },
+  "corrected_entry": {
+    "canonical": "passport_grade",
+    "match": "exact",
+    "evidence": "inferable",
+    "inferred_from": [
+      "issuance evidence record",
+      "hasIssuerSignature",
+      "hasVerifiedRuntime",
+      "hasPrincipalEndorsement"
+    ],
+    "inference_basis": "computePassportGrade() returns a grade 0 to 3 from an evidence record and issuance conditions. No passport type declares a grade field and no emitted passport carries one, so the value is produced by the consumer calling the function rather than read from the artifact.",
+    "counts_toward_independent_implementation": false
+  }
+}

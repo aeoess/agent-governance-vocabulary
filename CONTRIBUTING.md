@@ -41,8 +41,49 @@ A crosswalk file maps your governance system's internal naming to the canonical 
 
 1. **The system is publicly inspectable and implemented.** Public spec or repository, plus a working implementation or live endpoint with public documentation, and a named maintainer.
 2. **The mapping is field-level precise.** Each canonical term either maps to a specific field with a cited source path, or carries an explicit `no_mapping` entry with a technical rationale.
-3. **Gaps are explicit.** If your system does not implement a canonical signal type, use `no_mapping` with a technical rationale rather than forcing a partial mapping.
+3. **Gaps are explicit, and so is inference.** If your system does not implement a canonical signal type, use `no_mapping` with a technical rationale rather than forcing a partial mapping. If the shape corresponds but your artifact never asserts the value, keep the match type and add `evidence: inferable`. See [Evidence state](#evidence-state).
 4. **Format is consistent with merged crosswalks.** New structural sections are welcome when they document primitives the existing shapes don't capture (verification patterns, derivation lineage, identity methods).
+
+---
+
+## Evidence state
+
+`match` and `evidence` answer different questions and are recorded separately.
+
+`match` answers how closely the target primitive corresponds. Its values are fixed by
+`crosswalk_match_types` in `vocabulary.yaml`.
+
+`evidence` answers whether the emitting artifact carries the value, computes it, or points
+elsewhere for it. It is optional, it applies only when `match` is not `no_mapping`, and it takes
+one of three values:
+
+- `emitted` requires `source_path`. The artifact carries the value as a field. The cited path must
+  point at the field carrying the value, not at the operands it was derived from.
+- `inferable` requires `inferred_from` and `inference_basis`. The value is recoverable by
+  computation over fields the artifact does carry, but the issuer never asserts the result.
+- `referenced` requires `resolution_path` and `resolution_note`. The artifact carries a pointer
+  rather than the value, so the answer can change without the artifact changing.
+
+The two axes are independent. A mapping can be `exact` in shape and still `inferable` in evidence,
+which says the shapes correspond precisely and the artifact nonetheless never carries the value.
+
+**Status.** This axis is `status: proposed` with a `review_by` date. It is introduced from a single
+implementation, so it lands under the same bar this registry applies to any single-implementation
+term rather than exempting itself. Values are additive, and a consumer MUST treat an unknown
+evidence value as unspecified rather than failing.
+
+**Existing crosswalks are unaffected.** `evidence` is optional and absent means unspecified.
+Entries written before this axis existed keep their original meaning, and nothing is retroactively
+reinterpreted. In particular, a pre-existing `partial` still carries whatever the author meant by
+it. Annotating an older entry is welcome and is never required.
+
+**Unspecified is not a shortcut.** Neither `evidence: inferable`, `evidence: referenced`, nor an
+absent `evidence` satisfies requirement (3) of the independent-implementation bar below. Only a
+declared `emitted` with a resolvable `source_path` counts. Silence must never qualify a term that
+candour would have disqualified.
+
+Worked example against a real emitted artifact: [`fixtures/mapping-evidence-states/`](fixtures/mapping-evidence-states/).
+Rationale: [`docs/rationale/crosswalk-evidence-states.md`](docs/rationale/crosswalk-evidence-states.md).
 
 ---
 
@@ -88,7 +129,7 @@ status is never a path to implicit `canonical`.
 for `canonical` only when it has (1) independent maintainership from the first, (2) an
 independent codebase, (3) an emitted artifact whose shape is compatible under the canonical
 definition, and (4) a published fixture or conformance vector a third party can check.
-Fixture-only or crosswalk-only declarations without a production-emitted artifact do not count.
+Fixture-only or crosswalk-only declarations without a production-emitted artifact do not count. An entry marked `evidence: inferable` or `evidence: referenced` does not satisfy (3), and neither does an absent `evidence`: a value the consumer computes, or resolves elsewhere, or declines to characterise, is not an emitted artifact. Only a declared `emitted` with a resolvable `source_path` counts toward (3).
 
 ## Definition purity
 

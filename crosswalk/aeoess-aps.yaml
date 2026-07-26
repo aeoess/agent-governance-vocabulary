@@ -62,6 +62,18 @@ signal_types:
   passport_grade:
     canonical: passport_grade
     match: exact
+    evidence: inferable
+    inferred_from:
+      - issuance evidence record
+      - hasIssuerSignature
+      - hasVerifiedRuntime
+      - hasPrincipalEndorsement
+    inference_basis: >
+      computePassportGrade() in src/core/attestation.ts returns a grade 0 to 3 from an
+      issuance evidence record and four issuance conditions. No passport type declares a
+      grade field and no emitted passport carries one, so a consumer obtains the value by
+      calling the function rather than by reading the artifact. The previous aps_field of
+      passport.grade named a field that does not exist.
     notes: |
       APS is the sole production issuer listed in vocabulary.yaml for this
       signal_type. A passport grade (0-3) is the composite trust grade

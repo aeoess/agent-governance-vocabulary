@@ -291,6 +291,11 @@ function validateSignalTypes(doc, file) {
       }
     }
     if (entry.evidence !== undefined) {
+      // `evidence` qualifies a mapping. Without a `match` there is no mapping to
+      // qualify, and the matrix would render the qualifier on an ungraded cell.
+      if (!entry.match) {
+        err(file, `signal_types.${key}: evidence "${entry.evidence}" declared without a \`match\`; evidence qualifies a mapping and cannot stand alone`)
+      }
       if (!canonicalEvidenceStates.has(entry.evidence)) {
         err(file, `signal_types.${key}: evidence "${entry.evidence}" not in crosswalk_evidence_states (allowed: ${[...canonicalEvidenceStates].join(', ')})`)
       } else if (entry.match === 'no_mapping') {
@@ -304,6 +309,10 @@ function validateSignalTypes(doc, file) {
             || (typeof val === 'string' && val.trim() === '')
           if (empty) {
             err(file, `signal_types.${key}: evidence "${entry.evidence}" requires a non-empty \`${field}\``)
+          } else if (field === 'inferred_from' && !Array.isArray(val)) {
+            err(file, `signal_types.${key}: \`inferred_from\` must be an array of the fields the value is derived from, got ${typeof val}`)
+          } else if (field !== 'inferred_from' && typeof val !== 'string') {
+            err(file, `signal_types.${key}: \`${field}\` must be a string, got ${Array.isArray(val) ? 'array' : typeof val}`)
           }
         }
       }

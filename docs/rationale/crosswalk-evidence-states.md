@@ -68,3 +68,42 @@ bar, and catching it is a reviewer obligation rather than a CI guarantee.
 
 It does not reinterpret any merged crosswalk. Absent means unspecified, and unspecified never
 upgrades.
+
+## Why the worked example stays `exact` rather than `partial`
+
+An objection raised in review: `exact` is defined as "Identical primitive, same signature
+semantics," so a value the issuer never signs cannot be an exact match, and `passport_grade` should
+be recorded as `partial` instead.
+
+The canonical definition decides it. `passport_grade` is defined as "Composite trust grade from
+agent passport issuance evidence." The canonical term itself describes a value derived from
+issuance evidence, and `computePassportGrade(evidence, options)` produces exactly that. The
+primitive is identical, so the match is exact.
+
+What was false in the previous entry was carriage, not semantics: the claim that the value lived at
+`passport.grade` inside the signed envelope. That is precisely the confusion this axis separates.
+
+The test generalises. If a canonical definition describes a value as derived, an implementation
+that derives it matches exactly and records `evidence: inferable`. If a canonical definition
+requires the value to be carried or signed, an implementation that only computes it diverges on the
+primitive itself and belongs in `partial` with the divergence stated. Read the canonical definition
+first, then choose the match type, then record carriage separately.
+
+Whether `exact` should be reworded to drop "signature semantics" is a separate question about the
+match-type definitions and is deliberately not bundled here. It is noted for the `review_by` date.
+
+## Coverage
+
+The negative fixture at `crosswalk/_test-evidence-invalid.yaml` carries eight deliberate defects:
+an unknown state, evidence paired with `no_mapping`, evidence declared without a `match`, missing
+companions, empty companions on two different states, and a wrong type for `inferred_from`.
+Disabling the evidence checks makes the suite fail with an explicit drift error rather than passing
+quietly.
+
+Positive coverage comes from production data rather than a fixture. `crosswalk/aeoess-aps.yaml`
+now declares a real evidence state, so breaking the companion-requirement lookup makes a production
+crosswalk fail validation.
+
+The one thing still missing is an example from an independently maintained system. That cannot be
+manufactured, and it is exactly what the promotion trigger requires before this axis stops being
+`proposed`.

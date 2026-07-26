@@ -5,7 +5,7 @@
     "source_crosswalk": "crosswalk/aeoess-aps.yaml",
     "calibration_owner": "aeoess (Agent Passport System maintainer)",
     "evidence_basis": "Artifact emitted 2026-07-26 by the agent-passport-system SDK createDelegation() at the version pinned below, using ephemeral keys generated for this fixture and used nowhere else. Not a production delegation. The three evidence states describe only what this artifact carries; nothing here is a conformance requirement on any external specification.",
-    "purpose": "Worked example of the three mapping-evidence states for a crosswalk field. Demonstrates the format only. It asserts nothing about any system other than the one that emitted the artifact.",
+    "purpose": "Worked example of the `evidence` axis on a crosswalk entry, using a real emitted artifact. Shows that `match` and `evidence` are independent. Demonstrates the format only; it asserts nothing about any system other than the one that emitted the artifact.",
     "artifact_provenance": "Emitted 2026-07-26 by agent-passport-system createDelegation() at the version pinned below. Ephemeral test keys, never used anywhere. Not a production delegation.",
     "emitted_by": "agent-passport-system SDK, createDelegation()",
     "claim_boundary": "The three states below describe what THIS artifact carries. They are not claims about what the APS protocol can express, nor about any other system."
@@ -29,27 +29,28 @@
   "mapping_evidence": [
     {
       "canonical_term": "spend_cap",
-      "state": "present",
+      "match": "exact",
+      "evidence": "emitted",
       "source_path": "$.spendLimit",
       "observed_value": 100,
-      "basis": "Emitted directly as a signed field. A verifier reads it without computing anything."
+      "basis": "Signed field. A verifier reads it without computing anything."
     },
     {
       "canonical_term": "remaining_spend",
-      "state": "inferable",
+      "match": "exact",
+      "evidence": "inferable",
       "inferred_from": [
         "$.spendLimit",
         "$.spentAmount"
       ],
-      "inference_basis": "Derivable as spendLimit minus spentAmount. The artifact never asserts the difference, so the value is a consumer's computation rather than the issuer's claim. If the issuer's accounting and the consumer's arithmetic disagree, nothing in the signed body resolves it.",
-      "why_not_present": "No field carries the remainder.",
-      "why_not_absent": "Both operands are present and signed, so the value is recoverable without any additional lookup.",
+      "inference_basis": "Derivable as spendLimit minus spentAmount. Both operands are signed, so the shape corresponds exactly, but the issuer never asserts the difference. The value is the consumer's computation. If the issuer's accounting and that arithmetic disagree, nothing in the signed body resolves it.",
+      "why_this_axis_matters": "Recorded as a bare `exact` this reads as though the issuer emits a remaining balance. Recorded as `no_mapping` it understates a value the consumer can genuinely obtain. Only the pair says what is true.",
       "counts_toward_independent_implementation": false
     },
     {
       "canonical_term": "revocation_status",
-      "state": "absent",
-      "no_mapping_rationale": "Neither carried nor derivable. Revocation is a separate lookup against issuer state at verification time. A consumer holding only this artifact cannot distinguish an active delegation from one revoked one second after issuance."
+      "match": "no_mapping",
+      "notes": "Neither carried nor derivable. Revocation is a separate lookup against issuer state at verification time. A holder of this artifact alone cannot distinguish an active delegation from one revoked a second after issuance. `evidence` does not apply when there is no mapping."
     }
   ]
 }

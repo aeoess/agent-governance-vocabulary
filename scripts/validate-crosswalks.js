@@ -58,6 +58,7 @@ if (vocabContainment) {
 const vocab = yaml.load(fs.readFileSync(VOCAB_PATH, 'utf8'))
 const canonicalSignalTypes = new Set(Object.keys(vocab.signal_types || {}))
 const canonicalMatchTypes = new Set(Object.keys(vocab.crosswalk_match_types || {}))
+const canonicalEvidenceStates = new Set(Object.keys(vocab.crosswalk_evidence_states || {}))
 // decision_trajectory entries are valid signal-level keys (veritasacta maps them)
 const canonicalTrajectory = new Set(Object.keys(vocab.decision_trajectory || {}))
 const descriptorEnums = {}
@@ -286,6 +287,20 @@ function validateSignalTypes(doc, file) {
       }
       if (entry.match === 'no_mapping' && !entry.notes && !entry.note) {
         warn(file, `signal_types.${key}: match "no_mapping" without a note explaining the gap`)
+      }
+    }
+    if (entry.evidence !== undefined) {
+      if (!canonicalEvidenceStates.has(entry.evidence)) {
+        err(file, `signal_types.${key}: evidence "${entry.evidence}" not in crosswalk_evidence_states (allowed: ${[...canonicalEvidenceStates].join(', ')})`)
+      } else if (entry.match === 'no_mapping') {
+        err(file, `signal_types.${key}: evidence "${entry.evidence}" is meaningless with match "no_mapping"; evidence describes an existing mapping`)
+      } else {
+        const required = (vocab.crosswalk_evidence_states[entry.evidence] || {}).requires || []
+        for (const field of required) {
+          if (entry[field] === undefined) {
+            err(file, `signal_types.${key}: evidence "${entry.evidence}" requires \`${field}\``)
+          }
+        }
       }
     }
   }

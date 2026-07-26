@@ -13,31 +13,45 @@ Every file here carries a machine-readable top-level `scope` object so it stays 
 
 ## The problem this addresses
 
-The current merge bar gives a contributor two ways to describe a canonical term:
+A crosswalk entry records `match`, which says how closely the target primitive corresponds. It had
+no way to say whether the emitting artifact actually carries the value.
 
-1. a mapping to a specific field with a cited source path, or
-2. `no_mapping` with a technical rationale.
+Some values are recoverable from fields the artifact does emit, but the artifact never asserts
+them. Without a second axis a contributor has to record such a value as a plain mapping, which
+reads as stronger than the system it describes, or as `no_mapping`, which understates a value the
+consumer can genuinely obtain. A reader of the crosswalk cannot tell which kind of wrong they are
+looking at.
 
-Some fields are neither. The value is recoverable from what the artifact carries, but the artifact never asserts it. A contributor facing one of those has to overstate it as a mapping or understate it as absent. Both answers are wrong, and the reader of the crosswalk cannot tell which kind of wrong they are looking at.
+That is the collapse this registry already rejects elsewhere. A verifier that reports
+could-not-verify as valid has removed the distinction its reader most needs.
 
-That is the same collapse the registry already rejects elsewhere: a verifier that reports could-not-verify as valid has removed the distinction its reader most needs.
+## Two independent axes
 
-## The three states
+`match` answers how closely the primitives correspond. `evidence` answers whether the artifact
+emits the value or the consumer computes it. They do not substitute for one another, and a mapping
+can be `exact` in shape while still being `inferable` in evidence.
 
-| State | Meaning | Required alongside |
+| `evidence` | Meaning | Required alongside |
 |---|---|---|
-| `present` | The artifact emits the value as a field. | `source_path`, `basis` |
-| `inferable` | Recoverable from emitted fields by computation, never asserted by the issuer. | `inferred_from`, `inference_basis`, `why_not_present`, `why_not_absent` |
-| `absent` | Neither carried nor derivable. Requires a lookup outside the artifact. | `no_mapping_rationale` |
+| `emitted` | The artifact emits the value as a field. | `source_path` |
+| `inferable` | Recoverable from emitted fields by computation, never asserted by the issuer. | `inferred_from`, `inference_basis` |
 
-`inferable` does not count toward the two-independent-implementations bar for canonical status. That bar asks for an emitted artifact whose shape is compatible under the canonical definition. A value the consumer computes is not something the issuer emitted, so it is not evidence that the issuer implements the term.
+`evidence` is optional and does not apply when `match` is `no_mapping`, since there is no mapping
+to characterise. `evidence: inferable` does not count toward the two-independent-implementations
+bar for canonical status: that bar asks for an emitted artifact, and a value the consumer computes
+is not something the issuer emitted.
 
 ## The worked example
 
-[`01-aps-delegation.json`](01-aps-delegation.json) carries one real delegation artifact and maps three canonical terms against it, one in each state.
+[`01-aps-delegation.json`](01-aps-delegation.json) carries one real delegation artifact and records
+three canonical terms against it.
 
-- `spend_cap` is **present**. It is a signed field and a verifier reads it directly.
-- `remaining_spend` is **inferable**. Both operands are signed and the subtraction is trivial, but the issuer never states the remainder, so the number is the consumer's computation. If the issuer's accounting disagrees with that arithmetic, nothing in the signed body resolves the conflict.
-- `revocation_status` is **absent**. A holder of this artifact alone cannot distinguish an active delegation from one revoked a second after issuance.
+- `spend_cap` is `exact` and `emitted`. A signed field, read directly.
+- `remaining_spend` is `exact` and `inferable`. Both operands are signed and the subtraction is
+  trivial, so the shape corresponds precisely, but the issuer never states the remainder. If the
+  issuer's accounting disagrees with that arithmetic, nothing in the signed body resolves it.
+- `revocation_status` is `no_mapping`. A holder of this artifact alone cannot distinguish an active
+  delegation from one revoked a second after issuance.
 
-The middle row is the one the current merge bar has no vocabulary for, and it is the row where a crosswalk most easily reads as stronger than the system it describes.
+The middle row is the one the registry previously had no vocabulary for, and it is where a
+crosswalk most easily reads as stronger than the system it describes.

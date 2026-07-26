@@ -595,6 +595,19 @@ crosswalk_match_types:
   no_mapping:
     definition: "No analog in target system. Honest gap."
 
+# Evidence state is ORTHOGONAL to match type. Match type answers how closely the
+# target primitive corresponds. Evidence state answers whether the emitting
+# artifact carries the value or the consumer must compute it. A mapping can be
+# `exact` in shape and still `inferable` in evidence.
+# Applies only when match is not `no_mapping`. Optional; absent means unspecified.
+crosswalk_evidence_states:
+  emitted:
+    definition: "The artifact emits the value as a field. A verifier reads it without computing anything."
+    requires: ["source_path"]
+  inferable:
+    definition: "Recoverable from emitted fields by computation, never asserted by the issuer. The value is the consumer's computation rather than the issuer's claim."
+    requires: ["inferred_from", "inference_basis"]
+
 # ─────────────────────────────────────────────────
 # DECISION TRAJECTORY (per @nanookclaw, contributed from PDR Section 8)
 # Longitudinal primitives. These describe how decisions evolve over time

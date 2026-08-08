@@ -307,11 +307,12 @@ signal_types:
     review_by: "2026-11-30"
     promotion_trigger: >
       A published conformance vector or fixture that a third party can
-      independently check (CONTRIBUTING.md bar 4), covering the two
-      converging production implementations (APS `delegation_revocation`,
-      Nobulex `covenant_binding`). The two implementations already report a
-      byte-matching canonical preimage; canonical status follows once that
-      convergence is checkable from a published vector rather than asserted.
+      independently check (CONTRIBUTING.md bar 4), covering APS
+      (`delegation_revocation`, the counted implementation) and Nobulex
+      (`covenant_binding`) once its convergence counts as the second
+      implementation. The two are already reported to share a byte-matching
+      canonical preimage; canonical status follows once that convergence is
+      checkable from a published vector rather than asserted.
     proposed_by: ["issue #81 (Track B)"]
     definition: >
       Two-party signed delegation receipt: a signed acknowledgment of a
@@ -331,6 +332,14 @@ signal_types:
       - action_ref      # content-addressed reference to the prior event acknowledged, normative
       - purpose         # registered enum value (see registered_purposes), normative
       - issued_at       # signed timestamp anchor: envelope-level issued_at OR per-signature iat, normative
+    field_contract: >
+      `required` names canonical properties, not mandatory literal wire keys.
+      An implementation may satisfy a canonical property through a semantically
+      equivalent emitted structure declared and source-grounded in its
+      crosswalk; where integrity coverage matters, the crosswalk identifies how
+      the property is covered by the signed artifact. `purpose` is satisfied by
+      the registered crosswalk declaration unless the implementation emits it
+      directly.
     registered_purposes:
       - delegation_revocation     # APS, revocation acknowledgment
       - covenant_binding          # Nobulex, covenant-lifecycle state transition (per @arian-gogani)
@@ -344,21 +353,24 @@ signal_types:
       invariant_survival: post_action
       replay_class: full_replay
       governed_action_class: delegate
-    issuers_in_production: ["APS", "Nobulex"]
     notes: |
-      Track B primitive from issue #81. Two independent implementations are
-      reported to converge on the canonical shape: APS emits a BilateralReceipt
-      with purpose `delegation_revocation` (revocation acknowledgment), and
-      Nobulex emits its covenant receipt with purpose `covenant_binding`
-      (covenant-lifecycle state transition). Both canonicalize with RFC 8785
-      JCS and are reported to byte-match on the shared preimage; the shape is
-      the convergence point, not the use case.
+      Track B primitive from issue #81. APS is the counted implementation: it
+      implements the compatible BilateralReceipt shape and maps it to registered
+      purpose `delegation_revocation` (revocation acknowledgment), with its
+      crosswalk row landing in this PR. Nobulex provides independent convergence
+      evidence for the same primitive and is expected to become the second
+      implementation when its crosswalk mapping, compatible emitted artifact,
+      and published checkable fixture are present; it does not count toward
+      promotion until then. Both are reported to canonicalize with RFC 8785 JCS
+      and byte-match on the shared preimage; the shape is the convergence point,
+      not the use case.
 
-      Status is `proposed`, not `canonical`: the two implementations are cited
-      but no published conformance vector meeting CONTRIBUTING.md bar (4) — a
-      fixture a third party can independently check — is in the registry yet.
-      This is a missing-vector gap, not a missing-second-implementation gap;
-      promotion to `canonical` follows the vector, per promotion_trigger.
+      Status is `proposed`, not `canonical`: one production implementation (APS)
+      is cited with its implementing crosswalk row, which is what `proposed`
+      requires. Promotion to `canonical` needs the second implementation to
+      count (Nobulex, per above) plus a published conformance vector meeting
+      CONTRIBUTING.md bar (4) — a fixture a third party can independently check.
+      Promotion follows those, per promotion_trigger.
 
       Purpose discriminator: registry + enum (Option B, locked by @aeoess in
       #81). `purpose` is a normative field whose value is drawn from the

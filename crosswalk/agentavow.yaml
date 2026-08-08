@@ -17,7 +17,13 @@
 # repository) with the wallet/DID acting as a discoverability lookup
 # key rather than the signed principal. Each scan returns a 0-100
 # security score plus a public A+/A/B/C/D/F letter grade, backed by an
-# EdDSA-signed JWS attestation (RFC 7515) over a JCS-canonical payload.
+# EdDSA-signed compact JWS attestation (RFC 7515). The payload bytes are
+# produced by AgentAvow's legacy canonicalizer (src/signing.py
+# `canonicalize()`: null members stripped, ASCII escapes) - NOT RFC 8785
+# JCS - and EdDSA (Ed25519) signs the JWS signing input directly, with no
+# separate SHA-256 step; the attestation is verified as transmitted with
+# no re-canonicalization. See `system_attributes` and the
+# `canonicalization` fields below for the per-artifact profile detail.
 
 system:
   name: AgentAvow
@@ -70,10 +76,30 @@ issuer_keys:
     (src/api/public_scan_router.py `_build_scan_payload`). Verifiers
     MUST continue to pin the DID and kid, not the name.
 
+# AgentAvow emits two distinct canonicalization paths, scoped by artifact.
+# The system-level profile below reflects the PRIMARY signed artifact of
+# this crosswalk (the scan attestation), which is NOT RFC 8785:
+#   - SecurityPostureAttestation / ScanHistoryAttestation JWS (the signed
+#     scan attestation this crosswalk maps): payload bytes come from the
+#     legacy canonicalizer src/signing.py `canonicalize()` (sorted keys, no
+#     whitespace, integer-valued floats normalized, null members stripped,
+#     ASCII escapes). This is implementation-defined, NOT RFC 8785 JCS.
+#     EdDSA (Ed25519) signs the JWS signing input directly (RFC 7515); there
+#     is no separate SHA-256 step and no re-canonicalization on verify.
+#   - composed-v1 interop slot (`agentgraph-scan-v1-structural`,
+#     src/attestation/composed_slot.py): declares canonicalization_spec
+#     `jcs-rfc8785+sha256` and carries an `evidence_hash` (`sha256:<hex>`)
+#     digest surface. That slot's evidence_hash is the ONLY place
+#     jcs-rfc8785+sha256 correctly applies, and `hash_family: sha-256`
+#     below records that verifier-visible digest, not a hash in the scan
+#     attestation JWS path.
 system_attributes:
   signature_capability: classical
-  canonicalization_profile: jcs-rfc-8785
-  hash_family: sha-256
+  # implementation-defined (not jcs-rfc-8785): the scan attestation uses the
+  # legacy null-stripping canonicalizer; strict RFC 8785 JCS + SHA-256 is
+  # scoped to the composed-v1 slot evidence_hash only (see comment above).
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256   # verifier-visible digest of the composed-v1 slot `evidence_hash`
 
 
 # ─────────────────────────────────────────────────
@@ -112,7 +138,19 @@ signal_types:
     kid: agentgraph-security-v1
     verification_method: "did:web:agentgraph.co#agentgraph-security-v1"
     jwks_uri: https://agentgraph.co/.well-known/jwks.json
-    canonicalization: "RFC 8785 (JCS) + SHA-256 (jcs-rfc8785+sha256)"
+    canonicalization: >
+      Compact JWS per RFC 7515: EdDSA (Ed25519) over the JWS signing input
+      (`base64url(header) + "." + base64url(payload)`) directly. The payload
+      bytes are produced by AgentAvow's legacy canonicalizer (src/signing.py
+      `canonicalize()`): sorted keys, no whitespace, integer-valued floats
+      normalized, null members stripped, ASCII escapes - this is NOT RFC 8785
+      JCS (src/signing.py `canonicalize_jcs_strict` is the distinct RFC 8785
+      path and its docstring marks it do-not-use for legacy signed
+      attestations). There is no separate SHA-256 step on this path; the
+      signature covers the signing input, and the attestation is verified as
+      transmitted with NO re-canonicalization. jcs-rfc8785+sha256 applies only
+      to the composed-v1 interop slot's `evidence_hash` digest surface (see
+      `envelope_identifiers` below), not to this attestation.
     default_ttl_seconds: 86400   # JWS `expiresAt = issuedAt + 24h` (src/api/public_scan_router.py)
     rescan_spacing: "minimum 24h between re-scans (src/scanner/service.py); staleness-driven scheduler re-scan"
     subject_identifier: >
@@ -146,10 +184,19 @@ signal_types:
       - scan.sampled            # bool - true when a large repo was only partially scanned
       - scan.primaryLanguage    # string
       - scan.categoryScores     # object - per-category 0-100 sub-scores
-      - scan.toolManifestDigest # string|null - canonical hash of tool/skill/MCP definitions (#8 pinning)
-      - scan.toolDigests        # object - per-file tool-definition digests
+      # CONDITIONAL - present on the signed wire only when a tool manifest digest
+      # exists. `_build_scan_payload` inserts it as `null` when absent, and the
+      # scan JWS path serializes via the legacy canonicalizer (src/signing.py
+      # `canonicalize()`), which STRIPS `None` members before `create_jws`. So a
+      # scan with no tool manifest omits this field from the signed bytes
+      # entirely rather than signing an explicit null. Verifiers MUST treat it as
+      # optional and not fail on its absence.
+      - scan.toolManifestDigest # string, CONDITIONAL - canonical hash of tool/skill/MCP definitions (#8 pinning); absent (null-stripped) when there is no manifest
+      - scan.toolDigests        # object - per-file tool-definition digests (defaults to {}, always present, may be empty)
       - recommendedLimits       # object - suggested rate/token limits for the tier
-      - toolDrift               # object (optional) - digest diff vs the previous scan (rug-pull signal)
+      # CONDITIONAL - added to the payload only when drift is detected vs the
+      # previous scan; otherwise omitted (not signed as null).
+      - toolDrift               # object, CONDITIONAL - digest diff vs the previous scan (rug-pull signal); present only when drift detected
 
     endpoints:
       scan:            "GET https://agentgraph.co/api/v1/public/scan/{owner}/{repo}"
@@ -164,6 +211,14 @@ signal_types:
       context: "https://schema.agentgraph.co/attestation/security/v1"
       type: "SecurityPostureAttestation"
       slot_schema_version: "agentgraph-scan-v1-structural"  # composed-v1 interop slot (src/attestation/composed_slot.py)
+      # The composed-v1 slot (separate from the SecurityPostureAttestation JWS
+      # above) declares `canonicalization_spec: jcs-rfc8785+sha256` and carries an
+      # `evidence_hash` of the form `sha256:<hex>` (src/attestation/composed_slot.py
+      # CANONICALIZATION_SPEC / compute_evidence_hash). This evidence_hash digest
+      # surface is the ONLY place jcs-rfc8785+sha256 correctly applies in this
+      # crosswalk. The primary scan attestation JWS does not use it.
+      slot_canonicalization_spec: "jcs-rfc8785+sha256"   # composed-v1 slot evidence_hash digest surface only
+      slot_evidence_hash_format: "sha256:<hex>"
 
     letter_grade_rubric:
       # Public A+/A/B/C/D/F thresholds (src/attestation/composed_slot.py).
@@ -268,6 +323,40 @@ signal_types:
       AgentAvow does not anchor settlement or payment-execution
       receipts. Primary issuer: SAR.
 
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: >
+      AgentAvow does not issue delegator-signed task-completion
+      attestations about a service agent's delivery; it scans artifacts,
+      it does not review executed work. Primary issuers: Logpose, RNWY.
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: >
+      AgentAvow does not compute a completed-over-total task ratio across
+      an observation window - it emits point-in-time static scans, not an
+      aggregate delegation-outcome metric. Primary issuers: AgentID, APS.
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: >
+      AgentAvow does not attest that an agent identity persists across a
+      key rotation, host migration, or environment swap; its subject is a
+      `{owner}/{repo}` artifact, not a migrating agent identity. Primary
+      issuer: SBR Protocol (canonical status: proposed).
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: >
+      AgentAvow does not attest to structural properties of an agent's
+      reasoning state at decision time under a reduction map; static
+      security posture is orthogonal to what was reasoned over. Canonical
+      status: reserved (no production implementation; proposer AEOESS).
+
 
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSION MAPPINGS
@@ -326,7 +415,16 @@ descriptor_dimensions:
 envelope:
   alg: EdDSA
   curve: Ed25519
-  canonicalization: "RFC 8785 (JCS) + SHA-256 (jcs-rfc8785+sha256)"
+  canonicalization: >
+    Compact JWS (RFC 7515). Payload bytes are produced by AgentAvow's legacy
+    canonicalizer (src/signing.py `canonicalize()`: sorted keys, no whitespace,
+    integer-valued floats normalized, null members stripped, ASCII escapes) -
+    NOT RFC 8785 JCS. EdDSA (Ed25519) signs the JWS signing input directly;
+    there is no separate SHA-256 step, and the attestation is verified as
+    transmitted with no re-canonicalization. jcs-rfc8785+sha256 is scoped to
+    the composed-v1 slot's `evidence_hash` digest surface only (see
+    `signal_types.security_posture.envelope_identifiers` and
+    `system_attributes`).
   jwks_uri: "https://agentgraph.co/.well-known/jwks.json"
   did_document: "https://agentgraph.co/.well-known/did.json"
   signing_kid: "agentgraph-security-v1"
@@ -384,7 +482,7 @@ gaps:
 crosswalk_metadata:
   authored_by: "@kenneives"
   vocabulary_version: "0.2.0"
-  last_reviewed: "2026-08-07"
+  last_reviewed: "2026-08-08"
   supersedes: "crosswalk/agentgraph.yaml"
   rebrand:
     previous_name: AgentGraph

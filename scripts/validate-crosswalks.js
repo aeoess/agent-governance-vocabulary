@@ -62,6 +62,15 @@ const evidenceSpec = (vocab.crosswalk_evidence_states || {}).states || {}
 const canonicalEvidenceStates = new Set(Object.keys(evidenceSpec))
 // decision_trajectory entries are valid signal-level keys (veritasacta maps them)
 const canonicalTrajectory = new Set(Object.keys(vocab.decision_trajectory || {}))
+// bilateral_receipt (#81, Track B) carries a registered `purpose` enum. Any
+// crosswalk row that maps to canonical bilateral_receipt MUST declare which
+// registered purpose value(s) the system emits, so downstream verifiers can
+// route on purpose rather than on implementation-specific field presence. The
+// enum is the single source of truth in vocabulary.yaml; the validator reads it
+// here and enforces the crosswalk-level declaration in validateSignalTypes.
+const registeredReceiptPurposes = new Set(
+  (((vocab.signal_types || {}).bilateral_receipt || {}).registered_purposes) || [],
+)
 const descriptorEnums = {}
 for (const [dim, def] of Object.entries(vocab.descriptor_dimensions || {})) {
   if (def && Array.isArray(def.values)) descriptorEnums[dim] = new Set(def.values)
@@ -278,6 +287,33 @@ function validateSignalTypes(doc, file) {
     const canonical = entry.canonical || key
     if (!canonicalSignalTypes.has(canonical) && !canonicalTrajectory.has(canonical)) {
       err(file, `signal_types.${key}: canonical "${canonical}" is not in vocabulary.yaml signal_types or decision_trajectory`)
+    }
+    // bilateral_receipt registry-purpose enforcement (#81, Track B). A crosswalk
+    // row mapping to canonical bilateral_receipt MUST declare which registered
+    // `purpose` value(s) the system emits, and each declared value MUST be in
+    // the registered_purposes enum in vocabulary.yaml. `purpose` accepts a
+    // single string or an array of strings. Same hygiene bar as the signal_types
+    // block: a row referencing a registry-purpose primitive states its purpose
+    // so downstream verifiers can route on it. A `no_mapping` row is exempt —
+    // there is no emitted receipt to carry a purpose.
+    if (canonical === 'bilateral_receipt' && entry.match !== 'no_mapping') {
+      const allowed = [...registeredReceiptPurposes].join(', ') || '(none registered)'
+      const pv = entry.purpose
+      const missing = pv === undefined || pv === null || pv === ''
+        || (Array.isArray(pv) && pv.length === 0)
+        || (typeof pv === 'string' && pv.trim() === '')
+      if (missing) {
+        err(file, `signal_types.${key}: canonical "bilateral_receipt" requires a \`purpose\` declaring the registered value(s) this system emits (allowed: ${allowed})`)
+      } else {
+        const purposes = Array.isArray(pv) ? pv : [pv]
+        for (const p of purposes) {
+          if (typeof p !== 'string') {
+            err(file, `signal_types.${key}: \`purpose\` values must be strings from the registered enum (allowed: ${allowed})`)
+          } else if (!registeredReceiptPurposes.has(p)) {
+            err(file, `signal_types.${key}: purpose "${p}" not in registered bilateral_receipt purposes (allowed: ${allowed})`)
+          }
+        }
+      }
     }
     if (entry.match) {
       if (!canonicalMatchTypes.has(entry.match)) {

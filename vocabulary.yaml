@@ -302,6 +302,86 @@ signal_types:
       governed_action_class: publish
       measurement_point: mutation_boundary
 
+  bilateral_receipt:
+    status: proposed
+    review_by: "2026-11-30"
+    promotion_trigger: >
+      A published conformance vector or fixture that a third party can
+      independently check (CONTRIBUTING.md bar 4), covering the two
+      converging production implementations (APS `delegation_revocation`,
+      Nobulex `covenant_binding`). The two implementations already report a
+      byte-matching canonical preimage; canonical status follows once that
+      convergence is checkable from a published vector rather than asserted.
+    proposed_by: ["issue #81 (Track B)"]
+    definition: >
+      Two-party signed delegation receipt: a signed acknowledgment of a
+      content-addressed prior event carrying both parties' signatures over a
+      single shared canonical preimage (RFC 8785 JCS). The bilateral property
+      is exactly the two-signature property — both the delegating party and
+      the counterparty sign the same canonicalized preimage, so the receipt is
+      independently verifiable without knowing which implementation produced
+      it. Answers: did both parties sign off on this prior event? Distinct
+      from governance_attestation (single-issuer attestation that a declared
+      governance requirement was satisfied) and peer_review (a first-party
+      attestation from one task delegator): without both parties' signatures
+      it is not a bilateral_receipt. `covenant_binding` is a registered
+      `purpose` value of a bilateral_receipt, not a separate primitive.
+    required:
+      - signatures      # both parties' signatures over the shared canonical preimage, normative
+      - action_ref      # content-addressed reference to the prior event acknowledged, normative
+      - purpose         # registered enum value (see registered_purposes), normative
+      - issued_at       # signed timestamp anchor: envelope-level issued_at OR per-signature iat, normative
+    registered_purposes:
+      - delegation_revocation     # APS, revocation acknowledgment
+      - covenant_binding          # Nobulex, covenant-lifecycle state transition (per @arian-gogani)
+    implementation_specific:
+      - compromise_window_ts      # APS-only, revocation compromise window
+      - evidence_merkle_leaf      # APS-only, delegation evidence trail
+    descriptor_dimensions:
+      enforcement_class: binding
+      validity_temporal: at_issuance
+      refusal_authority: shared
+      invariant_survival: post_action
+      replay_class: full_replay
+      governed_action_class: delegate
+    issuers_in_production: ["APS", "Nobulex"]
+    notes: |
+      Track B primitive from issue #81. Two independent implementations are
+      reported to converge on the canonical shape: APS emits a BilateralReceipt
+      with purpose `delegation_revocation` (revocation acknowledgment), and
+      Nobulex emits its covenant receipt with purpose `covenant_binding`
+      (covenant-lifecycle state transition). Both canonicalize with RFC 8785
+      JCS and are reported to byte-match on the shared preimage; the shape is
+      the convergence point, not the use case.
+
+      Status is `proposed`, not `canonical`: the two implementations are cited
+      but no published conformance vector meeting CONTRIBUTING.md bar (4) — a
+      fixture a third party can independently check — is in the registry yet.
+      This is a missing-vector gap, not a missing-second-implementation gap;
+      promotion to `canonical` follows the vector, per promotion_trigger.
+
+      Purpose discriminator: registry + enum (Option B, locked by @aeoess in
+      #81). `purpose` is a normative field whose value is drawn from the
+      registered_purposes enum above; each implementation declares which
+      purpose value(s) it emits in its own crosswalk file (same hygiene as the
+      signal_types block). This is the substrate-vs-primitive layering pattern
+      (CTEF v0.3.2 §4.5.4 error_code precedent): the canonical primitive
+      defines the shape and the registry discipline; crosswalks declare the
+      purpose value(s) so downstream verifiers can route on them. The
+      validator enforces the crosswalk-level declaration
+      (scripts/validate-crosswalks.js). `covenant_binding` stays locked as the
+      Nobulex purpose name per @arian-gogani; the CONTRIBUTING.md
+      purpose-discriminator decision tree lands as a separate PR per the #81
+      split.
+
+      issued_at is normative, promoted from the original draft: TTL semantics
+      need a signed timestamp anchor to distinguish a fresh receipt from a
+      replay. Implementer choice between an envelope-level `issued_at` and
+      per-signature `iat` blocks; at least one signed timestamp MUST be
+      present. The implementation-specific fields (compromise_window_ts,
+      evidence_merkle_leaf) are APS-domain and are not part of the canonical
+      contract; consumers MUST NOT route on their presence.
+
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS (per @QueBallSharken)
 # Each canonical term carries descriptor metadata answering concrete governance questions.

@@ -1,0 +1,494 @@
+# crosswalk/agentavow.yaml
+#
+# Maps AgentAvow's internal `security_posture` scan output and
+# scan-attestation envelope shape onto the canonical vocabulary in
+# vocabulary.yaml v0.2.0.
+#
+# AgentAvow is the same issuer previously registered as AgentGraph
+# (crosswalk/agentgraph.yaml). AgentGraph rebranded to AgentAvow; the
+# issuer identity, signing key, and DID are unchanged and remain
+# `did:web:agentgraph.co`. This is NOT a second independent
+# implementation of `security_posture` for the purposes of the
+# CONTRIBUTING.md 2-implementation promotion threshold - it is one
+# issuer under a new name. See `issuer_keys` below for the dual-carry
+# aliasing during the transition.
+#
+# The signed subject is the artifact (`{owner}/{repo}` GitHub
+# repository) with the wallet/DID acting as a discoverability lookup
+# key rather than the signed principal. Each scan returns a 0-100
+# security score plus a public A+/A/B/C/D/F letter grade, backed by an
+# EdDSA-signed compact JWS attestation (RFC 7515). The payload bytes are
+# produced by AgentAvow's legacy canonicalizer (src/signing.py
+# `canonicalize()`: null members stripped, ASCII escapes) - NOT RFC 8785
+# JCS - and EdDSA (Ed25519) signs the JWS signing input directly, with no
+# separate SHA-256 step; the attestation is verified as transmitted with
+# no re-canonicalization. See `system_attributes` and the
+# `canonicalization` fields below for the per-artifact profile detail.
+
+system:
+  name: AgentAvow
+  previous_name: AgentGraph
+  home: https://agentgraph.co
+  repo: https://github.com/agentgraph-co/agentgraph
+  jwks: https://agentgraph.co/.well-known/jwks.json
+  did: did:web:agentgraph.co
+  role: >
+    Static security scanner for AI-agent distribution surfaces (GitHub
+    repositories referenced by agent listings, MCP servers, npm + PyPI
+    agent packages). Issues EdDSA / Ed25519-signed scan attestations
+    bound to `{owner}/{repo}` artifact keys, returning a 0-100 security
+    score plus an A+/A/B/C/D/F letter grade. Canonical (and currently
+    sole) production issuer of `security_posture` per vocabulary.yaml,
+    now operating as AgentAvow following the AgentGraph rebrand.
+  license: Apache-2.0
+
+license: Apache-2.0
+
+maintainer:
+  github: kenneives
+  confirmed_at: "2026-08-07"
+
+issuer: "did:web:agentgraph.co"
+
+# ─────────────────────────────────────────────────
+# DUAL-CARRY ALIASING (transition window)
+# Both issuer keys resolve to the same issuer. `agentavow` is current;
+# `agentgraph` is the previous key, retained as an alias so consumers
+# keyed on either name resolve to `did:web:agentgraph.co`. This is the
+# reversible default: cutting to `agentavow`-only later is a delete of
+# the alias, not a rewrite. crosswalk/agentgraph.yaml is reduced to a
+# thin alias record pointing here so the issuer is not double-counted
+# in the crosswalk matrix.
+# ─────────────────────────────────────────────────
+issuer_keys:
+  current: agentavow
+  previous: agentgraph
+  status: dual_carry
+  aliases:
+    - agentgraph
+  issuer_did: did:web:agentgraph.co
+  supersedes_file: crosswalk/agentgraph.yaml
+  note: >
+    AgentGraph rebranded to AgentAvow. Issuer DID, JWKS, signing kid,
+    and all endpoint hosts remain on agentgraph.co - only the display
+    name changed. The signed JWS payload already carries
+    `issuer.name: AgentAvow` with `issuer.id: did:web:agentgraph.co`
+    (src/api/public_scan_router.py `_build_scan_payload`). Verifiers
+    MUST continue to pin the DID and kid, not the name.
+
+# AgentAvow emits two distinct canonicalization paths, scoped by artifact.
+# The system-level profile below reflects the PRIMARY signed artifact of
+# this crosswalk (the scan attestation), which is NOT RFC 8785:
+#   - SecurityPostureAttestation / ScanHistoryAttestation JWS (the signed
+#     scan attestation this crosswalk maps): payload bytes come from the
+#     legacy canonicalizer src/signing.py `canonicalize()` (sorted keys, no
+#     whitespace, integer-valued floats normalized, null members stripped,
+#     ASCII escapes). This is implementation-defined, NOT RFC 8785 JCS.
+#     EdDSA (Ed25519) signs the JWS signing input directly (RFC 7515); there
+#     is no separate SHA-256 step and no re-canonicalization on verify.
+#   - composed-v1 interop slot (`agentgraph-scan-v1-structural`,
+#     src/attestation/composed_slot.py): declares canonicalization_spec
+#     `jcs-rfc8785+sha256` and carries an `evidence_hash` (`sha256:<hex>`)
+#     digest surface. That slot's evidence_hash is the ONLY place
+#     jcs-rfc8785+sha256 correctly applies, and `hash_family: sha-256`
+#     below records that verifier-visible digest, not a hash in the scan
+#     attestation JWS path.
+system_attributes:
+  signature_capability: classical
+  # implementation-defined (not jcs-rfc-8785): the scan attestation uses the
+  # legacy null-stripping canonicalizer; strict RFC 8785 JCS + SHA-256 is
+  # scoped to the composed-v1 slot evidence_hash only (see comment above).
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256   # verifier-visible digest of the composed-v1 slot `evidence_hash`
+
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  security_posture:
+    canonical: security_posture
+    internal: >
+      Static-analysis scan of an agent's source repository. The public
+      response model is `PublicScanResponse`
+      (src/api/public_scan_router.py); the signed attestation is the
+      `SecurityPostureAttestation` JWS payload built by
+      `_build_scan_payload`. Findings are severity-graded
+      (critical / high / medium) and category-tagged; the composite
+      0-100 `trust_score` (security scan score) maps to a public
+      A+/A/B/C/D/F letter grade via the thresholds in
+      src/attestation/composed_slot.py.
+    match: exact
+    notes: >
+      AgentAvow IS the canonical issuer for this signal_type per
+      vocabulary.yaml (registered previously as AgentGraph). The signed
+      subject is the artifact (`{owner}/{repo}` GitHub repository); the
+      wallet/DID is a lookup key, not the signed principal. Each scan
+      is a point-in-time snapshot; the JWS carries a 24h TTL
+      (`expiresAt = issuedAt + 24h`), and the scan service re-runs on a
+      minimum 24h spacing (src/scanner/service.py) with a
+      staleness-driven scheduler re-scan. Historical timeline available
+      at `/api/v1/public/scan/{owner}/{repo}/history` (rate-limited via
+      the `rate_limit_history_reads` dependency).
+    issuer_uri: https://agentgraph.co
+    issuer_did: did:web:agentgraph.co
+    algorithm: EdDSA
+    curve: Ed25519
+    kid: agentgraph-security-v1
+    verification_method: "did:web:agentgraph.co#agentgraph-security-v1"
+    jwks_uri: https://agentgraph.co/.well-known/jwks.json
+    canonicalization: >
+      Compact JWS per RFC 7515: EdDSA (Ed25519) over the JWS signing input
+      (`base64url(header) + "." + base64url(payload)`) directly. The payload
+      bytes are produced by AgentAvow's legacy canonicalizer (src/signing.py
+      `canonicalize()`): sorted keys, no whitespace, integer-valued floats
+      normalized, null members stripped, ASCII escapes - this is NOT RFC 8785
+      JCS (src/signing.py `canonicalize_jcs_strict` is the distinct RFC 8785
+      path and its docstring marks it do-not-use for legacy signed
+      attestations). There is no separate SHA-256 step on this path; the
+      signature covers the signing input, and the attestation is verified as
+      transmitted with NO re-canonicalization. jcs-rfc8785+sha256 applies only
+      to the composed-v1 interop slot's `evidence_hash` digest surface (see
+      `envelope_identifiers` below), not to this attestation.
+    default_ttl_seconds: 86400   # JWS `expiresAt = issuedAt + 24h` (src/api/public_scan_router.py)
+    rescan_spacing: "minimum 24h between re-scans (src/scanner/service.py); staleness-driven scheduler re-scan"
+    subject_identifier: >
+      `{owner}/{repo}` artifact key (GitHub repository). In the signed
+      payload the subject is `{ id: "github:{owner}/{repo}", repo:
+      "{owner}/{repo}" }`. Wallet/DID is a discoverability lookup key,
+      NOT the signed principal.
+
+    # Fields the signature covers, grounded in the SecurityPostureAttestation
+    # JWS payload (`_build_scan_payload`, src/api/public_scan_router.py).
+    # The scoring WEIGHTS that produce trust_score are deliberately NOT
+    # published (proprietary rubric); the A+/A/B/C/D/F letter thresholds are.
+    signed_payload_fields:
+      - "@context"              # "https://schema.agentgraph.co/attestation/security/v1"
+      - type                    # "SecurityPostureAttestation"
+      - issuer.id               # "did:web:agentgraph.co"
+      - issuer.name             # "AgentAvow" (display name; verifiers pin issuer.id, not name)
+      - issuer.url              # "https://agentgraph.co"
+      - subject.id              # "github:{owner}/{repo}"
+      - subject.repo            # "{owner}/{repo}" artifact key
+      - scannedAt               # ISO 8601 - when the scan ran (evidence freshness)
+      - issuedAt                # ISO 8601 - when the JWS was minted (signature freshness)
+      - expiresAt               # ISO 8601 - issuedAt + 24h TTL
+      - scan.trustScore         # integer 0-100 - security scan score
+      - scan.trustTier          # string - rate-limit tier derived from score
+      - scan.result             # string - clean | warnings | critical | error
+      - scan.findings           # object - severity/category-tagged findings summary
+      - scan.positiveSignals    # array of strings
+      - scan.filesScanned       # integer
+      - scan.filesTotal         # integer - total scannable files before the 200-file sample cap
+      - scan.sampled            # bool - true when a large repo was only partially scanned
+      - scan.primaryLanguage    # string
+      - scan.categoryScores     # object - per-category 0-100 sub-scores
+      # CONDITIONAL - present on the signed wire only when a tool manifest digest
+      # exists. `_build_scan_payload` inserts it as `null` when absent, and the
+      # scan JWS path serializes via the legacy canonicalizer (src/signing.py
+      # `canonicalize()`), which STRIPS `None` members before `create_jws`. So a
+      # scan with no tool manifest omits this field from the signed bytes
+      # entirely rather than signing an explicit null. Verifiers MUST treat it as
+      # optional and not fail on its absence.
+      - scan.toolManifestDigest # string, CONDITIONAL - canonical hash of tool/skill/MCP definitions (#8 pinning); absent (null-stripped) when there is no manifest
+      - scan.toolDigests        # object - per-file tool-definition digests (defaults to {}, always present, may be empty)
+      - recommendedLimits       # object - suggested rate/token limits for the tier
+      # CONDITIONAL - added to the payload only when drift is detected vs the
+      # previous scan; otherwise omitted (not signed as null).
+      - toolDrift               # object, CONDITIONAL - digest diff vs the previous scan (rug-pull signal); present only when drift detected
+
+    endpoints:
+      scan:            "GET https://agentgraph.co/api/v1/public/scan/{owner}/{repo}"
+      history:         "GET https://agentgraph.co/api/v1/public/scan/{owner}/{repo}/history"
+      badge:           "GET https://agentgraph.co/api/v1/public/scan/{owner}/{repo}/badge"
+      og_image:        "GET https://agentgraph.co/api/v1/public/scan/{owner}/{repo}/og-image"
+      checks:          "GET https://agentgraph.co/api/v1/public/scan/{owner}/{repo}/checks"
+      jwks:            "https://agentgraph.co/.well-known/jwks.json"
+      did_document:    "https://agentgraph.co/.well-known/did.json"
+
+    envelope_identifiers:
+      context: "https://schema.agentgraph.co/attestation/security/v1"
+      type: "SecurityPostureAttestation"
+      slot_schema_version: "agentgraph-scan-v1-structural"  # composed-v1 interop slot (src/attestation/composed_slot.py)
+      # The composed-v1 slot (separate from the SecurityPostureAttestation JWS
+      # above) declares `canonicalization_spec: jcs-rfc8785+sha256` and carries an
+      # `evidence_hash` of the form `sha256:<hex>` (src/attestation/composed_slot.py
+      # CANONICALIZATION_SPEC / compute_evidence_hash). This evidence_hash digest
+      # surface is the ONLY place jcs-rfc8785+sha256 correctly applies in this
+      # crosswalk. The primary scan attestation JWS does not use it.
+      slot_canonicalization_spec: "jcs-rfc8785+sha256"   # composed-v1 slot evidence_hash digest surface only
+      slot_evidence_hash_format: "sha256:<hex>"
+
+    letter_grade_rubric:
+      # Public A+/A/B/C/D/F thresholds (src/attestation/composed_slot.py).
+      # Publishing the letter thresholds is fine; the weights that produce
+      # the 0-100 score are proprietary and are NOT exposed.
+      "A+": ">= 96"
+      "A":  ">= 81"
+      "B":  ">= 61"
+      "C":  ">= 41"
+      "D":  ">= 21"
+      "F":  ">= 0"
+
+    trust_score_formula:
+      # Internal composite for entity ranking - audit-required, not
+      # enforcement-required. The published `trust_score` on a
+      # security_posture attestation is the security-scan component only;
+      # the four-weight composition below is AgentAvow's internal entity
+      # trust score (src/trust/score.py) and is exposed for auditability,
+      # not as a refusal-bearing signal.
+      verification_weight: 0.35   # identity: DID resolution + verification
+      external_weight:     0.35   # GitHub / npm / PyPI external reputation
+      scan_weight:         0.20   # static security findings (security_posture)
+      age_weight:          0.10   # account age / tenure
+      max_single_weight:   0.40   # MAX_SINGLE_WEIGHT isolation invariant (src/trust/score.py)
+
+
+  # ─────────────────────────────────────────────────
+  # All other vocabulary.yaml signal_types - no_mapping.
+  # AgentAvow's role is the static-analysis security-posture surface;
+  # identity, behavioral runtime, peer-review, settlement, governance,
+  # etc. are delegated to peer issuers via the multi-attestation
+  # envelope.
+  # ─────────────────────────────────────────────────
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: >
+      AgentAvow does not issue identity attestations beyond resolving
+      its own did:web:agentgraph.co for signed-scan provenance. Primary
+      issuers: AgentID, APS.
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: >
+      AgentAvow issues static security_posture, not scored behavioral
+      assessment over observed runtime. Primary issuers: MolTrust,
+      AgentLair.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: >
+      Foundation-layer wallet attestation is out of scope. Primary
+      issuer: InsumerAPI.
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: >
+      Behavioral wallet classification is not in AgentAvow's scope.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: >
+      AgentAvow does not attest to model reasoning artifacts.
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: >
+      AgentAvow does not perform sanctions / OFAC / regulatory
+      counterparty screening.
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: >
+      AgentAvow does not issue delegation-chain or policy-satisfaction
+      attestations. Primary issuers: APS, AgentNexus, Nobulex, SINT.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: >
+      AgentAvow's letter grade is artifact-bound (security_posture for
+      a `{owner}/{repo}` artifact), distinct from APS's agent-level
+      passport_grade primitive. Primary issuer: APS.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: >
+      AgentAvow does not issue task-outcome attestations.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      AgentAvow does not anchor settlement or payment-execution
+      receipts. Primary issuer: SAR.
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: >
+      AgentAvow does not issue delegator-signed task-completion
+      attestations about a service agent's delivery; it scans artifacts,
+      it does not review executed work. Primary issuers: Logpose, RNWY.
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: >
+      AgentAvow does not compute a completed-over-total task ratio across
+      an observation window - it emits point-in-time static scans, not an
+      aggregate delegation-outcome metric. Primary issuers: AgentID, APS.
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: >
+      AgentAvow does not attest that an agent identity persists across a
+      key rotation, host migration, or environment swap; its subject is a
+      `{owner}/{repo}` artifact, not a migrating agent identity. Primary
+      issuer: SBR Protocol (canonical status: proposed).
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: >
+      AgentAvow does not attest to structural properties of an agent's
+      reasoning state at decision time under a reduction map; static
+      security posture is orthogonal to what was reasoned over. Canonical
+      status: reserved (no production implementation; proposer AEOESS).
+
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSION MAPPINGS
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+
+  security_posture:
+    enforcement_class: advisory
+    enforcement_notes: >
+      AgentAvow emits signed evidence (score, grade, findings); refusal
+      authority lives with the consuming agent or policy layer. The
+      score is composable input for downstream gating, not a direct
+      refusal-bearing primitive.
+
+    validity_temporal: at_issuance
+    validity_notes: >
+      Each scan is a point-in-time snapshot bound to the artifact at
+      scan time. The JWS carries `scannedAt` (evidence freshness),
+      `issuedAt` (signature freshness), and `expiresAt` (issuedAt + 24h
+      TTL); consumers can diff scannedAt vs issuedAt to assess
+      staleness, and consult `/history` `score_timeline` for the
+      trajectory.
+
+    refusal_authority: consumer_policy
+    refusal_notes: >
+      AgentAvow does not refuse; it reports the observed security
+      posture. Consumer-side policy decides how to weight the signal
+      (e.g. a marketplace gateway might gate listings below grade C).
+
+    invariant_survival: pre_action
+    invariant_notes: >
+      Scan attestations are consumed before an action - typically
+      installation, listing publication, marketplace purchase, or
+      delegation to an agent backed by the scanned artifact.
+
+    replay_class: decision_replay
+    replay_notes: >
+      Given the JWS attestation plus the JWKS, any verifier can replay
+      the signature decision offline and confirm the score / grade /
+      findings at issuance. Re-running the static-analysis pipeline
+      from source is not part of the receipt surface; that requires
+      re-querying the scan endpoint.
+
+    governed_action_class: ["read", "compose", "transfer", "delegate"]
+    governed_action_notes: >
+      security_posture is most commonly consumed at the installation /
+      listing boundary (`compose` / `transfer`) and at gated-discovery
+      surfaces (`read`). It composes with `trust_verification`
+      (identity), `governance_attestation` (authority), and
+      `behavioral_trust` (runtime) from peer issuers.
+
+
+# ─────────────────────────────────────────────────
+# ENVELOPE
+# ─────────────────────────────────────────────────
+envelope:
+  alg: EdDSA
+  curve: Ed25519
+  canonicalization: >
+    Compact JWS (RFC 7515). Payload bytes are produced by AgentAvow's legacy
+    canonicalizer (src/signing.py `canonicalize()`: sorted keys, no whitespace,
+    integer-valued floats normalized, null members stripped, ASCII escapes) -
+    NOT RFC 8785 JCS. EdDSA (Ed25519) signs the JWS signing input directly;
+    there is no separate SHA-256 step, and the attestation is verified as
+    transmitted with no re-canonicalization. jcs-rfc8785+sha256 is scoped to
+    the composed-v1 slot's `evidence_hash` digest surface only (see
+    `signal_types.security_posture.envelope_identifiers` and
+    `system_attributes`).
+  jwks_uri: "https://agentgraph.co/.well-known/jwks.json"
+  did_document: "https://agentgraph.co/.well-known/did.json"
+  signing_kid: "agentgraph-security-v1"
+  verification_method: "did:web:agentgraph.co#agentgraph-security-v1"
+  context: "https://schema.agentgraph.co/attestation/security/v1"
+  type: "SecurityPostureAttestation"
+  media: "compact JWS, RFC 7515"
+
+
+# ─────────────────────────────────────────────────
+# TRANSPORT
+# ─────────────────────────────────────────────────
+transport:
+  auth: "none for /api/v1/public/scan/* (rate-limited)"
+  api_base: "https://agentgraph.co/api/v1"
+  scan_endpoint: "https://agentgraph.co/api/v1/public/scan/{owner}/{repo}"
+  history_endpoint: "https://agentgraph.co/api/v1/public/scan/{owner}/{repo}/history"
+  history_rate_limit: "rate_limit_history_reads dependency (src/api/public_scan_router.py)"
+  jwks_endpoint: "https://agentgraph.co/.well-known/jwks.json"
+  did_document_endpoint: "https://agentgraph.co/.well-known/did.json"
+
+
+# ─────────────────────────────────────────────────
+# GAPS AND NOTES
+# ─────────────────────────────────────────────────
+gaps:
+
+  - area: "Rebrand / issuer-key aliasing"
+    notes: |
+      AgentGraph rebranded to AgentAvow. The issuer identity is
+      unchanged: same DID (did:web:agentgraph.co), same signing kid
+      (agentgraph-security-v1), same endpoint hosts. This crosswalk is
+      dual-carry (see `issuer_keys`): both `agentgraph` and `agentavow`
+      resolve to the same issuer during the transition. This is a
+      single issuer under a new name, NOT a second independent
+      implementation - it does not satisfy the CONTRIBUTING.md
+      2-implementation promotion threshold for `security_posture`.
+
+  - area: "Score composition exposure"
+    notes: |
+      The four-weight entity trust score (verification 0.35, external
+      0.35, scan 0.20, age 0.10; MAX_SINGLE_WEIGHT 0.40 invariant) is
+      AgentAvow's internal entity ranking, audit-required not
+      enforcement-required. The published `trust_score` on a
+      security_posture attestation is the static-analysis component
+      only. The scoring WEIGHTS that produce the 0-100 score are
+      proprietary and not published; the A+/A/B/C/D/F letter thresholds
+      are public. vocabulary.yaml has no canonical term for this
+      multi-input composite; flagging so the mapping is legible.
+
+
+# ─────────────────────────────────────────────────
+# CROSSWALK METADATA
+# ─────────────────────────────────────────────────
+crosswalk_metadata:
+  authored_by: "@kenneives"
+  vocabulary_version: "0.2.0"
+  last_reviewed: "2026-08-08"
+  supersedes: "crosswalk/agentgraph.yaml"
+  rebrand:
+    previous_name: AgentGraph
+    current_name: AgentAvow
+    issuer_did_unchanged: did:web:agentgraph.co
+    signing_kid_unchanged: agentgraph-security-v1
+  related_artifacts:
+    - "https://agentgraph.co/.well-known/jwks.json"   # public key set
+    - "https://agentgraph.co/.well-known/did.json"    # did:web:agentgraph.co document

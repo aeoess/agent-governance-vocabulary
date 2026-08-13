@@ -303,46 +303,56 @@ signal_types:
       measurement_point: mutation_boundary
 
   bilateral_receipt:
-    status: proposed
+    status: reserved
     review_by: "2026-11-30"
     promotion_trigger: >
-      A published conformance vector or fixture that a third party can
-      independently check (CONTRIBUTING.md bar 4), covering APS
-      (`delegation_revocation`, the counted implementation) and Nobulex
-      (`covenant_binding`) once its convergence counts as the second
-      implementation. The two are already reported to share a byte-matching
-      canonical preimage; canonical status follows once that convergence is
-      checkable from a published vector rather than asserted.
+      Leaving `reserved` requires at least one QUALIFYING EMITTED crosswalk row:
+      a real receipt whose signed preimage carries `purpose`, from APS or
+      Nobulex, plus a published conformance vector a third party can
+      independently check (CONTRIBUTING.md bar 4). Canonical status further
+      requires a second counted implementation. No qualifying emitted evidence
+      is in the registry yet — cross-implementation convergence is reported but
+      not yet checkable from a published vector.
     proposed_by: ["issue #81 (Track B)"]
     definition: >
       Two-party signed delegation receipt: a signed acknowledgment of a
-      content-addressed prior event carrying both parties' signatures over a
-      single shared canonical preimage (RFC 8785 JCS). The bilateral property
-      is exactly the two-signature property — both the delegating party and
-      the counterparty sign the same canonicalized preimage, so the receipt is
-      independently verifiable without knowing which implementation produced
-      it. Answers: did both parties sign off on this prior event? Distinct
-      from governance_attestation (single-issuer attestation that a declared
-      governance requirement was satisfied) and peer_review (a first-party
-      attestation from one task delegator): without both parties' signatures
-      it is not a bilateral_receipt. `covenant_binding` is a registered
-      `purpose` value of a bilateral_receipt, not a separate primitive.
+      content-addressed prior event carrying both parties' signatures over the
+      same canonicalized preimage. The bilateral property is exactly the
+      two-signature property — both the delegating party and the counterparty
+      sign that preimage, so the receipt is independently verifiable by a party
+      that resolves the implementation's declared preimage (see
+      `canonicalization`). Answers: did both parties sign off on this prior
+      event? Distinct from governance_attestation (single-issuer attestation
+      that a declared governance requirement was satisfied) and peer_review (a
+      first-party attestation from one task delegator): without both parties'
+      signatures it is not a bilateral_receipt. `covenant_binding` is a
+      registered `purpose` value of a bilateral_receipt, not a separate
+      primitive.
     required:
-      - signatures      # both parties' signatures over the shared canonical preimage, normative
+      - signatures      # both parties' signatures over the declared canonical preimage, normative
       - action_ref      # content-addressed reference to the prior event acknowledged, normative
-      - purpose         # registered enum value (see registered_purposes), normative
+      - purpose         # registered enum value, emitted and signed in the preimage, normative
       - issued_at       # signed timestamp anchor: envelope-level issued_at OR per-signature iat, normative
     field_contract: >
       `required` names canonical properties, not mandatory literal wire keys.
       An implementation may satisfy a canonical property through a semantically
       equivalent emitted structure declared and source-grounded in its
-      crosswalk; where integrity coverage matters, the crosswalk identifies how
-      the property is covered by the signed artifact. `purpose` is satisfied by
-      the registered crosswalk declaration unless the implementation emits it
-      directly.
+      crosswalk. `purpose` MUST be emitted and signed in the receipt's preimage:
+      a verifier relies on it for per-receipt routing, so it cannot be satisfied
+      by mutable registry metadata — a later crosswalk edit must not be able to
+      relabel already-signed receipts.
+    canonicalization: >
+      No single serializer is mandated. Each implementation MUST declare its
+      exact signing preimage — serializer and profile — in its crosswalk. Any
+      byte-compatibility claim between implementations requires (a) the same
+      declared profile and (b) a shared conformance vector that actually detects
+      serializer differences. Profiles are named only after their definitions
+      exist. As of this entry no shared verified canonicalization profile has
+      been published across implementations (APS emits via a legacy serializer,
+      not RFC 8785 JCS).
     registered_purposes:
-      - delegation_revocation     # APS, revocation acknowledgment
-      - covenant_binding          # Nobulex, covenant-lifecycle state transition (per @arian-gogani)
+      - delegation_revocation     # revocation acknowledgment (reserved; no emitted receipt yet)
+      - covenant_binding          # Nobulex, covenant-lifecycle state transition (per @arian-gogani); reserved pending emitted evidence
     implementation_specific:
       - compromise_window_ts      # APS-only, revocation compromise window
       - evidence_merkle_leaf      # APS-only, delegation evidence trail
@@ -354,23 +364,19 @@ signal_types:
       replay_class: full_replay
       governed_action_class: delegate
     notes: |
-      Track B primitive from issue #81. APS is the counted implementation: it
-      implements the compatible BilateralReceipt shape and maps it to registered
-      purpose `delegation_revocation` (revocation acknowledgment), with its
-      crosswalk row landing in this PR. Nobulex provides independent convergence
-      evidence for the same primitive and is expected to become the second
-      implementation when its crosswalk mapping, compatible emitted artifact,
-      and published checkable fixture are present; it does not count toward
-      promotion until then. Both are reported to canonicalize with RFC 8785 JCS
-      and byte-match on the shared preimage; the shape is the convergence point,
-      not the use case.
+      Track B primitive from issue #81, held at `reserved`. No qualifying
+      emitted crosswalk row — a receipt whose signed preimage carries `purpose` —
+      exists yet: APS emits its BilateralReceipt shape via a legacy serializer
+      (not RFC 8785 JCS) and does not currently emit a `purpose` field; Nobulex
+      provides independent convergence evidence but no published checkable
+      fixture. Cross-implementation byte-match is reported but is not asserted
+      here, because it is not yet backed by a shared vector that detects
+      serializer differences under a common declared profile.
 
-      Status is `proposed`, not `canonical`: one production implementation (APS)
-      is cited with its implementing crosswalk row, which is what `proposed`
-      requires. Promotion to `canonical` needs the second implementation to
-      count (Nobulex, per above) plus a published conformance vector meeting
-      CONTRIBUTING.md bar (4) — a fixture a third party can independently check.
-      Promotion follows those, per promotion_trigger.
+      The term leaves `reserved` when at least one implementation publishes a
+      receipt that signs `purpose` in its declared preimage, with a conformance
+      vector a third party can independently check (CONTRIBUTING.md bar 4).
+      Canonical status additionally needs a second counted implementation.
 
       Purpose discriminator: registry + enum (Option B, locked by @aeoess in
       #81). `purpose` is a normative field whose value is drawn from the

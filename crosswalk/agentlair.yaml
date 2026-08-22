@@ -10,9 +10,11 @@
 # the pre-delegation question: does this agent's track record warrant
 # the delegation scope being requested?
 #
+# AgentLair is NOT a Linux Foundation project.
+#
 # Home: https://agentlair.dev
-# Source: https://github.com/hawkaa/picoclaw (host runtime)
-# License: Apache-2.0
+# Source: https://github.com/piiiico/agentlair
+# License: MIT
 
 system:
   name: AgentLair
@@ -26,9 +28,10 @@ system:
     trust scores (consistency, restraint, transparency). The trust profile
     is queryable by any third party to inform pre-delegation decisions.
   identity_layer: "did:web:agentlair.dev (self-issued)"
-  license: Apache-2.0
+  license: MIT
+  not_linux_foundation: true
 
-license: Apache-2.0
+license: MIT
 
 maintainer:
   github: piiiico
@@ -162,7 +165,7 @@ signal_types:
       standalone signed governance attestation in the multi-attestation
       envelope format. Partial match — the data exists and is signed, but
       the delivery mechanism is an audit log rather than a portable
-      attestation.
+      attestation. Category: Agent Governance & Policy Enforcement.
     endpoints:
       audit_trail: "Referenced via al_audit_url claim in AAT"
 
@@ -290,8 +293,8 @@ descriptor_dimensions:
 
 crosswalk_metadata:
   authored_by: "@piiiico"
-  vocabulary_version: "0.1.0"
-  last_reviewed: "2026-04-29"
+  vocabulary_version: "0.2.0"
+  last_reviewed: "2026-08-22"
   rfc_context: "openclaw/openclaw#49971 (RFC: Native Agent Identity & Trust Verification)"
   refresh_notes:
     - "v2: Corrected primary mapping from peer_review to behavioral_trust per @aeoess review (aeoess/agent-governance-vocabulary#46)."
@@ -300,3 +303,4 @@ crosswalk_metadata:
     - "Temporal-sequencing note (four-layer model) moved to behavioral_trust.notes per vocabulary review guidance."
     - "Production state: trust endpoints live, behavioral event ingestion live, three-dimensional scoring operational."
     - "v3: Added trust_verify endpoint (POST /v1/trust/verify — AAT-based lookup, no agentId path param required)."
+    - "v4 (2026-08-22): license updated to MIT (LICENSE file added at piiiico/agentlair root). Source updated to piiiico/agentlair. Added not_linux_foundation: true to system block. vocabulary_version bumped to 0.2.0."

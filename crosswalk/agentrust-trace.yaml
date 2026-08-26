@@ -1,0 +1,522 @@
+# TRACE Trust Record to agent-governance-vocabulary crosswalk
+#
+# Mapped artifact: the TRACE Trust Record as defined by schema/trace-claim.json
+# in agentrust-io/trace-spec at tag v0.9.0 (94271a1630601c94e80a23263d9750cb8d39f1f4),
+# which is the source commit for the released PyPI package agentrust-trace 0.9.0.
+#
+# Version coherence, checked before any mapping was written. The SHA-256 over
+# json.dumps(sort_keys=True, separators=(',',':')) with default ensure_ascii (the
+# file carries \u escapes, so ensure_ascii=False changes the digest) of the
+# installed agentrust_trace.SCHEMA and of schema/trace-claim.json at v0.9.0 are
+# identical:
+#   41139ed12f4aaca689cde6ed97c9066b46436517cf39bebdc2c4feb186cfc5d9  (10102 bytes)
+# trace-spec main at the time of writing (e0afe8eba628244afd591433014b182530a0c11c,
+# 79 commits later) carries a different schema
+# (07c98c1ad217fa9eac32b6a51416ac692c7725b25cffe05651af072a734c4399, 13165 bytes):
+# it adds a `references` property, adds `provenance_depth` under build_provenance
+# and `provenance_depth_verified` under appraisal, and drops `transparency` from
+# `required`, while pyproject.toml still declares version 0.9.0. Every path cited
+# in this file is
+# therefore pinned to v0.9.0 and no claim here is made about trace-spec main.
+#
+# Worked example used to check emission: a Level 0 Trust Record emitted by the
+# aeoess-aps exporter against agentrust-trace 0.9.0. That record carries 8 of the
+# 11 schema-required fields; it omits model, data_class and build_provenance, an
+# omission the exporter documents deliberately. Absence from that one record is
+# not evidence that TRACE lacks a field: the schema and spec establish TRACE
+# capability, the record establishes one observed emission. Entries below say
+# which basis they rest on.
+
+system:
+  name: TRACE Trust Record
+  short_name: TRACE
+  home: https://trace.agentrust.io
+  github: https://github.com/agentrust-io/trace-spec
+  spec: https://github.com/agentrust-io/trace-spec/blob/v0.9.0/spec/trace-v0.2.md
+  schema: https://github.com/agentrust-io/trace-spec/blob/v0.9.0/schema/trace-claim.json
+  spec_version: "TRACE v0.2 profile (eat_profile tag:agentrust-io.com,2026:trace-v0.2)"
+  implementation: PyPI agentrust-trace 0.9.0
+  version_tested: agentrust-trace 0.9.0 (CPython 3.12.13)
+  trace_spec_sha: 94271a1630601c94e80a23263d9750cb8d39f1f4  # tag v0.9.0
+  role: >
+    Signed evidence record binding an agent execution to hardware-rooted
+    attestation. Carries a TEE measurement chain, a confirmation key, model and
+    build provenance, the policy bundle in force, a verifier EAR appraisal, and
+    a SCITT transparency receipt URI. TRACE describes what ran and under which
+    policy; it does not score agents and does not issue reputation.
+  upstream_license: >
+    Multi-licensed per trace-spec LICENSE at v0.9.0. Normative specification text
+    under spec/ and the normative JSON Schema at schema/trace-claim.json are
+    Community Specification License 1.0. Source, SDK, tests, examples and
+    workflows under src/, tests/, examples/ and .github/ are Apache-2.0.
+    Documentation excluding specifications is CC BY 4.0. These are not collapsed
+    into a single upstream license here.
+
+# Per CONTRIBUTING.md line 256, this field is the license of the crosswalk file
+# itself (contributor's choice, must permit Apache 2.0 downstream consumption),
+# not the mapped system's upstream license. TRACE's own multi-licensing is
+# recorded under system.upstream_license above.
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: imran-siddique
+    project: agentrust-io/trace-spec
+
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+    contact: signal@aeoess.com
+
+# system_attributes basis, recorded as comments because merged crosswalks carry
+# no `notes` key under this section (agentid, agentgraph, cycles, chancery,
+# continuity-analyzer, mycelium-trails, sar all use inline comments instead).
+system_attributes:
+  signature_capability: classical          # Ed25519 OKP in cnf.jwk (docs/glossary.md); spec 3.2.1 lists ES256/ES384/EdDSA; no PQC algorithm
+  canonicalization_profile: jcs-rfc-8785   # docs/glossary.md JCS entry and CHANGELOG "Canonicalization is now RFC 8785 (JCS)"; the anchor leaf uses sorted-key JSON, the signature pre-image uses JCS
+  # hash_family is deliberately omitted. The attribute takes one value and TRACE's
+  # verifier-visible hash is platform-dependent: docs/schema.md at v0.9.0 gives
+  # sha384 for SEV-SNP and TDX measurements and sha256 for TPM, and every digest
+  # field's pattern admits both. Recording sha-256 would be false for a SEV-SNP or
+  # TDX record. This is a representation gap in the registry attribute, not in TRACE.
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# One entry per key under vocabulary.yaml signal_types, regardless of lifecycle
+# status. TRACE is an attestation record format for agent executions: it carries
+# what ran, on what hardware, under which policy, and what a verifier appraised.
+# It issues no scores and no reputation, so the scored, wallet and
+# reputation-shaped signal types resolve to no_mapping. That is a structural
+# property of TRACE, not a gap in this crosswalk.
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: |
+      Examined for partial and left as no_mapping. The registry term is a signed
+      attestation that an agent or action satisfied a declared governance requirement.
+      TRACE's appraisal is, in the schema's own words, the verifier's EAR appraisal of
+      the evidence: appraisal.status is an AR4SI tier, and AR4SI defines affirming as
+      the verifier affirming the attester's support for an aspect of trustworthiness,
+      per aspect (instance identity, configuration, executables, hardware). That is a
+      statement about the trustworthiness of the evidence, not that the execution
+      satisfied the policy at appraisal.policy_ref. Second divergence: the record's
+      signature is bound to the cnf key (properties.signature.description) and
+      appraisal.verifier names the verifier; the schema does not bind the verifier to
+      that signing key, so the appraisal is not shown to be a signed statement by the
+      appraiser, which the registry term requires. Recorded as no_mapping rather
+      than partial because CONTRIBUTING.md prefers an explicit gap over a forced
+      partial. At v0.9.0 TRACE's docs disagree on what the slot is for: the glossary
+      says affirming means the measured environment matches the expected state;
+      docs/verification.md says none means no appraisal performed (software-only
+      Level 0); the signing tutorial says software-only Level 0 records carry none and
+      hardware-attested ones affirming; docs/integration/sandbox-runtime.md says set
+      affirming only when an appraisal actually happened. Against that,
+      the AGT adapter hardcodes affirming at Level 0 with no verdict read
+      (docs/integration/agt.md line 20: "`affirming` (Phase 1)";
+      docs/tutorials/agt-adapter.md line 112: "Always `affirming` (Phase 1)"), and the
+      aeoess-aps exporter in agentrust-io/integrations (merged 2026-08-04) maps APS
+      verdicts permit, narrow and deny to affirming, warning and contraindicated with
+      the APS evaluator as verifier and the floor policy as policy_ref; its review called
+      narrow to warning "a defensible reading". Since then the integrations README
+      (2026-08-08, agentrust-trace-adapters) states that records built from evidence
+      another system produced carry appraisal.status none, and its adapters library
+      README (packages/agentrust-trace-adapters, integrations#89, merged 2026-08-09)
+      draws the line explicitly: "A vendor's bare ALLOW/DENY result is still a policy
+      decision, not an appraisal of the evidence behind that decision." This cell maps
+      the schema's meaning, not one emitter's use, so it stays no_mapping; it moves to
+      partial only if TRACE's own text defines appraisal as able to carry an external
+      policy evaluator's verdict.
+      Schema: schema/trace-claim.json properties.appraisal, a required member.
+      Emission checked: present in the worked example with status "affirming",
+      verifier "urn:aps:evaluator:eval_example"; not evidence for this cell while it
+      is no_mapping.
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: |
+      The registry definition is wallet-discoverable posture: the signed subject
+      is the artifact (repo, commit, output) and the wallet is the lookup key.
+      TRACE carries the artifact half, at build_provenance (SLSA builder URI,
+      artifact digest, provenance attestation URI, SLSA Build Level) together
+      with workload identity at subject and runtime evidence at runtime.
+      It carries no wallet anywhere in schema/trace-claim.json at v0.9.0, so
+      there is no wallet-keyed lookup and the discovery half of the definition
+      has nothing to bind to. Recorded as a gap rather than as partial, because
+      the lookup key is what makes the term wallet-discoverable and TRACE's
+      lookup key is a SPIFFE SVID or DID URI.
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: |
+      TRACE binds a workload identity (subject, a SPIFFE SVID or DID URI) to a
+      TEE-held key (cnf.jwk). That is identity binding, not an identity-layer
+      verification status. trust_verification asks for a graded verification
+      outcome: Grade 1-3, KYC presence, principal endorsement. TRACE emits no
+      grade, no KYC assertion and no endorsement anywhere in
+      schema/trace-claim.json at v0.9.0. The cryptographic shapes look related
+      and the governance question is different, so this is recorded as a gap
+      rather than forced onto subject or cnf.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: |
+      TRACE has no passport primitive. build_provenance.slsa_level is an integer
+      level and is the nearest lexical neighbour, but it grades the build
+      pipeline of the workload artifact, not the issuance evidence behind an
+      agent identity. Mapping a build level onto a composite agent trust grade
+      would assert a claim TRACE never makes.
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: |
+      behavioral_trust is a scored assessment derived from observed behavior
+      over time. A TRACE Trust Record describes a single execution and carries
+      no score, no observation window and no history. Nothing in
+      schema/trace-claim.json accumulates across executions.
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: |
+      TRACE delegation links a record to the delegating hop by credential_id and
+      parent_record_hash. That is authority provenance, recording which hop
+      granted this one, not a delegator-signed assessment of whether the service
+      agent completed the work. peer_review asks a question about task outcome
+      that no TRACE field answers.
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: |
+      Requires an issuer-computed ratio over a declared observation window. A
+      Trust Record is single-execution; tool_transcript.call_count counts calls
+      within one session and is not a completion measure across delegations.
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: |
+      TRACE carries subject, cnf.jwk and runtime.measurement, and a consumer
+      holding two records could compare them across a key rotation or host
+      migration. But no single Trust Record carries or asserts a continuity
+      claim, and the schema has no field that binds a prior identity to a
+      current one across an infrastructure change. Recorded as a gap rather
+      than as inferable, because inferable requires the value to be recoverable
+      from fields the artifact does carry, and one artifact never carries both
+      sides of the comparison.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: |
+      Status note: reasoning_integrity is status reserved in vocabulary.yaml.
+      Mapping to a reserved term is permitted by merged precedent; this entry is
+      a no_mapping regardless.
+      TRACE tool_transcript binds a hash of the MCP or A2A tool-call transcript,
+      which records the actions taken, not the reasoning behind them. The
+      vocabulary term's attestation surface is the reasoning content of an
+      action. TRACE never commits to reasoning state.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: |
+      Status note: cognitive_attestation is status reserved in vocabulary.yaml.
+      Requires a declared reduction map and faithfulness scope over an agent's
+      reasoning state. TRACE carries model identity and provenance (model.*) but
+      makes no claim about reasoning content at decision time.
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: |
+      Status note: compliance_risk is status reserved in vocabulary.yaml.
+      A scored exposure assessment. TRACE emits no score. data_class records the
+      highest sensitivity of data processed, which is a classification of inputs
+      and outputs, not an exposure assessment of a counterparty.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: |
+      TRACE has no wallet, balance, holding or chain primitive anywhere in
+      schema/trace-claim.json at v0.9.0.
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: |
+      Status note: wallet_intelligence is status reserved in vocabulary.yaml.
+      Same basis as wallet_state: TRACE carries no wallet primitive and no
+      behavioral classification of wallet activity.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: |
+      Status note: job_performance is status reserved in vocabulary.yaml.
+      Wallet-bound assessment of completed task outcomes. TRACE is neither
+      wallet-bound nor outcome-scoring.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: |
+      TRACE carries no payment, value-exchange or settlement-terms primitive. A
+      Trust Record can attest that an execution occurred under a policy, but it
+      never states that a settlement was verified against expected terms.
+
+# ─────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# Only terms TRACE actually supports are mapped. divergence_signal and
+# trust_velocity are recorded as gaps rather than forced.
+# ─────────────────────────────────────────────────
+decision_trajectory:
+
+  decision_lineage:
+    canonical: decision_lineage
+    match: no_mapping
+    notes: |
+      The construction is the same and the question is not. TRACE records in a
+      delegation chain reference their predecessor by content hash
+      (delegation.parent_record_hash, a SHA-256 or SHA-384 digest of the parent
+      hop's Trust Record), which is exactly the hash-to-predecessor construction
+      decision_lineage specifies and is what makes such a sequence walkable
+      without trusting an intermediary. That similarity is named here so it is
+      not mistaken for an oversight.
+      What differs is what the sequence is of. The schema describes
+      properties.delegation as linking "this record to the delegating hop's
+      Trust Record": it orders AUTHORITY HOPS ACROSS AGENTS, one record per hop,
+      with the acting credential at delegation.credential_id. decision_lineage
+      orders DECISIONS ABOUT A SINGLE AGENT. A TRACE chain answers who delegated
+      to whom; the term asks what this agent's ordered decision history is.
+      Shared construction with a different question is not a mapping, and TRACE
+      ships its own delegation profile and vectors, so equating the two would
+      overstate the correspondence.
+      Schema: schema/trace-claim.json properties.delegation, an optional member
+      present when the execution acted under a delegation.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: partial
+    evidence: emitted
+    source_path: "policy.version"
+    notes: |
+      Overlap: both are a version identifier for the standard an execution was
+      judged against, carried so two identical verdicts at different times are
+      not silently different judgements. TRACE names it policy.version, with
+      policy.bundle_hash as the content address of the same bundle and
+      policy.policy_uri as the resolution pointer.
+      Dimension of divergence: policy.version is a POLICY BUNDLE version, not
+      the behavioral baseline a decision was evaluated against. The registry
+      term is about a behavioral baseline; a policy bundle is a different object
+      that happens to answer an adjacent question. Recorded as partial rather
+      than structural, consistent with the merged veritasacta.yaml precedent,
+      where a policy version is also carried as partial.
+      Third divergence: policy.version is present under every enforcement_mode, and
+      under declared the schema says nothing evaluated the bundle, so the field is the
+      baseline a decision was evaluated against only under enforce, silent or advisory.
+      The worked example carries enforcement_mode "enforce", so its emission counts.
+      source_path points at policy.version because that is the version
+      identifier the term asks for; bundle_hash is the digest of the bundle, not
+      the revision label.
+      Schema: schema/trace-claim.json properties.policy, a required member.
+      Emission checked: present in the worked example as version "floor-1.0"
+      with bundle_hash "sha256:7388d9f8...".
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: |
+      Requires a quantitative deviation measurement that is first-class and
+      separable from any gate verdict it triggers. TRACE carries appraisal.status,
+      which is the verdict, and no measurement behind it. The vocabulary
+      definition explicitly separates the measurement from the gate, and TRACE
+      emits only the gate.
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: |
+      A derivative over a trust score across an observation window. TRACE emits
+      no score and no window, so there is nothing to differentiate.
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Evaluated from TRACE descriptor semantics, separately from the signal
+# mappings above.
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+  enforcement_class:
+    - binding
+    - advisory
+  enforcement_notes: |
+    TRACE carries enforcement per record, not per system, so no single scalar is
+    honest here. policy.enforcement_mode is an enum of enforce, advisory, silent,
+    declared (schema/trace-claim.json properties.policy.properties.enforcement_mode).
+    A list is used because merged precedent already carries multi-valued
+    descriptors this way (asqav, nobulex and signet each carry
+    governed_action_class as a list) and the validator checks every element of a
+    list against the same enum.
+    Mapping from the 0.9.0 schema's own definitions of each value:
+      enforce  -> binding.  "evaluated and blocked on deny".
+      silent   -> binding, on the schema's "evaluated and enforced with operational
+                  logs suppressed" and the CHANGELOG's "silent acted with the log
+                  lines suppressed". Documented divergence, recorded and not
+                  resolved here: the same schema sentence says the audit chain
+                  records "every would-have-denied decision", and docs/schema.md
+                  line 56 at the tag reads "`enforce` or `silent` (advisory)",
+                  which reads either as a label on silent or as a list of three
+                  modes. The normative schema description governs this cell. If
+                  TRACE's documents settle on the action proceeding, silent moves
+                  to advisory; the list is unchanged either way.
+      advisory -> advisory. "evaluated, logged, allowed".
+      declared -> NO HONEST COUNTERPART in the enforcement_class enum. The schema
+                  defines it as "the policy is named and bound into the signed
+                  record and NOTHING evaluated it", and states that "a consumer
+                  MUST NOT read it as evidence that any rule was checked". Both
+                  binding and advisory assert that evaluation occurred, so
+                  declaring either for a declared record would be false. The
+                  enum has no value for a policy that was bound but never
+                  evaluated, and this crosswalk does not invent one.
+    A consumer MUST therefore read policy.enforcement_mode on the record rather
+    than rely on this descriptor, and MUST NOT infer enforcement for a record
+    carrying declared.
+  validity_temporal: at_issuance
+  refusal_authority: issuer
+  invariant_survival: post_action
+  replay_class: fingerprint_only
+  measurement_point: session_boundary
+  notes: |
+    validity_temporal: iat is issued-at for the record and appraisal.timestamp is
+    when the appraisal was produced. Both are issuance-time stamps, so the claim
+    is scoped at_issuance. TRACE carries no expiry field at v0.9.0.
+    refusal_authority: issuer. The refusal TRACE records is the enforcement
+    decision at the producing gateway: enforce is "evaluated and blocked on deny"
+    and gateways MUST default to enforce, so actual refusal of the governed
+    execution lives with the party that emits the record. The verifier's appraisal
+    comes after the execution and compels nothing, so verifier is wrong. A relying
+    party may decline to accept the record on its appraisal, but that is refusal of
+    the record, not of the execution, and it is not what this descriptor asks. Not
+    shared: the one merged use of shared (cursor-hooks) is two parties over one
+    decision.
+    invariant_survival: a Trust Record is emitted describing an execution that
+    already ran, carrying its runtime measurement, tool transcript hash and build
+    provenance. The invariant it records is post_action.
+    replay_class: the record alone carries digests and URIs (runtime.measurement,
+    policy.bundle_hash, tool_transcript.hash, build_provenance.digest), which let
+    a verifier detect that something differs, not re-derive the verdict. That is
+    fingerprint_only. A verifier willing to resolve policy.policy_uri,
+    tool_transcript.transcript_uri and the transparency receipt can reach
+    decision_replay, but that requires state the record does not contain, so the
+    record's own class is fingerprint_only.
+    measurement_point: tool_transcript.call_count counts calls within one session
+    and the record scopes one execution, so the measurement point is
+    session_boundary.
+    governed_action_class is deliberately omitted. TRACE does not constrain the
+    class of action it attests: a record describes whatever the agent executed,
+    and the schema has no field naming an action class. Declaring one of read,
+    write, transfer, delegate, publish or compose would assert a scope TRACE does
+    not carry.
+# ─────────────────────────────────────────────────
+# TRACE PRIMITIVES NOT IN VOCABULARY
+# Fields TRACE ships that no canonical term currently asks for. Listed for
+# completeness, not proposed as canonical terms here.
+# ─────────────────────────────────────────────────
+out_of_vocabulary_primitives:
+
+  runtime_measurement_chain:
+    trace_field: "runtime"
+    notes: |
+      Hardware root of trust: platform enum (intel-tdx, amd-sev-snp,
+      azure-cvm-sev-snp, nvidia-h100, nvidia-blackwell, aws-nitro, arm-cca,
+      google-confidential-space, tpm2, software-only), measurement,
+      firmware_version, nonce and rim_uri. No canonical term asks whether an
+      execution was hardware-attested. software-only marks the absence of a
+      hardware root, which is what the worked example emits.
+
+  confirmation_key_binding:
+    trace_field: "cnf.jwk"
+    notes: |
+      RFC 8747 confirmation key binding the record to a TEE-held signing key.
+      Adjacent to system_attributes.signature_capability, which this crosswalk
+      declares, but the binding itself is not a vocabulary term.
+
+  model_provenance:
+    trace_field: "model"
+    notes: |
+      model_id, provider, version, weights_digest and aibom_uri (SPDX 3.0 AI
+      Profile or CycloneDX 1.7 ML-BOM). No canonical signal type asks which
+      model produced the action.
+
+  transparency_receipt:
+    trace_field: "transparency"
+    notes: |
+      SCITT receipt URI. The Trust Record is the Signed Statement and this URI
+      resolves to the inclusion receipt. A resolution pointer, not a carried
+      value.
+
+  data_classification:
+    trace_field: "data_class"
+    notes: |
+      Highest-sensitivity classification of inputs and outputs processed during
+      the execution. Adjacent to compliance_risk but not a scored exposure
+      assessment, so it is recorded here rather than mapped.
+
+  evidence_origin:
+    trace_field: "origin"
+    notes: |
+      kind enum of self, third-party-control-plane, log-import, plus producer,
+      source_event_id and ingested_at. States where the evidence came from when
+      it was not this runtime. No vocabulary term asks that question; it is not
+      request_origin under context_dimensions, which asks about the origin of a
+      request rather than the provenance of evidence in a record.
+
+summary: |
+  TRACE maps onto one registry term, baseline_revision in decision_trajectory, as
+  partial. Eighteen of the nineteen keys across signal_types and decision_trajectory
+  resolve to no_mapping. governance_attestation was examined for partial and left as
+  no_mapping: appraisal.status is the verifier's EAR appraisal of the evidence, on the
+  AR4SI tiers, carried inside a record whose signature is bound to the cnf key with no
+  binding of the named verifier to that key, so it is not shown to be a signed
+  statement by the appraiser that the execution satisfied a governance requirement. The
+  v0.9.0 docs disagree on whether a policy-evaluation verdict belongs in the slot at
+  all (glossary and signing tutorial say environment appraisal and none for software-
+  only; the AGT adapter hardcodes affirming at Level 0 and the aeoess-aps exporter maps
+  a policy verdict into the slot; the integrations README now says records built from
+  another system's evidence carry none). The cell maps the schema and stays no_mapping
+  unless TRACE's own text changes. policy.version is partial because it is a policy bundle version
+  where the registry term names a behavioral baseline, and because under declared
+  nothing evaluated it.
+  Two further candidates were examined and rejected rather than recorded as partial.
+  decision_lineage shares TRACE's exact hash-to-predecessor construction
+  (delegation.parent_record_hash) but orders authority hops across agents where
+  the term orders decisions about one agent. security_posture is wallet-
+  discoverable by definition and TRACE has no wallet-keyed lookup. Shared
+  construction and shared vocabulary are not shared semantics, and this file
+  records the similarity in each rationale so the rejection is auditable rather
+  than silent.
+  The remaining no_mapping entries are structural to what TRACE is: an attestation
+  record format for a single agent execution, carrying hardware measurement, model
+  and build provenance, policy state and a verifier appraisal. It issues no scores,
+  holds no history across executions, and has no wallet primitive, so the scored,
+  reputation and wallet-shaped terms have nothing to bind to.
+  enforcement_class is carried as a list rather than a scalar because TRACE sets
+  enforcement per record. enforce is binding, advisory is advisory,
+  silent is binding on the schema's own words, with the docs/schema.md label
+  recorded as a conflict in TRACE's own documents, and declared has no honest
+  counterpart in the enum: the schema says nothing
+  evaluated the policy and that a consumer MUST NOT read it as evidence any rule
+  was checked, so no single value could be true for every TRACE record.
+  Everything above is pinned to trace-spec v0.9.0
+  (94271a1630601c94e80a23263d9750cb8d39f1f4), the source commit for the released
+  agentrust-trace 0.9.0 whose schema was executed for this crosswalk.
+  hash_family is omitted because TRACE's verifier-visible hash is sha384 on SEV-SNP
+  and TDX and sha256 on TPM, and the attribute takes one value.

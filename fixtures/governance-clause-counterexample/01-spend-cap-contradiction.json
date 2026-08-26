@@ -1,0 +1,220 @@
+{
+  "scope": {
+    "profile": "governance_clause_counterexample",
+    "normative_status": "non_normative",
+    "source_crosswalk": "crosswalk/sar.yaml",
+    "calibration_owner": "aeoess (Agent Passport System maintainer)",
+    "evidence_basis": "SAR-side receipt and spend-cap predicate input supplied by nutstrut on aeoess/agent-governance-vocabulary#135, comment 5305777390, 2026-08-16T04:47:30Z, and reproduced here byte-for-byte. Governance history, signed intervals, version selection and clause binding are constructed by this fixture set, which is what #135 reserved to itself. All keys in this file are ephemeral fixture keys used nowhere else. Not production evidence.",
+    "purpose": "Worked example of successful counterexample construction. Establishes exactly one claim: this receipt contradicted this clause under the version selected by the timestamp the receipt states. Not drift, not recurrence, not significance, not system-wide nonconformance."
+  },
+  "fixture": {
+    "id": "01-spend-cap-contradiction",
+    "issue": "aeoess/agent-governance-vocabulary#135",
+    "exercises": "successful construction from one verifying receipt, one uniquely selected version, one failed deterministic predicate"
+  },
+  "preconditions": [
+    "receipt R independently verifies",
+    "governance history H is pinned by digest",
+    "each version in H carries a signed effective interval",
+    "intervals use UTC instants and half-open semantics",
+    "exactly one version G covers the timestamp stated by R",
+    "cited clause C in G is machine-evaluable",
+    "P fails against R"
+  ],
+  "receipt": {
+    "embedded": {
+      "authority_binding": {
+        "acting_party": "resource_server",
+        "verifier_has_execution_authority": false
+      },
+      "continuity": {
+        "authority_continuity": "PASS",
+        "constraint_continuity": "PASS",
+        "executor_continuity": "PASS",
+        "object_continuity": "PASS",
+        "temporal_continuity": "PASS"
+      },
+      "delivery": {
+        "delivered_at": "2026-08-16T09:12:41Z",
+        "delivered_resource": "https://api.example.com/v1/forecast?region=eu-west",
+        "evidence_digest": "sha256:3b1c4d5e6f708192a3b4c5d6e7f80911223344556677889900aabbccddeeff01",
+        "evidence_type": "http_response",
+        "status_code": 200
+      },
+      "delivery_state": "confirmed",
+      "identity": {
+        "agent": "agent.example/weather-bot",
+        "derived_identity": {
+          "derived_agent_id": "agent:x402:eip155:10:0x1f4C8d2A9b3E6c7D0a5B4e3F2c1D0a9B8e7C6d5F",
+          "identity_status": "derived",
+          "registration_mode": "derived_from_settlement"
+        },
+        "payer": "0x1f4C8d2A9b3E6c7D0a5B4e3F2c1D0a9B8e7C6d5F",
+        "wallet": "0x1f4C8d2A9b3E6c7D0a5B4e3F2c1D0a9B8e7C6d5F"
+      },
+      "integrity": {
+        "canonicalization": "jcs",
+        "digest": "sha256:2fef826a49b77832f52dcec41569c9f32de0e6913ec9b6ad395ab60d4647e18e",
+        "digest_alg": "sha256",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "aeoess-135-fixture-ephemeral-key-01",
+          "value": "4a1988820836d77712dc1c0edfba9ad927b6acdfd783686377cb83bc3c754c035375bcb6b3b75f37606d87ea05cfa223e20fe00127ab21063ad201cd09e93905"
+        }
+      },
+      "issuer": {
+        "environment": "test",
+        "verifier": "DefaultVerifier",
+        "verifier_version": "0.1.0"
+      },
+      "notes": "aeoess/agent-governance-vocabulary#135 spend-cap-contradiction fixture input. SAR-side receipt only -- fixture composition/H/G selection is owned by #135.",
+      "payment": {
+        "amount_paid": {
+          "amount": "500000000",
+          "asset": "USDC",
+          "decimals": 6
+        },
+        "asset": "USDC",
+        "chain": "eip155:10",
+        "facilitator": "x402-facilitator.example",
+        "payer": "0x1f4C8d2A9b3E6c7D0a5B4e3F2c1D0a9B8e7C6d5F",
+        "payment_ref": "0xae31c0f9b2d847e6a1c5f3902b7d4e8c19f6a0b3c2d4e5f60718293a4b5c6d7e",
+        "price": {
+          "amount": "500000000",
+          "asset": "USDC",
+          "decimals": 6
+        },
+        "quote_id": "q_aeoess135_spendcap",
+        "recipient": "0x9aE2b7c1F0d4E5a6B8c3D2e1F09A8b7C6d5E4F30",
+        "resource": "https://api.example.com/v1/forecast?region=eu-west"
+      },
+      "payment_state": "verified",
+      "profile": "sar-402",
+      "sar_type": "Settlement Attestation Receipt",
+      "sar_verdict": "PASS",
+      "schema_id": "sar_402_settlement_v0.1",
+      "settlement_state": "delivered",
+      "timestamps": {
+        "delivered_at": "2026-08-16T09:12:41Z",
+        "issued_at": "2026-08-16T09:12:42Z",
+        "paid_at": "2026-08-16T09:12:28Z",
+        "quote_expires_at": "2026-08-16T09:16:10Z",
+        "quoted_at": "2026-08-16T09:12:10Z",
+        "verified_at": "2026-08-16T09:12:42Z"
+      },
+      "verification_mode": "record",
+      "verification_point": "post_delivery"
+    },
+    "verification": {
+      "canonicalization": "receipt with the top-level integrity member removed, recursive key ordering, compact separators, UTF-8",
+      "preimage_hex": "7b22617574686f726974795f62696e64696e67223a7b22616374696e675f7061727479223a227265736f757263655f736572766572222c2276657269666965725f6861735f657865637574696f6e5f617574686f72697479223a66616c73657d2c22636f6e74696e75697479223a7b22617574686f726974795f636f6e74696e75697479223a2250415353222c22636f6e73747261696e745f636f6e74696e75697479223a2250415353222c226578656375746f725f636f6e74696e75697479223a2250415353222c226f626a6563745f636f6e74696e75697479223a2250415353222c2274656d706f72616c5f636f6e74696e75697479223a2250415353227d2c2264656c6976657279223a7b2264656c6976657265645f6174223a22323032362d30382d31365430393a31323a34315a222c2264656c6976657265645f7265736f75726365223a2268747470733a2f2f6170692e6578616d706c652e636f6d2f76312f666f7265636173743f726567696f6e3d65752d77657374222c2265766964656e63655f646967657374223a227368613235363a33623163346435653666373038313932613362346335643665376638303931313232333334343535363637373838393930306161626263636464656566663031222c2265766964656e63655f74797065223a22687474705f726573706f6e7365222c227374617475735f636f6465223a3230307d2c2264656c69766572795f7374617465223a22636f6e6669726d6564222c226964656e74697479223a7b226167656e74223a226167656e742e6578616d706c652f776561746865722d626f74222c22646572697665645f6964656e74697479223a7b22646572697665645f6167656e745f6964223a226167656e743a783430323a6569703135353a31303a307831663443386432413962334536633744306135423465334632633144306139423865374336643546222c226964656e746974795f737461747573223a2264657269766564222c22726567697374726174696f6e5f6d6f6465223a22646572697665645f66726f6d5f736574746c656d656e74227d2c227061796572223a22307831663443386432413962334536633744306135423465334632633144306139423865374336643546222c2277616c6c6574223a22307831663443386432413962334536633744306135423465334632633144306139423865374336643546227d2c22697373756572223a7b22656e7669726f6e6d656e74223a2274657374222c227665726966696572223a2244656661756c745665726966696572222c2276657269666965725f76657273696f6e223a22302e312e30227d2c226e6f746573223a2261656f6573732f6167656e742d676f7665726e616e63652d766f636162756c61727923313335207370656e642d6361702d636f6e74726164696374696f6e206669787475726520696e7075742e205341522d736964652072656365697074206f6e6c79202d2d206669787475726520636f6d706f736974696f6e2f482f472073656c656374696f6e206973206f776e656420627920233133352e222c227061796d656e74223a7b22616d6f756e745f70616964223a7b22616d6f756e74223a22353030303030303030222c226173736574223a2255534443222c22646563696d616c73223a367d2c226173736574223a2255534443222c22636861696e223a226569703135353a3130222c22666163696c697461746f72223a22783430322d666163696c697461746f722e6578616d706c65222c227061796572223a22307831663443386432413962334536633744306135423465334632633144306139423865374336643546222c227061796d656e745f726566223a22307861653331633066396232643834376536613163356633393032623764346538633139663661306233633264346535663630373138323933613462356336643765222c227072696365223a7b22616d6f756e74223a22353030303030303030222c226173736574223a2255534443222c22646563696d616c73223a367d2c2271756f74655f6964223a22715f61656f6573733133355f7370656e64636170222c22726563697069656e74223a22307839614532623763314630643445356136423863334432653146303941386237433664354534463330222c227265736f75726365223a2268747470733a2f2f6170692e6578616d706c652e636f6d2f76312f666f7265636173743f726567696f6e3d65752d77657374227d2c227061796d656e745f7374617465223a227665726966696564222c2270726f66696c65223a227361722d343032222c227361725f74797065223a22536574746c656d656e74204174746573746174696f6e2052656365697074222c227361725f76657264696374223a2250415353222c22736368656d615f6964223a227361725f3430325f736574746c656d656e745f76302e31222c22736574746c656d656e745f7374617465223a2264656c697665726564222c2274696d657374616d7073223a7b2264656c6976657265645f6174223a22323032362d30382d31365430393a31323a34315a222c226973737565645f6174223a22323032362d30382d31365430393a31323a34325a222c22706169645f6174223a22323032362d30382d31365430393a31323a32385a222c2271756f74655f657870697265735f6174223a22323032362d30382d31365430393a31363a31305a222c2271756f7465645f6174223a22323032362d30382d31365430393a31323a31305a222c2276657269666965645f6174223a22323032362d30382d31365430393a31323a34325a227d2c22766572696669636174696f6e5f6d6f6465223a227265636f7264222c22766572696669636174696f6e5f706f696e74223a22706f73745f64656c6976657279227d",
+      "digest": "sha256:2fef826a49b77832f52dcec41569c9f32de0e6913ec9b6ad395ab60d4647e18e",
+      "signature_over": "the raw 32-byte SHA-256 digest",
+      "public_key": "d80b7477c287d43884ed907cf2f8552fbcf6143a442a9dad9e4f536bf264d5d3",
+      "supplied_by": "nutstrut, aeoess/agent-governance-vocabulary#135 comment 5305777390, 2026-08-16T04:47:30Z"
+    }
+  },
+  "governance_history": {
+    "history_id": "H-spend-cap-single-cover",
+    "digest": "sha256:2658065ec6ab81cd5f572c159f61cdce2102a621dcad91508655d21193f52ba9",
+    "digest_over": "RFC 8785 style canonical JSON of the versions array as written here, signatures included",
+    "interval_semantics": "half-open [effective_from, effective_until); an absent effective_until means the version remains in force",
+    "signing_key": {
+      "alg": "Ed25519",
+      "key_id": "aeoess-135-governance-history-ephemeral-key-01",
+      "public_key": "748c53f5d6dc982fb681015ec8f0858a2c706a51e318b991f6706d30197ed738",
+      "seed_derivation": "sha256('aeoess/agent-governance-vocabulary#135 governance-history fixture key v1')",
+      "note": "Ephemeral fixture key. Published seed, reproducible by anyone, used nowhere else."
+    },
+    "versions": [
+      {
+        "version_id": "G-2026-01",
+        "effective_from": "2026-01-01T00:00:00Z",
+        "effective_until": "2026-08-01T00:00:00Z",
+        "clause": {
+          "clause_id": "C-spend-cap",
+          "machine_evaluable": true,
+          "predicate_id": "spend_cap_v1",
+          "predicate_description": "spend.amount (in predicate_asset base units) must not exceed cap.amount",
+          "comparison": "spend_amount_base_units > cap_amount_base_units",
+          "predicate_asset": "USDC",
+          "cap": {
+            "amount": "1000000000",
+            "asset": "USDC",
+            "decimals": 6
+          }
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "aeoess-135-governance-history-ephemeral-key-01",
+          "over": "sha256 of this version object with the signature member removed, RFC 8785 style canonical JSON",
+          "digest": "sha256:5beb4a30f198b1cce24e23187775d83afb2a89c01d46bea251f834a23ce2277e",
+          "value": "e2a0a24358adb6c8f9a26c486d0caa2ace2729538549867609febfe488fe92430fc1c089ee8c29f59b8f79bed3ca4e33582dab61b63fc0e84ffc043623194407"
+        }
+      },
+      {
+        "version_id": "G-2026-08",
+        "effective_from": "2026-08-01T00:00:00Z",
+        "effective_until": null,
+        "clause": {
+          "clause_id": "C-spend-cap",
+          "machine_evaluable": true,
+          "predicate_id": "spend_cap_v1",
+          "predicate_description": "spend.amount (in predicate_asset base units) must not exceed cap.amount",
+          "comparison": "spend_amount_base_units > cap_amount_base_units",
+          "predicate_asset": "USDC",
+          "cap": {
+            "amount": "250000000",
+            "asset": "USDC",
+            "decimals": 6
+          }
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "aeoess-135-governance-history-ephemeral-key-01",
+          "over": "sha256 of this version object with the signature member removed, RFC 8785 style canonical JSON",
+          "digest": "sha256:c892eadc0075bcbfa430d31c54358bfd170f8a95a471ac195c846ff490b1ef1a",
+          "value": "631bdd0e8d5d8aed38e71f98a1a448e7846a597d83017598b44a8a64316bfa18f1eccc4e405f497f862816703ecf600f376e161bc9949dffb4bb7f46ea2ba702"
+        }
+      }
+    ]
+  },
+  "selection": {
+    "stated_timestamp_pointer": "/timestamps/paid_at",
+    "stated_timestamp": "2026-08-16T09:12:28Z",
+    "rule": "exactly one version in the history must cover the stated timestamp under half-open interval semantics",
+    "boundary": "A valid signature identifies who asserted this timestamp. It does not independently anchor when the execution occurred.",
+    "selected_version": "G-2026-08",
+    "why": "G-2026-01 ends at 2026-08-01T00:00:00Z and the interval is half-open, so it does not cover the stated timestamp. G-2026-08 is open-ended and does. Exactly one version covers."
+  },
+  "evaluation": {
+    "predicate_id": "spend_cap_v1",
+    "spend_base_units": "500000000",
+    "cap_base_units": "250000000",
+    "asset": "USDC",
+    "decimals": 6,
+    "expression": "500000000 > 250000000",
+    "result": "predicate_failed"
+  },
+  "expected": {
+    "construction": "succeeds",
+    "finding": "R contradicted C-spend-cap under G-2026-08, selected using the timestamp stated by R."
+  },
+  "composition_boundary": {
+    "statement": "Constructing this counterexample does not invalidate identity, continuity or authority artifacts elsewhere in the evidence bundle. Those remain valid for the claims they independently establish.",
+    "unaffected_in_this_receipt": [
+      "identity",
+      "continuity",
+      "authority_binding",
+      "delivery"
+    ]
+  },
+  "not_established": [
+    "drift",
+    "recurrence",
+    "significance",
+    "system-wide nonconformance",
+    "trusted execution time",
+    "any conformance requirement on any specification"
+  ]
+}

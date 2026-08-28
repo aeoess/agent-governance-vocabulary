@@ -29,7 +29,6 @@ system:
     is queryable by any third party to inform pre-delegation decisions.
   identity_layer: "did:web:agentlair.dev (self-issued)"
   license: MIT
-  not_linux_foundation: true
 
 license: MIT
 
@@ -165,7 +164,7 @@ signal_types:
       standalone signed governance attestation in the multi-attestation
       envelope format. Partial match — the data exists and is signed, but
       the delivery mechanism is an audit log rather than a portable
-      attestation. Category: Agent Governance & Policy Enforcement.
+      attestation.
     endpoints:
       audit_trail: "Referenced via al_audit_url claim in AAT"
 

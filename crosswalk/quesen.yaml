@@ -1,0 +1,160 @@
+# crosswalk/quesen.yaml
+#
+# Maps Quesen governance primitives to the canonical vocabulary
+# defined in vocabulary.yaml.
+#
+# Quesen is a deterministic decision / agent-firewall engine for
+# autonomous agents. A typed security context (subject, action,
+# target, tool, data, provenance) is evaluated to one of
+# PASS / REVIEW / BLOCK / SKIP with reason codes and a replayable
+# receipt. No model inference is in the scoring path, so the same
+# input always yields the same verdict.
+#
+# Home: https://github.com/Shxnque/quesen
+# Live: https://web-production-aa5ba.up.railway.app (/health, /version, /mcp, /openapi.json)
+# Author / maintainer: Shxnque (Senueren)
+# License: MIT (Apache-2.0 compatible downstream)
+
+system:
+  name: quesen
+  home: https://github.com/Shxnque/quesen
+  github: https://github.com/Shxnque/quesen
+  spec_version: "engine 1.10.0, August 2026"
+  role: >
+    Deterministic decision / agent-firewall engine. A typed security
+    context is evaluated to PASS / REVIEW / BLOCK / SKIP with reason
+    codes and a replayable receipt. Decision-time authorization for
+    tool calls, data egress, and payments. Hosted HTTP + native MCP
+    server + Python and TypeScript SDKs.
+  identity_layer: >
+    API-key scoped callers (sandbox and production). Quesen does not
+    issue agent identities; it evaluates the attempted action and the
+    provenance of its authority. Subject identity is an input field,
+    not a Quesen-issued credential.
+  license: MIT
+  maintainer: Shxnque
+
+# ─────────────────────────────────────────────────
+# SYSTEM ATTRIBUTES
+# ─────────────────────────────────────────────────
+system_attributes:
+  # signature_capability intentionally omitted: Quesen emits no cryptographic
+  # signature. Its evidence artifact is an unsigned, recomputable receipt
+  # (ruleset commit id + SHA-256 over the canonical typed input). This is the
+  # load-bearing structural difference from signature-based systems (e.g.
+  # signet, nobulex): reproducibility-by-recomputation rather than attestation-
+  # by-signature. A reader that filters on signature_capability should treat
+  # Quesen as "no signature scheme".
+  # canonicalization: deterministic canonical-JSON serialization of the typed
+  # security context prior to hashing (stable key ordering), engine-defined and
+  # versioned with the ruleset commit. hash_family sha-256 = verifier-visible
+  # receipt digest.
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    quesen_term: "Decision receipt"
+    quesen_field: "validate_tsc() return value: {decision, reasons[], receipt}"
+    source_path: "https://github.com/Shxnque/quesen/tree/main/docs/security-context"
+    quesen_definition: >
+      For every evaluated action Quesen returns a decision
+      (PASS / REVIEW / BLOCK / SKIP), machine reason codes (e.g.
+      EGRESS_SECRET_UNTRUSTED, UNVERIFIED_GRANT), and a receipt =
+      {ruleset commit id, SHA-256 of the canonical typed input,
+      decision}. The receipt attests that the action was evaluated
+      against a declared, pinned governance ruleset and records the
+      outcome. It is verifiable by recomputation: re-hash the same
+      canonical input, re-run the pinned ruleset, obtain the identical
+      verdict.
+    match: structural
+    evidence: emitted
+    notes: >
+      Same primitive as governance_attestation (a per-action attestation
+      that the action satisfied a declared governance requirement), but the
+      artifact is an unsigned recomputable receipt rather than a signed
+      envelope. Quesen adds a REVIEW state distinct from binary permit/deny:
+      REVIEW routes to human/operator adjudication rather than allowing or
+      denying, and SKIP marks the context out of policy scope.
+    descriptor_dimensions:
+      enforcement_class: refusal_authority   # BLOCK is an enforceable refusal condition
+      validity_temporal: at_processing        # evaluated at decision-time, immediately before the action
+      refusal_authority: shared                # engine issues the verdict; consumer enforces at the call site (SDK require_pass raises)
+      invariant_survival: post_action          # receipt is replayable after the action
+      replay_class: full_replay                # deterministic recompute from receipt + pinned ruleset
+      governed_action_class: write             # primary; Quesen is action-class-agnostic and also governs transfer (payments) and compose (tool calls) — see notes
+    governed_action_class_notes: >
+      Quesen governs multiple action classes (tool call, data egress = write,
+      payment = transfer, delegation). governed_action_class records the most
+      representative single value per the enum; the actual class travels on
+      each evaluated context's action.kind field.
+
+  # ── No analog in Quesen (honest gaps) ──
+  wallet_state:
+    match: no_mapping
+    note: "Quesen does not attest wallet balances, holdings, or on-chain identity; it evaluates actions, not wallet foundation state."
+  behavioral_trust:
+    match: no_mapping
+    note: "Quesen is stateless per-decision and deterministic; it produces no scored trust assessment accumulated over observed behavior."
+  wallet_intelligence:
+    match: no_mapping
+    note: "No behavioral classification of wallet activity; out of scope."
+  reasoning_integrity:
+    match: no_mapping
+    note: "Quesen attests admissibility of the attempted action (authority, scope, provenance, egress), not the integrity of the agent's reasoning process."
+  compliance_risk:
+    match: no_mapping
+    note: "Quesen emits a categorical action verdict, not a scored counterparty exposure assessment."
+  passport_grade:
+    match: no_mapping
+    note: "No composite agent-passport grade is issued."
+  trust_verification:
+    match: no_mapping
+    note: "Quesen does not perform identity-layer verification (KYC grade, principal endorsement); subject identity is an input, not an output."
+  security_posture:
+    match: no_mapping
+    note: "Quesen evaluates per-action admissibility at decision-time, not a standing/aggregate security posture of an agent."
+  job_performance:
+    match: no_mapping
+    note: "No performance or job-outcome scoring."
+  settlement_witness:
+    match: no_mapping
+    note: "Quesen may BLOCK/REVIEW a payment action pre-settlement but issues no settlement-witness attestation of a completed transfer."
+  peer_review:
+    match: no_mapping
+    note: "No peer or cross-agent review signal is produced."
+  completion_ratio:
+    match: no_mapping
+    note: "No task-completion ratio is tracked."
+  entity_continuity:
+    match: no_mapping
+    note: "Quesen holds no cross-session identity/continuity state; each decision is independent."
+  cognitive_attestation:
+    match: no_mapping
+    note: "No attestation of cognitive/reasoning process is emitted."
+
+# ─────────────────────────────────────────────────
+# PROVENANCE TIERING (novel section)
+# Documents a decision-time input primitive the existing shapes don't capture:
+# the trust tier of the *authority* behind an action, used to close the
+# permission-through-derivation-chain gap discussed in
+# modelcontextprotocol/modelcontextprotocol#2498.
+# ─────────────────────────────────────────────────
+provenance_tiering:
+  quesen_field: "context.provenance"
+  definition: >
+    Every evaluated action carries a typed provenance tier for the authority
+    behind it (e.g. operator_asserted, adapter_derived, client_asserted,
+    attested). A sensitive action whose authority is client_asserted or
+    derived-from-untrusted does not auto-pass on the strength of a static
+    grant: it fails closed to REVIEW/BLOCK (UNVERIFIED_GRANT). Authority
+    derived through a summarization/tool-output chain carries a downgraded
+    tier rather than inheriting the parent's grant.
+  relation_to_canonical: >
+    Adjacent to the context_dimensions layer (request_origin). Offered as a
+    candidate context dimension; provenance tier is derived by the evaluator
+    at decision time and is not issuer-signed.

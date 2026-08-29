@@ -61,4 +61,3 @@ repository's own crosswalk entry for `passport_grade`.
 That middle state is the one the registry previously had no vocabulary for, and it is where a
 crosswalk most easily reads as stronger than the system it describes. The example is deliberately
 a correction to the maintainer's own entry rather than to anyone else's.
-crosswalk most easily reads as stronger than the system it describes.

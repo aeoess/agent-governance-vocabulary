@@ -43,15 +43,22 @@ is not something the issuer emitted.
 
 ## The worked example
 
-[`01-aps-delegation.json`](01-aps-delegation.json) carries one real delegation artifact and records
-three canonical terms against it.
+[`01-aps-passport-grade.json`](01-aps-passport-grade.json) carries one real passport artifact,
+emitted by the agent-passport-system SDK with ephemeral keys, and records a correction to this
+repository's own crosswalk entry for `passport_grade`.
 
-- `spend_cap` is `exact` and `emitted`. A signed field, read directly.
-- `remaining_spend` is `exact` and `inferable`. Both operands are signed and the subtraction is
-  trivial, so the shape corresponds precisely, but the issuer never states the remainder. If the
-  issuer's accounting disagrees with that arithmetic, nothing in the signed body resolves it.
-- `revocation_status` is `no_mapping`. A holder of this artifact alone cannot distinguish an active
-  delegation from one revoked a second after issuance.
+- The crosswalk claimed `passport_grade` as `exact` against `passport.grade`, with a note that the
+  grade is embedded in the signed envelope.
+- The emitted passport carries no such field, and no passport type declares one. The grade is
+  produced by `computePassportGrade()` from an issuance evidence record and four conditions, so a
+  consumer obtains it by calling the function, never by reading the artifact.
+- Recorded as a bare `exact` the entry reads as though the issuer emits a grade. Recorded as
+  `no_mapping` it would understate a value a consumer can obtain. The corrected entry keeps the
+  match type and adds the evidence qualifier: `match: exact`, `evidence: inferable`, with
+  `inferred_from` and `inference_basis` stating exactly what the consumer computes it from, and
+  `counts_toward_independent_implementation: false`.
 
-The middle row is the one the registry previously had no vocabulary for, and it is where a
+That middle state is the one the registry previously had no vocabulary for, and it is where a
+crosswalk most easily reads as stronger than the system it describes. The example is deliberately
+a correction to the maintainer's own entry rather than to anyone else's.
 crosswalk most easily reads as stronger than the system it describes.

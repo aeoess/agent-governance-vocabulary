@@ -3,12 +3,13 @@
 # Maps Quesen governance primitives to the canonical vocabulary
 # defined in vocabulary.yaml.
 #
-# Quesen is a deterministic decision / agent-firewall engine for
-# autonomous agents. A typed security context (subject, action,
-# target, tool, data, provenance) is evaluated to one of
-# PASS / REVIEW / BLOCK / SKIP with reason codes and a replayable
-# receipt. No model inference is in the scoring path, so the same
-# input always yields the same verdict.
+# Quesen exposes a deterministic decision path for autonomous agents.
+# This crosswalk maps ONLY that path (POST /tsc/validate): a typed
+# security context (subject, action, target, tool, data, provenance)
+# is evaluated to one of PASS / REVIEW / BLOCK / SKIP with reason codes
+# and a replayable receipt. No model inference is in the scoring path,
+# so the same input always yields the same verdict. Other Quesen
+# surfaces (risk/scam scoring, ASP settlement, billing) are not mapped.
 #
 # Home: https://github.com/Shxnque/quesen
 # Live: https://web-production-aa5ba.up.railway.app (/health, /version, /mcp, /openapi.json)

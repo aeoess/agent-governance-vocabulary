@@ -21,11 +21,16 @@ system:
   github: https://github.com/Shxnque/quesen
   spec_version: "engine 1.10.0, August 2026"
   role: >
-    Deterministic decision / agent-firewall engine. A typed security
-    context is evaluated to PASS / REVIEW / BLOCK / SKIP with reason
-    codes and a replayable receipt. Decision-time authorization for
-    tool calls, data egress, and payments. Hosted HTTP + native MCP
-    server + Python and TypeScript SDKs.
+    This crosswalk maps only Quesen's typed-security-context decision
+    path (POST /tsc/validate): a typed security context (subject,
+    action, target, tool, data, provenance) is evaluated to a
+    categorical verdict (PASS / REVIEW / BLOCK / SKIP) with machine
+    reason codes and a replayable receipt, with no model inference in
+    the scoring path. This is one surface of a broader Quesen product;
+    per /version and the OpenAPI document the service also exposes agent
+    risk / scam scoring (/validate, /report), the Agent Settlement
+    Protocol (/asp/*) and billing (/billing/*). Those surfaces are out
+    of scope for this crosswalk and are not mapped here.
   identity_layer: >
     API-key scoped callers (sandbox and production). Quesen does not
     issue agent identities; it evaluates the attempted action and the
@@ -59,27 +64,43 @@ signal_types:
 
   governance_attestation:
     quesen_term: "Decision receipt"
-    quesen_field: "validate_tsc() return value: {decision, reasons[], receipt}"
-    source_path: "https://github.com/Shxnque/quesen/tree/main/docs/security-context"
+    quesen_field: "POST /tsc/validate response: {decision, reasons[], commit_sha, input_snapshot_hash}"
+    source_path: "https://github.com/Shxnque/quesen/blob/main/docs/api-reference.md#receipt-provenance-v110"
     quesen_definition: >
-      For every evaluated action Quesen returns a decision
-      (PASS / REVIEW / BLOCK / SKIP), machine reason codes (e.g.
-      EGRESS_SECRET_UNTRUSTED, UNVERIFIED_GRANT), and a receipt =
-      {ruleset commit id, SHA-256 of the canonical typed input,
-      decision}. The receipt attests that the action was evaluated
-      against a declared, pinned governance ruleset and records the
-      outcome. It is verifiable by recomputation: re-hash the same
-      canonical input, re-run the pinned ruleset, obtain the identical
-      verdict.
-    match: structural
+      For every evaluated action the shipped engine (engine_version
+      1.10.0, live) returns a decision (PASS / REVIEW / BLOCK / SKIP),
+      machine reason codes (e.g. EGRESS_SECRET_UNTRUSTED,
+      UNVERIFIED_GRANT), and two receipt fields carried directly on the
+      response: commit_sha (40-char git SHA of Shxnque/quesen HEAD that
+      pins the ruleset) and input_snapshot_hash (SHA-256 over the
+      canonical-JSON request). These emitted fields are documented under
+      "Receipt provenance (v1.10)" in the public api-reference and are
+      reproducible against the live endpoint without signup — e.g.
+      POST /tsc/validate (tsc_version 2.0) with a secret egress to an
+      unverified destination returns decision=BLOCK,
+      code=EGRESS_SECRET_UNTRUSTED, plus commit_sha + input_snapshot_hash.
+      The receipt records that the action was evaluated against a
+      declared, pinned ruleset and is verifiable by recomputation:
+      re-hash the same canonical input, re-run the pinned commit, obtain
+      the identical verdict.
+    match: non_equivalent_similar_label
     evidence: emitted
     notes: >
-      Same primitive as governance_attestation (a per-action attestation
-      that the action satisfied a declared governance requirement), but the
-      artifact is an unsigned recomputable receipt rather than a signed
-      envelope. Quesen adds a REVIEW state distinct from binary permit/deny:
-      REVIEW routes to human/operator adjudication rather than allowing or
-      denying, and SKIP marks the context out of policy scope.
+      Flagged non_equivalent_similar_label, not structural: the canonical
+      term is "signed attestation that an agent or action satisfied a
+      declared governance requirement". Quesen's artifact shares the
+      label and the per-action shape but not the governance semantics.
+      Recomputation establishes only that a deterministic verdict follows
+      from the given inputs and pinned ruleset; it does NOT establish that
+      an identified issuer made the statement — which is precisely what a
+      signature supplies. The receipt is therefore an unsigned,
+      recomputable artifact (commit_sha + input_snapshot_hash), which is
+      also why signature_capability is intentionally omitted above. A
+      consumer that needs issuer-attributable attestation should not treat
+      this receipt as equivalent to a signed governance_attestation. Two
+      Quesen-specific additions to the shape: a REVIEW state distinct from
+      binary permit/deny (routes to operator adjudication), and a SKIP
+      state marking a context out of policy scope.
     descriptor_dimensions:
       enforcement_class: refusal_authority   # BLOCK is an enforceable refusal condition
       validity_temporal: at_processing        # evaluated at decision-time, immediately before the action
@@ -137,24 +158,3 @@ signal_types:
     match: no_mapping
     note: "No attestation of cognitive/reasoning process is emitted."
 
-# ─────────────────────────────────────────────────
-# PROVENANCE TIERING (novel section)
-# Documents a decision-time input primitive the existing shapes don't capture:
-# the trust tier of the *authority* behind an action, used to close the
-# permission-through-derivation-chain gap discussed in
-# modelcontextprotocol/modelcontextprotocol#2498.
-# ─────────────────────────────────────────────────
-provenance_tiering:
-  quesen_field: "context.provenance"
-  definition: >
-    Every evaluated action carries a typed provenance tier for the authority
-    behind it (e.g. operator_asserted, adapter_derived, client_asserted,
-    attested). A sensitive action whose authority is client_asserted or
-    derived-from-untrusted does not auto-pass on the strength of a static
-    grant: it fails closed to REVIEW/BLOCK (UNVERIFIED_GRANT). Authority
-    derived through a summarization/tool-output chain carries a downgraded
-    tier rather than inheriting the parent's grant.
-  relation_to_canonical: >
-    Adjacent to the context_dimensions layer (request_origin). Offered as a
-    candidate context dimension; provenance tier is derived by the evaluator
-    at decision time and is not issuer-signed.

@@ -302,6 +302,111 @@ signal_types:
       governed_action_class: publish
       measurement_point: mutation_boundary
 
+  bilateral_receipt:
+    status: reserved
+    review_by: "2026-11-30"
+    promotion_trigger: >
+      Leaving `reserved` requires at least one QUALIFYING EMITTED crosswalk row:
+      a real receipt whose signed preimage carries `purpose`, from any
+      independent implementation, plus a published conformance vector a third party can
+      independently check — one of the four conjunctive conditions in
+      CONTRIBUTING.md's independent-implementation test, not a standalone rule.
+      Canonical status further requires a second counted implementation. No qualifying emitted evidence
+      is in the registry yet — cross-implementation convergence is reported but
+      not yet checkable from a published vector.
+    proposed_by: ["issue #81 (Track B)"]
+    definition: >
+      Two-party signed delegation receipt: a signed acknowledgment of a
+      content-addressed prior event carrying both parties' signatures over the
+      same canonicalized preimage. The bilateral property is exactly the
+      two-signature property — both the delegating party and the counterparty
+      sign that preimage, so the receipt is independently verifiable by a party
+      that resolves the implementation's declared preimage (see
+      `canonicalization`). Answers: did both parties sign off on this prior
+      event? Distinct from governance_attestation (single-issuer attestation
+      that a declared governance requirement was satisfied) and peer_review (a
+      first-party attestation from one task delegator): without both parties'
+      signatures it is not a bilateral_receipt. `covenant_binding` is a
+      registered `purpose` value of a bilateral_receipt, not a separate
+      primitive.
+    required:
+      - signatures      # both parties' signatures over the declared canonical preimage, normative
+      - action_ref      # content-addressed reference to the prior event acknowledged, normative
+      - purpose         # registered enum value, emitted and signed in the preimage, normative
+      - issued_at       # signed timestamp anchor: envelope-level issued_at OR per-signature iat, normative
+    field_contract: >
+      `required` names canonical properties, not mandatory literal wire keys.
+      An implementation may satisfy a canonical property through a semantically
+      equivalent emitted structure declared and source-grounded in its
+      crosswalk. `purpose` MUST be emitted and signed in the receipt's preimage:
+      a verifier relies on it for per-receipt routing, so it cannot be satisfied
+      by mutable registry metadata — a later crosswalk edit must not be able to
+      relabel already-signed receipts. A `partial` or `non_equivalent_similar_label`
+      crosswalk MAY omit `purpose` when the absence of an emitted, signed purpose is
+      an explicitly documented divergence; such a row records a real but incomplete
+      correspondence and does not satisfy the promotion trigger. An `exact` or
+      `structural` mapping asserts the canonical primitive is present and MUST carry
+      `purpose`.
+    canonicalization: >
+      No single serializer is mandated. Each implementation MUST declare its
+      exact signing preimage — serializer and profile — in its crosswalk. Any
+      byte-compatibility claim between implementations requires (a) the same
+      declared profile and (b) a shared conformance vector that actually detects
+      serializer differences. Profiles are named only after their definitions
+      exist. As of this entry no shared verified canonicalization profile has
+      been published across implementations (APS emits via a legacy serializer,
+      not RFC 8785 JCS).
+    registered_purposes:
+      - delegation_revocation     # revocation acknowledgment (reserved; no emitted receipt yet)
+      - covenant_binding          # Nobulex, covenant-lifecycle state transition (per @arian-gogani); reserved pending emitted evidence
+    descriptor_dimensions:
+      enforcement_class: binding
+      validity_temporal: at_issuance
+      refusal_authority: shared
+      invariant_survival: post_action
+      replay_class: full_replay
+      governed_action_class: delegate
+    notes: |
+      Track B primitive from issue #81, held at `reserved`. No qualifying
+      emitted crosswalk row — a receipt whose signed preimage carries `purpose` —
+      exists yet: APS emits its BilateralReceipt shape via a legacy serializer
+      (not RFC 8785 JCS) and does not currently emit a `purpose` field; Nobulex
+      provides independent convergence evidence but no published checkable
+      fixture. Cross-implementation byte-match is reported but is not asserted
+      here, because it is not yet backed by a shared vector that detects
+      serializer differences under a common declared profile.
+
+      The term leaves `reserved` when at least one implementation publishes a
+      receipt that signs `purpose` in its declared preimage, with a conformance
+      vector a third party can independently check — one of the four conjunctive
+      conditions in CONTRIBUTING.md's independent-implementation test, not a
+      standalone rule. Canonical status additionally needs a second counted
+      implementation.
+
+      Purpose discriminator: registry + enum (Option B, locked by @aeoess in
+      #81). `purpose` is a normative field whose value is drawn from the
+      registered_purposes enum above. Its obligation is keyed to match strength
+      (see field_contract): an exact or structural mapping MUST declare a
+      registered purpose; a partial or non_equivalent_similar_label mapping MAY
+      omit it when the absence of an emitted, signed purpose is a documented
+      divergence; a no_mapping row must not carry one. Whenever a purpose is
+      declared, every value must be in the enum. This is the substrate-vs-
+      primitive layering pattern (CTEF v0.3.2 §4.5.4 error_code precedent): the
+      canonical primitive defines the shape and the registry discipline;
+      crosswalks that assert the primitive is present declare the purpose
+      value(s) so downstream verifiers can route on them, and the validator
+      enforces that by match strength (scripts/validate-crosswalks.js).
+      `covenant_binding` stays locked as the
+      Nobulex purpose name per @arian-gogani; the CONTRIBUTING.md
+      purpose-discriminator decision tree lands as a separate PR per the #81
+      split.
+
+      issued_at is normative, promoted from the original draft: TTL semantics
+      need a signed timestamp anchor to distinguish a fresh receipt from a
+      replay. Implementer choice between an envelope-level `issued_at` and
+      per-signature `iat` blocks; at least one signed timestamp MUST be
+      present.
+
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS (per @QueBallSharken)
 # Each canonical term carries descriptor metadata answering concrete governance questions.

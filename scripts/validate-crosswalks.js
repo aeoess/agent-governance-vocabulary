@@ -62,6 +62,16 @@ const evidenceSpec = (vocab.crosswalk_evidence_states || {}).states || {}
 const canonicalEvidenceStates = new Set(Object.keys(evidenceSpec))
 // decision_trajectory entries are valid signal-level keys (veritasacta maps them)
 const canonicalTrajectory = new Set(Object.keys(vocab.decision_trajectory || {}))
+// bilateral_receipt (#81, Track B) carries a registered `purpose` enum. A
+// crosswalk row's obligation is keyed to MATCH STRENGTH (see validateSignalTypes):
+// exact / structural mappings MUST declare a registered purpose; partial and
+// non_equivalent_similar_label mappings MAY omit it as a documented divergence;
+// no_mapping rejects a supplied purpose. Whenever a purpose IS declared, every
+// value must be one of these. The enum is the single source of truth in
+// vocabulary.yaml; the validator reads it here and applies it in validateSignalTypes.
+const registeredReceiptPurposes = new Set(
+  (((vocab.signal_types || {}).bilateral_receipt || {}).registered_purposes) || [],
+)
 const descriptorEnums = {}
 for (const [dim, def] of Object.entries(vocab.descriptor_dimensions || {})) {
   if (def && Array.isArray(def.values)) descriptorEnums[dim] = new Set(def.values)
@@ -278,6 +288,51 @@ function validateSignalTypes(doc, file) {
     const canonical = entry.canonical || key
     if (!canonicalSignalTypes.has(canonical) && !canonicalTrajectory.has(canonical)) {
       err(file, `signal_types.${key}: canonical "${canonical}" is not in vocabulary.yaml signal_types or decision_trajectory`)
+    }
+    // bilateral_receipt registry-purpose enforcement (#81, Track B). The gate is
+    // keyed on MATCH STRENGTH, not on lifecycle state and not on the evidence axis
+    // (per #139 review): `match` governs correspondence, so it is what decides
+    // whether a signed `purpose` must be present.
+    //   - exact / structural assert the canonical primitive is present, and
+    //     `purpose` is normative in the definition, so a missing signed purpose
+    //     must not pass silently there.
+    //   - partial / non_equivalent_similar_label MAY omit `purpose`: a system with
+    //     a real two-party receipt that does not emit a signed purpose is an
+    //     explicitly documented divergence, not a false mapping. That absence must
+    //     be representable as `partial` rather than forcing `no_mapping` or a false
+    //     purpose declaration.
+    //   - no_mapping asserts no corresponding receipt exists, so a supplied
+    //     `purpose` is internally contradictory and is rejected.
+    // Whenever a `purpose` IS supplied, every value must be in the registered enum.
+    // `purpose` accepts a single string or an array of strings.
+    if (canonical === 'bilateral_receipt') {
+      const allowed = [...registeredReceiptPurposes].join(', ') || '(none registered)'
+      const pv = entry.purpose
+      const supplied = !(pv === undefined || pv === null || pv === ''
+        || (Array.isArray(pv) && pv.length === 0)
+        || (typeof pv === 'string' && pv.trim() === ''))
+      const m = entry.match
+      if (m === 'no_mapping') {
+        if (supplied) {
+          err(file, `signal_types.${key}: match "no_mapping" must not declare a \`purpose\` — a no_mapping row asserts no corresponding receipt exists, so a purpose is internally contradictory`)
+        }
+      } else if (m === 'exact' || m === 'structural') {
+        if (!supplied) {
+          err(file, `signal_types.${key}: match "${m}" to canonical "bilateral_receipt" requires a \`purpose\` declaring the registered value(s) this system emits (allowed: ${allowed})`)
+        }
+      }
+      // partial / non_equivalent_similar_label (and an unset match): `purpose` may
+      // be absent. When present, every value is still validated against the enum.
+      if (supplied && m !== 'no_mapping') {
+        const purposes = Array.isArray(pv) ? pv : [pv]
+        for (const p of purposes) {
+          if (typeof p !== 'string') {
+            err(file, `signal_types.${key}: \`purpose\` values must be strings from the registered enum (allowed: ${allowed})`)
+          } else if (!registeredReceiptPurposes.has(p)) {
+            err(file, `signal_types.${key}: purpose "${p}" not in registered bilateral_receipt purposes (allowed: ${allowed})`)
+          }
+        }
+      }
     }
     if (entry.match) {
       if (!canonicalMatchTypes.has(entry.match)) {

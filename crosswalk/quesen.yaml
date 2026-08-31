@@ -66,34 +66,35 @@ signal_types:
   governance_attestation:
     quesen_term: "Decision receipt"
     quesen_field: "POST /tsc/validate response: {decision, reasons[], commit_sha, input_snapshot_hash}"
-    source_path: "https://github.com/Shxnque/quesen/blob/main/evaluation/tsc_v2_poc.py"
+    source_path: "https://github.com/Shxnque/quesen/blob/main/docs/api-reference.md#post-tsc-validate"
     quesen_definition: >
       For every evaluated action the shipped engine (engine_version
       1.10.0, live) returns a decision (PASS / REVIEW / BLOCK / SKIP),
       machine reason codes (e.g. EGRESS_SECRET_UNTRUSTED,
       UNVERIFIED_GRANT), and two receipt fields carried directly on the
-      response: commit_sha (40-char git SHA that pins the ruleset the
-      live engine ran) and input_snapshot_hash (SHA-256 over the
-      canonical-JSON of the *normalized* typed context — not the raw
-      request; normalization is what distinguishes /tsc/validate from the
-      raw-request hash used by /validate). The emitting reference for this
-      scoped surface is the public, executable POC
-      evaluation/tsc_v2_poc.py, whose normalize() → canonical_json(for_hash)
-      → input_snapshot_hash() → decide() pipeline reproduces the live
-      input_snapshot_hash byte-for-byte and the same PASS/REVIEW/BLOCK/SKIP
-      verdict (independently confirmed against the deployed engine). It is
-      also reproducible against the live endpoint without signup — e.g.
-      POST /tsc/validate (tsc_version 2.0) with a secret egress to an
-      unverified destination returns decision=BLOCK,
-      code=EGRESS_SECRET_UNTRUSTED, plus commit_sha + input_snapshot_hash.
-      Three separable claims hold at different strengths: (a) the input
-      hash is independently reproducible from the received context; (b) the
-      public reference decision contract is executable via the POC; (c) the
-      exact *deployed* ruleset is NOT currently fetchable from the emitted
-      commit pin (that SHA resolves in the private ruleset repo, not the
-      public Shxnque/quesen), so replay is fingerprint-level (recompute the
-      input hash + re-run the public reference contract), not a byte-exact
-      refetch of the deployed ruleset.
+      response: commit_sha (a 40-char identifier the engine returns to pin
+      the ruleset version that produced the verdict — the engine-reported
+      identifier; the binding between it and the executed ruleset is not
+      independently resolvable from the public repository) and
+      input_snapshot_hash (SHA-256 over the canonical-JSON of the
+      *normalized* typed context, with client_request_id excluded from the
+      hash material; normalization is what distinguishes /tsc/validate from
+      the raw-request hash used by /validate). The emitting surface is
+      documented publicly at docs/api-reference.md#post-tsc-validate, which
+      carries the emitted response fields and is reproducible without signup
+      against the live endpoint (e.g. a secret egress to an unverified
+      destination returns decision=BLOCK, code=EGRESS_SECRET_UNTRUSTED, plus
+      commit_sha + input_snapshot_hash). The public, executable reference for
+      the normalization + hash is evaluation/tsc_v2_poc.py
+      (normalize() → canonical_json(for_hash=True) → input_snapshot_hash()),
+      which reproduces the emitted input_snapshot_hash byte-for-byte from the
+      same context. Three separable claims hold at different strengths: (a)
+      the input hash is independently reproducible from the received context;
+      (b) the public reference decision contract is executable via the POC;
+      (c) the emitted commit pin does not resolve in the public repository, so
+      replay from the record is fingerprint-level (recompute the input hash +
+      re-run the public reference contract), not a byte-exact refetch of the
+      deployed ruleset.
     match: non_equivalent_similar_label
     evidence: emitted
     notes: >
@@ -112,28 +113,6 @@ signal_types:
       Quesen-specific additions to the shape: a REVIEW state distinct from
       binary permit/deny (routes to operator adjudication), and a SKIP
       state marking a context out of policy scope.
-    descriptor_dimensions:
-      enforcement_class: refusal_authority   # BLOCK is an enforceable refusal condition
-      validity_temporal: at_processing        # evaluated at decision-time, immediately before the action
-      refusal_authority: consumer_policy       # engine issues the verdict; actual refusal authority lives with the consumer, which enforces at the call site (SDK require_pass raises). The engine produces a decision the consumer can honour or ignore — not shared refusal authority.
-      invariant_survival: pre_action           # pre-action decision surface: the consumer remains free to proceed, so the invariant does not survive through execution. (Receipt retention afterward is record-keeping, not invariant survival toward the irreversible primitive.)
-      replay_class: fingerprint_only           # the record carries digests (input_snapshot_hash + commit_sha), not the input, and the pinned commit is not fetchable from the public repo — so the record alone supports fingerprint-level replay, not full input+ruleset refetch
-      governed_action_class: write             # primary; Quesen is action-class-agnostic and also governs transfer (payments) and compose (tool calls) — see notes
-    replay_class_notes: >
-      fingerprint_only per the registry definition (what is replayable from
-      recorded evidence alone). Three claims are deliberately separated: (a)
-      input_snapshot_hash is independently reproducible from the received
-      context; (b) the public reference decision contract is executable via
-      evaluation/tsc_v2_poc.py (reproduces the live hash byte-for-byte); (c)
-      the exact deployed ruleset is NOT replayable from the emitted commit
-      pin today (the SHA lives in a private ruleset repo, returns 404/422 on
-      Shxnque/quesen). So the record supports fingerprint-level replay, not
-      full_replay.
-    governed_action_class_notes: >
-      Quesen governs multiple action classes (tool call, data egress = write,
-      payment = transfer, delegation). governed_action_class records the most
-      representative single value per the enum; the actual class travels on
-      each evaluated context's action.kind field.
 
   # ── No analog in Quesen (honest gaps) ──
   wallet_state:
@@ -178,4 +157,60 @@ signal_types:
   cognitive_attestation:
     match: no_mapping
     note: "No attestation of cognitive/reasoning process is emitted."
+
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS (top-level, keyed by signal — established shape)
+# Scoped to the mapped POST /tsc/validate decision surface.
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+
+  governance_attestation:
+    enforcement_class: refusal_authority
+    enforcement_notes: |
+      BLOCK is an enforceable refusal condition emitted by the decision
+      surface. The verdict is enforceable-shaped, but the enforcement point
+      (where a call is actually refused) is the consumer — see
+      refusal_authority.
+    validity_temporal: at_processing
+    validity_notes: |
+      Evaluated at decision-time, immediately before the action. The verdict
+      speaks to the context as normalized at processing; it is not a standing
+      attestation that remains valid afterward.
+    refusal_authority: consumer_policy
+    refusal_notes: |
+      The engine issues a verdict (PASS / REVIEW / BLOCK / SKIP); actual
+      refusal authority lives with the consumer, which enforces at the call
+      site (the SDK's require_pass raises on a non-PASS). The engine produces
+      a decision the consumer can honour or ignore — not shared refusal
+      authority, which would require real refusal power on both sides.
+    invariant_survival: pre_action
+    invariant_notes: |
+      A pre-action decision surface: the consumer remains free to proceed
+      after the verdict, so the invariant does not survive through execution
+      toward the irreversible primitive. Receipt retention afterward is
+      record-keeping, not invariant survival.
+    replay_class: fingerprint_only
+    replay_notes: |
+      What is replayable from the recorded evidence alone. The response
+      carries digests (input_snapshot_hash + commit_sha), not the input, so
+      the record cannot reconstruct the request by itself. Three claims are
+      deliberately kept separate at their true strength: (a) input_snapshot_hash
+      is independently reproducible from the received context; (b) the public
+      reference decision contract is executable via evaluation/tsc_v2_poc.py,
+      which reproduces the live hash byte-for-byte; (c) the emitted commit pin
+      does not resolve in the public repository (0095b618… returns HTTP 422 on
+      Shxnque/quesen — as does an invented 40-char SHA, so the status code only
+      shows non-resolution, not that a private commit exists). Hence
+      fingerprint_only, not full_replay or decision_replay.
+    governed_action_class: ["read", "write", "transfer", "publish", "compose"]
+    governed_action_notes: |
+      Quesen is action-class-agnostic; the array lists the classes the public
+      artifact evidences via the POC's action.kind enum: data_read → read;
+      data_write / data_egress / file_access → write; payment → transfer;
+      message_post → publish; tool_call / http_request / code_exec → compose.
+      The concrete class of each evaluated context travels on its action.kind
+      field. delegate is intentionally omitted — it is not in the public
+      artifact's action.kind enum, so nothing public evidences it.
+
 

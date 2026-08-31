@@ -307,8 +307,8 @@ signal_types:
     review_by: "2026-11-30"
     promotion_trigger: >
       Leaving `reserved` requires at least one QUALIFYING EMITTED crosswalk row:
-      a real receipt whose signed preimage carries `purpose`, from APS or
-      Nobulex, plus a published conformance vector a third party can
+      a real receipt whose signed preimage carries `purpose`, from any
+      independent implementation, plus a published conformance vector a third party can
       independently check (CONTRIBUTING.md bar 4). Canonical status further
       requires a second counted implementation. No qualifying emitted evidence
       is in the registry yet — cross-implementation convergence is reported but
@@ -353,9 +353,6 @@ signal_types:
     registered_purposes:
       - delegation_revocation     # revocation acknowledgment (reserved; no emitted receipt yet)
       - covenant_binding          # Nobulex, covenant-lifecycle state transition (per @arian-gogani); reserved pending emitted evidence
-    implementation_specific:
-      - compromise_window_ts      # APS-only, revocation compromise window
-      - evidence_merkle_leaf      # APS-only, delegation evidence trail
     descriptor_dimensions:
       enforcement_class: binding
       validity_temporal: at_issuance
@@ -396,9 +393,7 @@ signal_types:
       need a signed timestamp anchor to distinguish a fresh receipt from a
       replay. Implementer choice between an envelope-level `issued_at` and
       per-signature `iat` blocks; at least one signed timestamp MUST be
-      present. The implementation-specific fields (compromise_window_ts,
-      evidence_merkle_leaf) are APS-domain and are not part of the canonical
-      contract; consumers MUST NOT route on their presence.
+      present.
 
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS (per @QueBallSharken)

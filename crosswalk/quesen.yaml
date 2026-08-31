@@ -66,24 +66,34 @@ signal_types:
   governance_attestation:
     quesen_term: "Decision receipt"
     quesen_field: "POST /tsc/validate response: {decision, reasons[], commit_sha, input_snapshot_hash}"
-    source_path: "https://github.com/Shxnque/quesen/blob/main/docs/api-reference.md#receipt-provenance-v110"
+    source_path: "https://github.com/Shxnque/quesen/blob/main/evaluation/tsc_v2_poc.py"
     quesen_definition: >
       For every evaluated action the shipped engine (engine_version
       1.10.0, live) returns a decision (PASS / REVIEW / BLOCK / SKIP),
       machine reason codes (e.g. EGRESS_SECRET_UNTRUSTED,
       UNVERIFIED_GRANT), and two receipt fields carried directly on the
-      response: commit_sha (40-char git SHA of Shxnque/quesen HEAD that
-      pins the ruleset) and input_snapshot_hash (SHA-256 over the
-      canonical-JSON request). These emitted fields are documented under
-      "Receipt provenance (v1.10)" in the public api-reference and are
-      reproducible against the live endpoint without signup — e.g.
+      response: commit_sha (40-char git SHA that pins the ruleset the
+      live engine ran) and input_snapshot_hash (SHA-256 over the
+      canonical-JSON of the *normalized* typed context — not the raw
+      request; normalization is what distinguishes /tsc/validate from the
+      raw-request hash used by /validate). The emitting reference for this
+      scoped surface is the public, executable POC
+      evaluation/tsc_v2_poc.py, whose normalize() → canonical_json(for_hash)
+      → input_snapshot_hash() → decide() pipeline reproduces the live
+      input_snapshot_hash byte-for-byte and the same PASS/REVIEW/BLOCK/SKIP
+      verdict (independently confirmed against the deployed engine). It is
+      also reproducible against the live endpoint without signup — e.g.
       POST /tsc/validate (tsc_version 2.0) with a secret egress to an
       unverified destination returns decision=BLOCK,
       code=EGRESS_SECRET_UNTRUSTED, plus commit_sha + input_snapshot_hash.
-      The receipt records that the action was evaluated against a
-      declared, pinned ruleset and is verifiable by recomputation:
-      re-hash the same canonical input, re-run the pinned commit, obtain
-      the identical verdict.
+      Three separable claims hold at different strengths: (a) the input
+      hash is independently reproducible from the received context; (b) the
+      public reference decision contract is executable via the POC; (c) the
+      exact *deployed* ruleset is NOT currently fetchable from the emitted
+      commit pin (that SHA resolves in the private ruleset repo, not the
+      public Shxnque/quesen), so replay is fingerprint-level (recompute the
+      input hash + re-run the public reference contract), not a byte-exact
+      refetch of the deployed ruleset.
     match: non_equivalent_similar_label
     evidence: emitted
     notes: >
@@ -105,10 +115,20 @@ signal_types:
     descriptor_dimensions:
       enforcement_class: refusal_authority   # BLOCK is an enforceable refusal condition
       validity_temporal: at_processing        # evaluated at decision-time, immediately before the action
-      refusal_authority: shared                # engine issues the verdict; consumer enforces at the call site (SDK require_pass raises)
-      invariant_survival: post_action          # receipt is replayable after the action
-      replay_class: full_replay                # deterministic recompute from receipt + pinned ruleset
+      refusal_authority: consumer_policy       # engine issues the verdict; actual refusal authority lives with the consumer, which enforces at the call site (SDK require_pass raises). The engine produces a decision the consumer can honour or ignore — not shared refusal authority.
+      invariant_survival: pre_action           # pre-action decision surface: the consumer remains free to proceed, so the invariant does not survive through execution. (Receipt retention afterward is record-keeping, not invariant survival toward the irreversible primitive.)
+      replay_class: fingerprint_only           # the record carries digests (input_snapshot_hash + commit_sha), not the input, and the pinned commit is not fetchable from the public repo — so the record alone supports fingerprint-level replay, not full input+ruleset refetch
       governed_action_class: write             # primary; Quesen is action-class-agnostic and also governs transfer (payments) and compose (tool calls) — see notes
+    replay_class_notes: >
+      fingerprint_only per the registry definition (what is replayable from
+      recorded evidence alone). Three claims are deliberately separated: (a)
+      input_snapshot_hash is independently reproducible from the received
+      context; (b) the public reference decision contract is executable via
+      evaluation/tsc_v2_poc.py (reproduces the live hash byte-for-byte); (c)
+      the exact deployed ruleset is NOT replayable from the emitted commit
+      pin today (the SHA lives in a private ruleset repo, returns 404/422 on
+      Shxnque/quesen). So the record supports fingerprint-level replay, not
+      full_replay.
     governed_action_class_notes: >
       Quesen governs multiple action classes (tool call, data egress = write,
       payment = transfer, delegation). governed_action_class records the most

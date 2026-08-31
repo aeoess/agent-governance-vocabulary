@@ -288,23 +288,41 @@ function validateSignalTypes(doc, file) {
     if (!canonicalSignalTypes.has(canonical) && !canonicalTrajectory.has(canonical)) {
       err(file, `signal_types.${key}: canonical "${canonical}" is not in vocabulary.yaml signal_types or decision_trajectory`)
     }
-    // bilateral_receipt registry-purpose enforcement (#81, Track B). A crosswalk
-    // row mapping to canonical bilateral_receipt MUST declare which registered
-    // `purpose` value(s) the system emits, and each declared value MUST be in
-    // the registered_purposes enum in vocabulary.yaml. `purpose` accepts a
-    // single string or an array of strings. Same hygiene bar as the signal_types
-    // block: a row referencing a registry-purpose primitive states its purpose
-    // so downstream verifiers can route on it. A `no_mapping` row is exempt —
-    // there is no emitted receipt to carry a purpose.
-    if (canonical === 'bilateral_receipt' && entry.match !== 'no_mapping') {
+    // bilateral_receipt registry-purpose enforcement (#81, Track B). The gate is
+    // keyed on MATCH STRENGTH, not on lifecycle state and not on the evidence axis
+    // (per #139 review): `match` governs correspondence, so it is what decides
+    // whether a signed `purpose` must be present.
+    //   - exact / structural assert the canonical primitive is present, and
+    //     `purpose` is normative in the definition, so a missing signed purpose
+    //     must not pass silently there.
+    //   - partial / non_equivalent_similar_label MAY omit `purpose`: a system with
+    //     a real two-party receipt that does not emit a signed purpose is an
+    //     explicitly documented divergence, not a false mapping. That absence must
+    //     be representable as `partial` rather than forcing `no_mapping` or a false
+    //     purpose declaration.
+    //   - no_mapping asserts no corresponding receipt exists, so a supplied
+    //     `purpose` is internally contradictory and is rejected.
+    // Whenever a `purpose` IS supplied, every value must be in the registered enum.
+    // `purpose` accepts a single string or an array of strings.
+    if (canonical === 'bilateral_receipt') {
       const allowed = [...registeredReceiptPurposes].join(', ') || '(none registered)'
       const pv = entry.purpose
-      const missing = pv === undefined || pv === null || pv === ''
+      const supplied = !(pv === undefined || pv === null || pv === ''
         || (Array.isArray(pv) && pv.length === 0)
-        || (typeof pv === 'string' && pv.trim() === '')
-      if (missing) {
-        err(file, `signal_types.${key}: canonical "bilateral_receipt" requires a \`purpose\` declaring the registered value(s) this system emits (allowed: ${allowed})`)
-      } else {
+        || (typeof pv === 'string' && pv.trim() === ''))
+      const m = entry.match
+      if (m === 'no_mapping') {
+        if (supplied) {
+          err(file, `signal_types.${key}: match "no_mapping" must not declare a \`purpose\` — a no_mapping row asserts no corresponding receipt exists, so a purpose is internally contradictory`)
+        }
+      } else if (m === 'exact' || m === 'structural') {
+        if (!supplied) {
+          err(file, `signal_types.${key}: match "${m}" to canonical "bilateral_receipt" requires a \`purpose\` declaring the registered value(s) this system emits (allowed: ${allowed})`)
+        }
+      }
+      // partial / non_equivalent_similar_label (and an unset match): `purpose` may
+      // be absent. When present, every value is still validated against the enum.
+      if (supplied && m !== 'no_mapping') {
         const purposes = Array.isArray(pv) ? pv : [pv]
         for (const p of purposes) {
           if (typeof p !== 'string') {

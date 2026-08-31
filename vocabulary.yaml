@@ -340,7 +340,12 @@ signal_types:
       crosswalk. `purpose` MUST be emitted and signed in the receipt's preimage:
       a verifier relies on it for per-receipt routing, so it cannot be satisfied
       by mutable registry metadata — a later crosswalk edit must not be able to
-      relabel already-signed receipts.
+      relabel already-signed receipts. A `partial` or `non_equivalent_similar_label`
+      crosswalk MAY omit `purpose` when the absence of an emitted, signed purpose is
+      an explicitly documented divergence; such a row records a real but incomplete
+      correspondence and does not satisfy the promotion trigger. An `exact` or
+      `structural` mapping asserts the canonical primitive is present and MUST carry
+      `purpose`.
     canonicalization: >
       No single serializer is mandated. Each implementation MUST declare its
       exact signing preimage — serializer and profile — in its crosswalk. Any

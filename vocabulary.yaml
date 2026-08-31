@@ -309,8 +309,9 @@ signal_types:
       Leaving `reserved` requires at least one QUALIFYING EMITTED crosswalk row:
       a real receipt whose signed preimage carries `purpose`, from any
       independent implementation, plus a published conformance vector a third party can
-      independently check (CONTRIBUTING.md bar 4). Canonical status further
-      requires a second counted implementation. No qualifying emitted evidence
+      independently check — one of the four conjunctive conditions in
+      CONTRIBUTING.md's independent-implementation test, not a standalone rule.
+      Canonical status further requires a second counted implementation. No qualifying emitted evidence
       is in the registry yet — cross-implementation convergence is reported but
       not yet checkable from a published vector.
     proposed_by: ["issue #81 (Track B)"]
@@ -377,19 +378,25 @@ signal_types:
 
       The term leaves `reserved` when at least one implementation publishes a
       receipt that signs `purpose` in its declared preimage, with a conformance
-      vector a third party can independently check (CONTRIBUTING.md bar 4).
-      Canonical status additionally needs a second counted implementation.
+      vector a third party can independently check — one of the four conjunctive
+      conditions in CONTRIBUTING.md's independent-implementation test, not a
+      standalone rule. Canonical status additionally needs a second counted
+      implementation.
 
       Purpose discriminator: registry + enum (Option B, locked by @aeoess in
       #81). `purpose` is a normative field whose value is drawn from the
-      registered_purposes enum above; each implementation declares which
-      purpose value(s) it emits in its own crosswalk file (same hygiene as the
-      signal_types block). This is the substrate-vs-primitive layering pattern
-      (CTEF v0.3.2 §4.5.4 error_code precedent): the canonical primitive
-      defines the shape and the registry discipline; crosswalks declare the
-      purpose value(s) so downstream verifiers can route on them. The
-      validator enforces the crosswalk-level declaration
-      (scripts/validate-crosswalks.js). `covenant_binding` stays locked as the
+      registered_purposes enum above. Its obligation is keyed to match strength
+      (see field_contract): an exact or structural mapping MUST declare a
+      registered purpose; a partial or non_equivalent_similar_label mapping MAY
+      omit it when the absence of an emitted, signed purpose is a documented
+      divergence; a no_mapping row must not carry one. Whenever a purpose is
+      declared, every value must be in the enum. This is the substrate-vs-
+      primitive layering pattern (CTEF v0.3.2 §4.5.4 error_code precedent): the
+      canonical primitive defines the shape and the registry discipline;
+      crosswalks that assert the primitive is present declare the purpose
+      value(s) so downstream verifiers can route on them, and the validator
+      enforces that by match strength (scripts/validate-crosswalks.js).
+      `covenant_binding` stays locked as the
       Nobulex purpose name per @arian-gogani; the CONTRIBUTING.md
       purpose-discriminator decision tree lands as a separate PR per the #81
       split.

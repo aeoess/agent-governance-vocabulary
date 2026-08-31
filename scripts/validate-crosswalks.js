@@ -62,12 +62,13 @@ const evidenceSpec = (vocab.crosswalk_evidence_states || {}).states || {}
 const canonicalEvidenceStates = new Set(Object.keys(evidenceSpec))
 // decision_trajectory entries are valid signal-level keys (veritasacta maps them)
 const canonicalTrajectory = new Set(Object.keys(vocab.decision_trajectory || {}))
-// bilateral_receipt (#81, Track B) carries a registered `purpose` enum. Any
-// crosswalk row that maps to canonical bilateral_receipt MUST declare which
-// registered purpose value(s) the system emits, so downstream verifiers can
-// route on purpose rather than on implementation-specific field presence. The
-// enum is the single source of truth in vocabulary.yaml; the validator reads it
-// here and enforces the crosswalk-level declaration in validateSignalTypes.
+// bilateral_receipt (#81, Track B) carries a registered `purpose` enum. A
+// crosswalk row's obligation is keyed to MATCH STRENGTH (see validateSignalTypes):
+// exact / structural mappings MUST declare a registered purpose; partial and
+// non_equivalent_similar_label mappings MAY omit it as a documented divergence;
+// no_mapping rejects a supplied purpose. Whenever a purpose IS declared, every
+// value must be one of these. The enum is the single source of truth in
+// vocabulary.yaml; the validator reads it here and applies it in validateSignalTypes.
 const registeredReceiptPurposes = new Set(
   (((vocab.signal_types || {}).bilateral_receipt || {}).registered_purposes) || [],
 )

@@ -8,12 +8,13 @@
   },
   "scripts": {
     "validate": "node scripts/validate-crosswalks.js",
-    "test": "npm run validate && npm run check:matrix && npm run test:validators && npm run test:match-migration && npm run check:fixtures",
+    "test": "npm run validate && npm run check:matrix && npm run test:validators && npm run test:match-migration && npm run check:fixtures && npm run check:purpose-gate",
     "test:validators": "node scripts/validators/test-entity-continuity-pdr.js",
     "check:fixtures": "node scripts/validators/check-handoff-decay-fixtures.js",
     "generate:matrix": "node scripts/generate-crosswalk-matrix.js",
     "test:match-migration": "node scripts/validators/test-match-type-migration.js",
-    "check:matrix": "node scripts/generate-crosswalk-matrix.js --check"
+    "check:matrix": "node scripts/generate-crosswalk-matrix.js --check",
+    "check:purpose-gate": "node scripts/validators/check-bilateral-receipt-purpose-gate.js"
   },
   "repository": {
     "type": "git",

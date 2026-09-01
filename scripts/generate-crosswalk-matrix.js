@@ -2,8 +2,12 @@
 // generate-crosswalk-matrix.js — emit a system × signal-type match grid.
 // Reads vocabulary.yaml and crosswalk/*.yaml, writes
 // docs/generated/crosswalk-matrix.md.
-// Usage: node scripts/generate-crosswalk-matrix.js
-// Exit:  0 always (validator handles correctness; this is a docs build).
+// Usage: node scripts/generate-crosswalk-matrix.js            writes the matrix
+//        node scripts/generate-crosswalk-matrix.js --check    verifies it
+// Exit:  0 when written, or when --check finds the committed file current.
+//        1 only from --check, when the committed matrix differs from what the
+//        generator produces, or is missing. The write path still never fails on
+//        content: the validator owns correctness and this is a docs build.
 'use strict'
 
 const fs = require('fs')

@@ -200,13 +200,21 @@ console.log('\n# issue #153 acceptance criteria: match-type migration\n')
   ])
   const offenders = []
   const skipDirs = new Set(['.git', 'node_modules'])
+  // readdirSync with withFileTypes classifies each entry from the directory
+  // read itself, so there is no stat-then-read pair on the same path. Symlinks
+  // are skipped explicitly rather than followed: an entry's type is known here,
+  // and following one would take the walk outside the tree being scanned.
+  // This is not a defence against a filesystem mutating underneath the run,
+  // which is not this test's threat model; it removes an unnecessary
+  // check-then-use.
   ;(function walk(dir) {
-    for (const name of fs.readdirSync(dir)) {
-      if (skipDirs.has(name)) continue
-      const full = path.join(dir, name)
-      const st = fs.statSync(full)
-      if (st.isDirectory()) { walk(full); continue }
-      if (!/\.(ya?ml|md|js|json)$/.test(name)) continue
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (skipDirs.has(entry.name)) continue
+      if (entry.isSymbolicLink()) continue
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) { walk(full); continue }
+      if (!entry.isFile()) continue
+      if (!/\.(ya?ml|md|js|json)$/.test(entry.name)) continue
       let text
       try { text = fs.readFileSync(full, 'utf8') } catch { continue }
       if (!text.includes(LEGACY)) continue

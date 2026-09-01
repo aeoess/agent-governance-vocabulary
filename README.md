@@ -20,11 +20,11 @@ The verifier reads all five and learns a single canonical name, `behavioral_trus
 <signal>:
   canonical: <canonical name>
   internal: "<the system's own name for it>"
-  match: exact | structural | partial | non_equivalent_similar_label | no_mapping
+  match: exact | structural | partial | false_analog | no_mapping
   signed_payload_fields: [ ... ]   # the fields the signature covers
 ```
 
-The registry documents differences as carefully as matches. InsumerAPI's crosswalk maps `behavioral_trust` as `no_mapping`: it does not issue that signal, and the row says so instead of stretching a similar label to fit. Five match types carry this honesty: `exact`, `structural`, `partial`, `non_equivalent_similar_label`, `no_mapping`. The last two exist because false equivalence is the failure mode this layer prevents.
+The registry documents differences as carefully as matches. InsumerAPI's crosswalk maps `behavioral_trust` as `no_mapping`: it does not issue that signal, and the row says so instead of stretching a similar label to fit. Five match types carry this honesty: `exact`, `structural`, `partial`, `false_analog`, `no_mapping`. The last two exist because false equivalence is the failure mode this layer prevents.
 
 ## How the pieces fit
 

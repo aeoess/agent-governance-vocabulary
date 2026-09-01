@@ -8,6 +8,7 @@
 const fs = require('fs')
 const path = require('path')
 const yaml = require('js-yaml')
+const { normalizeDoc, rawMatch, aliasesFromVocab } = require('./match-types')
 
 // Optional positional argument: validate a different tree with THIS validator's
 // rules (used by the trusted CI job to run base-branch code against PR data).
@@ -58,6 +59,8 @@ if (vocabContainment) {
 const vocab = yaml.load(fs.readFileSync(VOCAB_PATH, 'utf8'))
 const canonicalSignalTypes = new Set(Object.keys(vocab.signal_types || {}))
 const canonicalMatchTypes = new Set(Object.keys(vocab.crosswalk_match_types || {}))
+// Alias map comes from the vocabulary being validated, not from the module.
+const matchAliases = aliasesFromVocab(vocab)
 const evidenceSpec = (vocab.crosswalk_evidence_states || {}).states || {}
 const canonicalEvidenceStates = new Set(Object.keys(evidenceSpec))
 // decision_trajectory entries are valid signal-level keys (veritasacta maps them)
@@ -65,7 +68,7 @@ const canonicalTrajectory = new Set(Object.keys(vocab.decision_trajectory || {})
 // bilateral_receipt (#81, Track B) carries a registered `purpose` enum. A
 // crosswalk row's obligation is keyed to MATCH STRENGTH (see validateSignalTypes):
 // exact / structural mappings MUST declare a registered purpose; partial and
-// non_equivalent_similar_label mappings MAY omit it as a documented divergence;
+// false_analog mappings MAY omit it as a documented divergence;
 // no_mapping rejects a supplied purpose. Whenever a purpose IS declared, every
 // value must be one of these. The enum is the single source of truth in
 // vocabulary.yaml; the validator reads it here and applies it in validateSignalTypes.
@@ -296,7 +299,7 @@ function validateSignalTypes(doc, file) {
     //   - exact / structural assert the canonical primitive is present, and
     //     `purpose` is normative in the definition, so a missing signed purpose
     //     must not pass silently there.
-    //   - partial / non_equivalent_similar_label MAY omit `purpose`: a system with
+    //   - partial / false_analog MAY omit `purpose`: a system with
     //     a real two-party receipt that does not emit a signed purpose is an
     //     explicitly documented divergence, not a false mapping. That absence must
     //     be representable as `partial` rather than forcing `no_mapping` or a false
@@ -321,7 +324,7 @@ function validateSignalTypes(doc, file) {
           err(file, `signal_types.${key}: match "${m}" to canonical "bilateral_receipt" requires a \`purpose\` declaring the registered value(s) this system emits (allowed: ${allowed})`)
         }
       }
-      // partial / non_equivalent_similar_label (and an unset match): `purpose` may
+      // partial / false_analog (and an unset match): `purpose` may
       // be absent. When present, every value is still validated against the enum.
       if (supplied && m !== 'no_mapping') {
         const purposes = Array.isArray(pv) ? pv : [pv]
@@ -513,6 +516,15 @@ function validateFile(file) {
   if (!doc || typeof doc !== 'object') {
     err(file, 'file is empty or not an object')
     return
+  }
+
+  // Match-token normalization, per issue #153, before ANY semantic check reads
+  // `match`. Both tokens survive: the entry now carries the canonical spelling
+  // and the raw one is kept for the deprecation warning below. Everything
+  // downstream (enum validation, the bilateral_receipt purpose gate, evidence
+  // rules) therefore sees the canonical value without knowing the alias exists.
+  for (const dep of normalizeDoc(doc, matchAliases)) {
+    warn(file, `signal_types.${dep.key}: match "${rawMatch(dep.entry)}" is a deprecated spelling of "${dep.entry.match}" and was normalized; update the source to "${dep.entry.match}" (see issue #153)`)
   }
 
   // Fail-closed reverify enforcement runs on every crosswalk shape, before the

@@ -159,7 +159,7 @@ composition_boundary:
 #   partial       — overlapping but not identical (vocab canonical)
 #   divergent     — different shape, document the gap (this file's
 #                   working term; maps to canonical
-#                   `non_equivalent_similar_label` from vocabulary.yaml
+#                   `false_analog` from vocabulary.yaml
 #                   when both sides have a comparable primitive in
 #                   different shapes)
 #   no_mapping    — one side has it, the other does not (vocab canonical)
@@ -219,7 +219,7 @@ mappings:
     aps_field: ActionReceipt.receiptId (UUID-derived 'rcpt_' prefix; src/core/delegation.ts createReceipt)
     acta_concept: implicit hash addressing
     acta_field: "no native id field; ACTA receipts are hash-addressable via SHA-256 of the canonical envelope. The verifier exposes receipt_hash via chain-explore (src/engines/chain-explore.js)."
-    match_type: non_equivalent_similar_label
+    match_type: false_analog
     notes: |
       APS uses an explicit, opaque, prefixed identifier
       ('rcpt_<uuid12>'); ACTA uses content-addressed hashing. Both
@@ -530,8 +530,8 @@ summary:
   exact: 1                          # row 5 (Ed25519 signature primitive)
   structural: 0
   partial: 7                        # rows 1, 3, 4, 7, 11, 12, 14
-  divergent: 3                      # rows 6, 8, 13 (canonical: non_equivalent_similar_label)
-  non_equivalent_similar_label: 1   # row 2 (receiptId vs hash addressing)
+  divergent: 3                      # rows 6, 8, 13 (canonical: false_analog)
+  false_analog: 1                   # row 2 (receiptId vs hash addressing)
   no_mapping: 2                     # rows 9 (revocation), 10 (Values Floor)
 
   load_bearing_interop_subtlety: |

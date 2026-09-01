@@ -26,11 +26,12 @@ the script rather than beside the cases because the intended CI shape runs the
 base branch's copy of the script against the pull request's copy of the data. A
 manifest under `fixtures/` would be editable by the same pull request it gates.
 
-That trusted invocation is **not wired yet**. This change runs the pack in the
-ordinary `npm test` job, using the pull request's own copy of everything, and the
-trusted-oracle step follows once this checker is on `main`. A commit that both
-introduced the checker and invoked it from the base checkout would fail, because
-the base branch would not contain it.
+That trusted invocation is now wired, in the step named `bilateral_receipt
+purpose gate (trusted oracle)`. It landed one commit after the checker itself,
+because a commit that both introduced the checker and invoked it from the base
+checkout would have failed: the base branch would not have contained it. The pack
+also runs in the ordinary `npm test` job, which uses the pull request's own copy
+of everything.
 
 ## Two properties this pack has that a naive one does not
 
@@ -54,11 +55,11 @@ the case data is supplied by the pull request. Pinning only id and outcome would
 let case 10 change from `false_analog` to `partial`, keeping its id and its
 `PASS`, while the contract still reported itself satisfied.
 
-## What the trusted job will and will not give you
+## What the trusted job does and does not give you
 
-Once wired, the base-owned code means a pull request cannot weaken the gate by
-editing the validator or the checker alongside the cases. It will not make the
-gate hostile-PR proof. Under `pull_request`, the workflow definition comes from the
+The base-owned code means a pull request cannot weaken the gate by editing the
+validator or the checker alongside the cases. It does not make the gate
+hostile-PR proof. Under `pull_request`, the workflow definition comes from the
 pull request, so a change could edit `.github/workflows/validate.yml` and remove
 the step. Anchoring that requires a required org or enterprise ruleset workflow,
 which is a governance decision made outside this repository. `pull_request_target`

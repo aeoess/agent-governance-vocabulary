@@ -341,7 +341,7 @@ signal_types:
       crosswalk. `purpose` MUST be emitted and signed in the receipt's preimage:
       a verifier relies on it for per-receipt routing, so it cannot be satisfied
       by mutable registry metadata — a later crosswalk edit must not be able to
-      relabel already-signed receipts. A `partial` or `non_equivalent_similar_label`
+      relabel already-signed receipts. A `partial` or `false_analog`
       crosswalk MAY omit `purpose` when the absence of an emitted, signed purpose is
       an explicitly documented divergence; such a row records a real but incomplete
       correspondence and does not satisfy the promotion trigger. An `exact` or
@@ -387,7 +387,7 @@ signal_types:
       #81). `purpose` is a normative field whose value is drawn from the
       registered_purposes enum above. Its obligation is keyed to match strength
       (see field_contract): an exact or structural mapping MUST declare a
-      registered purpose; a partial or non_equivalent_similar_label mapping MAY
+      registered purpose; a partial or false_analog mapping MAY
       omit it when the absence of an emitted, signed purpose is a documented
       divergence; a no_mapping row must not carry one. Whenever a purpose is
       declared, every value must be in the enum. This is the substrate-vs-
@@ -695,10 +695,22 @@ crosswalk_match_types:
     definition: "Same primitive shape, different field names."
   partial:
     definition: "Overlapping but not equivalent. Specify dimensions of divergence."
-  non_equivalent_similar_label:
-    definition: "Looks similar lexically but governance semantics differ. MUST be explicit."
+  false_analog:
+    definition: "Answers a different governance question, and is close enough that a
+      consumer could plausibly wire it up as the canonical primitive. The mapping
+      relationship is what is false, not the target primitive: treating this as an
+      analog would create a false equivalence. MUST be explicit. Where the question
+      differs without that substitution hazard, use no_mapping."
   no_mapping:
     definition: "No analog in target system. Honest gap."
+
+# Deprecated INPUT ALIAS, per issue #153. `non_equivalent_similar_label` was the
+# former spelling of `false_analog`. It is accepted on input, normalized before
+# any semantic consumer sees it, and warned about. It is deliberately NOT a
+# member of crosswalk_match_types above: two live spellings for one concept is
+# its own drift source, and generated or public output never emits it.
+crosswalk_match_type_aliases:
+  non_equivalent_similar_label: false_analog
 
 # Evidence state is ORTHOGONAL to match type. Match type answers how closely the
 # target primitive corresponds. Evidence state answers whether the emitting

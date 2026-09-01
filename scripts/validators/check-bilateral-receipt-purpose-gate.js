@@ -13,19 +13,18 @@
 //   SELF_ROOT  always this checker's own checkout. Source of the
 //              validate-crosswalks.js that is executed, and of node_modules.
 //
-// NOT YET WIRED INTO CI, deliberately. This commit lands the checker and its
-// cases and runs them in the ordinary `npm test` job, which uses the pull
-// request's own copy of everything. The trusted-oracle invocation is a separate
-// follow-up, because the trusted job checks out the BASE branch, and a commit
-// that both introduces this file and invokes it from the base checkout would
-// fail: the base does not contain it yet. The repository hit exactly that in
+// WIRED INTO THE TRUSTED CI JOB as of the commit that added the
+// "bilateral_receipt purpose gate (trusted oracle)" step to
+// .github/workflows/validate.yml. It landed one commit after this checker,
+// deliberately: the trusted job checks out the BASE branch, so a commit that
+// both introduced this file and invoked it from the base checkout would fail
+// because the base did not contain it yet. The repository hit exactly that in
 // 6d577d9 and solved it with a temporary existence guard, later removed in
-// favour of failing loudly. Splitting the two avoids shipping a skip path that
+// favour of failing loudly. Splitting the two avoided shipping a skip path that
 // somebody then has to remember to delete.
 //
-// WHAT THE FOLLOW-UP WILL DO, and what this file is already built for: the
-// trusted CI job checks out the base branch at `trusted/` and the pull request
-// at `pr-data/`, then runs the BASE copy of this script against PR data.
+// The trusted CI job checks out the base branch at `trusted/` and the pull
+// request at `pr-data/`, then runs the BASE copy of this script against PR data.
 //
 // WHAT THAT DOES AND DOES NOT BUY, stated exactly, because the obvious sentence
 // is too strong. It means the CODE doing the grading (this checker and the

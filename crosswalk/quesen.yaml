@@ -95,10 +95,10 @@ signal_types:
       replay from the record is fingerprint-level (recompute the input hash +
       re-run the public reference contract), not a byte-exact refetch of the
       deployed ruleset.
-    match: non_equivalent_similar_label
+    match: partial
     evidence: emitted
     notes: >
-      Flagged non_equivalent_similar_label, not structural: the canonical
+      Flagged partial, not structural-equivalent: the canonical
       term is "signed attestation that an agent or action satisfied a
       declared governance requirement". Quesen's artifact shares the
       label and the per-action shape but not the governance semantics.

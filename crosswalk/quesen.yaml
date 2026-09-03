@@ -66,7 +66,7 @@ signal_types:
   governance_attestation:
     quesen_term: "Decision receipt"
     quesen_field: "POST /tsc/validate response: {decision, reasons[], commit_sha, input_snapshot_hash}"
-    source_path: "https://github.com/Shxnque/quesen/blob/main/docs/api-reference.md#post-tsc-validate"
+    source_path: "https://github.com/Shxnque/quesen/blob/main/docs/api-reference.md#post-tscvalidate"
     quesen_definition: >
       For every evaluated action the shipped engine (engine_version
       1.10.0, live) returns a decision (PASS / REVIEW / BLOCK / SKIP),
@@ -80,7 +80,7 @@ signal_types:
       *normalized* typed context, with client_request_id excluded from the
       hash material; normalization is what distinguishes /tsc/validate from
       the raw-request hash used by /validate). The emitting surface is
-      documented publicly at docs/api-reference.md#post-tsc-validate, which
+      documented publicly at docs/api-reference.md#post-tscvalidate, which
       carries the emitted response fields and is reproducible without signup
       against the live endpoint (e.g. a secret egress to an unverified
       destination returns decision=BLOCK, code=EGRESS_SECRET_UNTRUSTED, plus

@@ -9,33 +9,19 @@
 # artifacts covering delegation decisions, receipts, attestations, and
 # reputation drift.
 #
-# This crosswalk covers what APS itself issues. The protocol (SDK) is
-# open-source Apache-2.0; the production gateway is a hosted product.
-# Both produce evidence against the same canonical signatures.
+# This crosswalk covers what APS itself issues: the open protocol and its
+# Apache-2.0 SDKs, which produce evidence against the canonical signatures.
 #
-# v2 note (2026-04-17): APS shipped v2.0.0 architecture separation.
-# Protocol primitives (crypto, types, scope logic, adapters, conformance
-# suite) stay in the public SDK; operational intelligence (analytics,
-# compliance automation, runtime state) moved to the private gateway.
-# This crosswalk reflects the v2 surface. v1.46.0 remains on npm @latest
-# for partners pinned to the monolithic shape; all signal-type mappings
-# below hold for both v1 and v2 because the public-API primitives are
-# byte-identical across the split.
-#
-# Spec: https://github.com/aeoess/agent-passport-system
-# npm SDK: https://www.npmjs.com/package/agent-passport-system
-# npm MCP: https://www.npmjs.com/package/agent-passport-system-mcp
-# PyPI: https://pypi.org/project/agent-passport-system/
-# Gateway: https://gateway.aeoess.com
-# JWKS: https://gateway.aeoess.com/.well-known/jwks.json
-# Release notes v2: https://github.com/aeoess/agent-passport-system/issues/16
+# Version note: this crosswalk reflects the current public API of the
+# agent-passport-system package (npm, PyPI, crates.io, Go); read the version
+# from the registry, not from this file.
 
 system:
   name: Agent Passport System
   short_name: APS
   home: https://aeoess.com
   github: https://github.com/aeoess/agent-passport-system
-  spec_version: "v2.0.0-beta.0 on @next, v1.46.0 on @latest"
+  spec_version: "current registry release of agent-passport-system"
   jwks: https://gateway.aeoess.com/.well-known/jwks.json
   role: >
     Identity and enforcement layer for AI agents. Ships Ed25519 passports
@@ -45,7 +31,6 @@ system:
     Other systems (SINT, MolTrust, AgentID, PDR, SAR) compose on top of
     APS identity for their own policy or trust layers.
   license: Apache-2.0
-  foundations_target: AAIF (Agentic AI Infrastructure Foundation) pending submission
 
 license: Apache-2.0
 maintainer:
@@ -82,12 +67,13 @@ signal_types:
       passport creation time and re-evaluated on endorsement or revocation
       events.
     aps_term: PassportGrade
-    aps_field: "passport.grade"
+    aps_field: null  # computed by the verifier; no passport field carries a grade
     aps_symbols:
       - getPassportGrade()
       - computePassportGradeFromEvidence()
     signed_shape: |
-      Grade is embedded in the signed passport envelope and referenced by
+      Grade is not embedded in any signed artifact; it is computed by the verifier
+      from the issuance evidence record. The previous text claimed it was embedded and referenced by
       hash in downstream governance_attestation receipts. Verifiable
       against the passport issuer's JWKS at issuance time.
     issuer_uri: https://gateway.aeoess.com

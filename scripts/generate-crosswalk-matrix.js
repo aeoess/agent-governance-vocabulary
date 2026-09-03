@@ -2,25 +2,32 @@
 // generate-crosswalk-matrix.js — emit a system × signal-type match grid.
 // Reads vocabulary.yaml and crosswalk/*.yaml, writes
 // docs/generated/crosswalk-matrix.md.
-// Usage: node scripts/generate-crosswalk-matrix.js
-// Exit:  0 always (validator handles correctness; this is a docs build).
+// Usage: node scripts/generate-crosswalk-matrix.js            writes the matrix
+//        node scripts/generate-crosswalk-matrix.js --check    verifies it
+// Exit:  0 when written, or when --check finds the committed file current.
+//        1 only from --check, when the committed matrix differs from what the
+//        generator produces, or is missing. The write path still never fails on
+//        content: the validator owns correctness and this is a docs build.
 'use strict'
 
 const fs = require('fs')
 const path = require('path')
 const yaml = require('js-yaml')
+const { normalizeDoc, aliasesFromVocab } = require('./match-types')
 
 const ROOT = path.resolve(__dirname, '..')
 const VOCAB_PATH = path.join(ROOT, 'vocabulary.yaml')
 const CROSSWALK_DIR = path.join(ROOT, 'crosswalk')
 const OUT_DIR = path.join(ROOT, 'docs', 'generated')
 const OUT_PATH = path.join(OUT_DIR, 'crosswalk-matrix.md')
+// --check renders and compares instead of writing; see the end of main().
+const checkOnly = process.argv.includes('--check')
 
 const BADGE = {
   exact:                       '✅',  // ✅
   partial:                     '🟡', // 🟡
   structural:                  '🟠', // 🟠
-  non_equivalent_similar_label:'🔵', // 🔵
+  false_analog:                '🔵', // 🔵
   no_mapping:                  '⚪',       // ⚪
 }
 const NOT_ADDRESSED = '—' // — em dash, signal absent from crosswalk
@@ -66,10 +73,15 @@ function systemLabel(filePath) {
   return titled
 }
 
-function loadCrosswalk(filePath) {
+function loadCrosswalk(filePath, aliases) {
   try {
     const doc = yaml.load(fs.readFileSync(filePath, 'utf8'))
-    return doc && typeof doc === 'object' ? doc : null
+    if (!doc || typeof doc !== 'object') return null
+    // Normalize deprecated match spellings before anything reads `match`
+    // (issue #153). The generator stays silent about it: the validator owns
+    // the deprecation warning, and generated output never shows the alias.
+    normalizeDoc(doc, aliases)
+    return doc
   } catch {
     return null
   }
@@ -94,7 +106,7 @@ function main() {
     const base = path.basename(f)
     if (base.startsWith('_')) { testFixtures.push(rel); continue }
 
-    const doc = loadCrosswalk(f)
+    const doc = loadCrosswalk(f, aliasesFromVocab(vocab))
     if (!doc) { altFormat.push({ rel, note: 'YAML parse failed or empty file' }); continue }
 
     if (doc.crosswalk_type === 'rfc_category_reverse') {
@@ -182,7 +194,7 @@ function main() {
   lines.push(`- ${BADGE.exact} \`exact\` — same question, same surface shape`)
   lines.push(`- ${BADGE.structural} \`structural\` — same question, different surface`)
   lines.push(`- ${BADGE.partial} \`partial\` — overlapping but not identical scope`)
-  lines.push(`- ${BADGE.non_equivalent_similar_label} \`non_equivalent_similar_label\` — different question entirely`)
+  lines.push(`- ${BADGE.false_analog} \`false_analog\` — different question, close enough to be mistaken for the canonical primitive`)
   lines.push(`- ${BADGE.no_mapping} \`no_mapping\` — explicit gap with technical rationale`)
   lines.push(`- ${EVIDENCE_MARK.inferable} suffix: \`evidence: inferable\`, the consumer computes the value and the issuer never asserts it`)
   lines.push(`- ${EVIDENCE_MARK.referenced} suffix: \`evidence: referenced\`, resolved out of band against state the artifact does not carry`)
@@ -252,9 +264,47 @@ function main() {
     lines.push('')
   }
 
-  // 7. Write.
+  // 7. Write, or check.
+  //
+  // --check renders the matrix in memory and compares it with the committed
+  // file, failing if they differ. Without it, a test that only READS
+  // docs/generated/crosswalk-matrix.md is not testing the generator: an edit
+  // that made this script emit a deprecated token would leave the committed
+  // file untouched and the suite green. It also catches the committed matrix
+  // going stale against the data, which had happened here silently for weeks.
+  //
+  // The generated-on date is normalized before comparison. It changes every
+  // day by design, and a check that fails daily is a check somebody switches
+  // off.
+  const rendered = lines.join('\n')
+  const DATE_LINE = /^Auto-generated on \d{4}-\d{2}-\d{2}\./m
+  if (checkOnly) {
+    if (!fs.existsSync(OUT_PATH)) {
+      console.error(`generate-crosswalk-matrix --check: ${path.relative(ROOT, OUT_PATH)} does not exist`)
+      process.exit(1)
+    }
+    const committed = fs.readFileSync(OUT_PATH, 'utf8')
+    const norm = t => t.replace(DATE_LINE, 'Auto-generated on <date>.')
+    if (norm(committed) === norm(rendered)) {
+      console.log(`generate-crosswalk-matrix --check: ${path.relative(ROOT, OUT_PATH)} is up to date`)
+      return
+    }
+    const a = norm(committed).split('\n')
+    const b = norm(rendered).split('\n')
+    console.error(`generate-crosswalk-matrix --check: ${path.relative(ROOT, OUT_PATH)} differs from what the generator produces`)
+    let shown = 0
+    for (let i = 0; i < Math.max(a.length, b.length) && shown < 10; i++) {
+      if (a[i] !== b[i]) {
+        console.error(`  line ${i + 1}\n    committed: ${a[i] === undefined ? '(absent)' : a[i]}\n    generated: ${b[i] === undefined ? '(absent)' : b[i]}`)
+        shown++
+      }
+    }
+    console.error('  run `npm run generate:matrix` and commit the result')
+    process.exit(1)
+  }
+
   fs.mkdirSync(OUT_DIR, { recursive: true })
-  fs.writeFileSync(OUT_PATH, lines.join('\n'), 'utf8')
+  fs.writeFileSync(OUT_PATH, rendered, 'utf8')
 
   console.log(`generate-crosswalk-matrix: wrote ${path.relative(ROOT, OUT_PATH)}`)
   console.log(`  ${systems.length} systems × ${canonicalSignals.length} signal types`)

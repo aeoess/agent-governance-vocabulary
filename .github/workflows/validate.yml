@@ -57,3 +57,22 @@ jobs:
       # loudly, never skip.
       - name: fixture math (trusted oracle)
         run: node trusted/scripts/validators/check-handoff-decay-fixtures.js "$GITHUB_WORKSPACE/pr-data"
+      # Same oracle property for the bilateral_receipt purpose gate (#81). The
+      # base branch's checker runs the base branch's validator against the pull
+      # request's case data, so a pull request cannot relax the gate in the same
+      # commit that changes the cases governing it. The checker resolves its
+      # validator and node_modules from its OWN checkout and only the case data
+      # from pr-data, which is why it runs correctly against a pr-data tree that
+      # never had npm ci.
+      #
+      # Runs unconditionally, with no existence guard: the checker is on main as
+      # of 83c661a7, and a missing base copy should fail loudly rather than skip.
+      #
+      # SCOPE OF THE GUARANTEE, stated so it is not over-read: this makes the
+      # GRADING CODE base-owned. It does not make the gate proof against a
+      # hostile pull request, because `pull_request` runs the workflow
+      # definition from the pull request, so a change could edit this file and
+      # remove the step. Anchoring that needs a required org or enterprise
+      # ruleset workflow, which is a governance decision outside this repository.
+      - name: bilateral_receipt purpose gate (trusted oracle)
+        run: node trusted/scripts/validators/check-bilateral-receipt-purpose-gate.js "$GITHUB_WORKSPACE/pr-data"

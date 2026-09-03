@@ -227,7 +227,7 @@ signal_types:
 
   passport_grade:
     canonical: passport_grade
-    match: non_equivalent_similar_label
+    match: false_analog
     notes: |
       DCP-AI does not emit composite trust grades. The four security
       tiers (LOCAL, NETWORK, FEDERATED, GLOBAL) look superficially
@@ -238,7 +238,7 @@ signal_types:
       accumulating evidence — the tier is declared by the deployment
       context at issuance time.
 
-      Flagged as non_equivalent_similar_label to prevent consumers
+      Flagged as false_analog to prevent consumers
       from treating the DCP-AI tier as a trust grade. Consumers that
       want a composite score should compose it from DCP-AI
       governance_attestation evidence on their own policy layer, or

@@ -1,0 +1,216 @@
+# crosswalk/quesen.yaml
+#
+# Maps Quesen governance primitives to the canonical vocabulary
+# defined in vocabulary.yaml.
+#
+# Quesen exposes a deterministic decision path for autonomous agents.
+# This crosswalk maps ONLY that path (POST /tsc/validate): a typed
+# security context (subject, action, target, tool, data, provenance)
+# is evaluated to one of PASS / REVIEW / BLOCK / SKIP with reason codes
+# and a replayable receipt. No model inference is in the scoring path,
+# so the same input always yields the same verdict. Other Quesen
+# surfaces (risk/scam scoring, ASP settlement, billing) are not mapped.
+#
+# Home: https://github.com/Shxnque/quesen
+# Live: https://web-production-aa5ba.up.railway.app (/health, /version, /mcp, /openapi.json)
+# Author / maintainer: Shxnque (Senueren)
+# License: MIT (Apache-2.0 compatible downstream)
+
+system:
+  name: quesen
+  home: https://github.com/Shxnque/quesen
+  github: https://github.com/Shxnque/quesen
+  spec_version: "engine 1.10.0, August 2026"
+  role: >
+    This crosswalk maps only Quesen's typed-security-context decision
+    path (POST /tsc/validate): a typed security context (subject,
+    action, target, tool, data, provenance) is evaluated to a
+    categorical verdict (PASS / REVIEW / BLOCK / SKIP) with machine
+    reason codes and a replayable receipt, with no model inference in
+    the scoring path. This is one surface of a broader Quesen product;
+    per /version and the OpenAPI document the service also exposes agent
+    risk / scam scoring (/validate, /report), the Agent Settlement
+    Protocol (/asp/*) and billing (/billing/*). Those surfaces are out
+    of scope for this crosswalk and are not mapped here.
+  identity_layer: >
+    API-key scoped callers (sandbox and production). Quesen does not
+    issue agent identities; it evaluates the attempted action and the
+    provenance of its authority. Subject identity is an input field,
+    not a Quesen-issued credential.
+  license: MIT
+  maintainer: Shxnque
+
+# ─────────────────────────────────────────────────
+# SYSTEM ATTRIBUTES
+# ─────────────────────────────────────────────────
+system_attributes:
+  # signature_capability intentionally omitted: Quesen emits no cryptographic
+  # signature. Its evidence artifact is an unsigned, recomputable receipt
+  # (ruleset commit id + SHA-256 over the canonical typed input). This is the
+  # load-bearing structural difference from signature-based systems (e.g.
+  # signet, nobulex): reproducibility-by-recomputation rather than attestation-
+  # by-signature. A reader that filters on signature_capability should treat
+  # Quesen as "no signature scheme".
+  # canonicalization: deterministic canonical-JSON serialization of the typed
+  # security context prior to hashing (stable key ordering), engine-defined and
+  # versioned with the ruleset commit. hash_family sha-256 = verifier-visible
+  # receipt digest.
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    quesen_term: "Decision receipt"
+    quesen_field: "POST /tsc/validate response: {decision, reasons[], commit_sha, input_snapshot_hash}"
+    source_path: "https://github.com/Shxnque/quesen/blob/main/docs/api-reference.md#post-tscvalidate"
+    quesen_definition: >
+      For every evaluated action the shipped engine (engine_version
+      1.10.0, live) returns a decision (PASS / REVIEW / BLOCK / SKIP),
+      machine reason codes (e.g. EGRESS_SECRET_UNTRUSTED,
+      UNVERIFIED_GRANT), and two receipt fields carried directly on the
+      response: commit_sha (a 40-char identifier the engine returns to pin
+      the ruleset version that produced the verdict — the engine-reported
+      identifier; the binding between it and the executed ruleset is not
+      independently resolvable from the public repository) and
+      input_snapshot_hash (SHA-256 over the canonical-JSON of the
+      *normalized* typed context, with client_request_id excluded from the
+      hash material; normalization is what distinguishes /tsc/validate from
+      the raw-request hash used by /validate). The emitting surface is
+      documented publicly at docs/api-reference.md#post-tscvalidate, which
+      carries the emitted response fields and is reproducible without signup
+      against the live endpoint (e.g. a secret egress to an unverified
+      destination returns decision=BLOCK, code=EGRESS_SECRET_UNTRUSTED, plus
+      commit_sha + input_snapshot_hash). The public, executable reference for
+      the normalization + hash is evaluation/tsc_v2_poc.py
+      (normalize() → canonical_json(for_hash=True) → input_snapshot_hash()),
+      which reproduces the emitted input_snapshot_hash byte-for-byte from the
+      same context. Three separable claims hold at different strengths: (a)
+      the input hash is independently reproducible from the received context;
+      (b) the public reference decision contract is executable via the POC;
+      (c) the emitted commit pin does not resolve in the public repository, so
+      replay from the record is fingerprint-level (recompute the input hash +
+      re-run the public reference contract), not a byte-exact refetch of the
+      deployed ruleset.
+    match: partial
+    evidence: emitted
+    notes: >
+      Flagged partial, not structural-equivalent: the canonical
+      term is "signed attestation that an agent or action satisfied a
+      declared governance requirement". Quesen's artifact shares the
+      label and the per-action shape but not the governance semantics.
+      Recomputation establishes only that a deterministic verdict follows
+      from the given inputs and pinned ruleset; it does NOT establish that
+      an identified issuer made the statement — which is precisely what a
+      signature supplies. The receipt is therefore an unsigned,
+      recomputable artifact (commit_sha + input_snapshot_hash), which is
+      also why signature_capability is intentionally omitted above. A
+      consumer that needs issuer-attributable attestation should not treat
+      this receipt as equivalent to a signed governance_attestation. Two
+      Quesen-specific additions to the shape: a REVIEW state distinct from
+      binary permit/deny (routes to operator adjudication), and a SKIP
+      state marking a context out of policy scope.
+
+  # ── No analog in Quesen (honest gaps) ──
+  wallet_state:
+    match: no_mapping
+    note: "Quesen does not attest wallet balances, holdings, or on-chain identity; it evaluates actions, not wallet foundation state."
+  behavioral_trust:
+    match: no_mapping
+    note: "Quesen is stateless per-decision and deterministic; it produces no scored trust assessment accumulated over observed behavior."
+  wallet_intelligence:
+    match: no_mapping
+    note: "No behavioral classification of wallet activity; out of scope."
+  reasoning_integrity:
+    match: no_mapping
+    note: "Quesen attests admissibility of the attempted action (authority, scope, provenance, egress), not the integrity of the agent's reasoning process."
+  compliance_risk:
+    match: no_mapping
+    note: "Quesen emits a categorical action verdict, not a scored counterparty exposure assessment."
+  passport_grade:
+    match: no_mapping
+    note: "No composite agent-passport grade is issued."
+  trust_verification:
+    match: no_mapping
+    note: "Quesen does not perform identity-layer verification (KYC grade, principal endorsement); subject identity is an input, not an output."
+  security_posture:
+    match: no_mapping
+    note: "Quesen evaluates per-action admissibility at decision-time, not a standing/aggregate security posture of an agent."
+  job_performance:
+    match: no_mapping
+    note: "No performance or job-outcome scoring."
+  settlement_witness:
+    match: no_mapping
+    note: "Quesen may BLOCK/REVIEW a payment action pre-settlement but issues no settlement-witness attestation of a completed transfer."
+  peer_review:
+    match: no_mapping
+    note: "No peer or cross-agent review signal is produced."
+  completion_ratio:
+    match: no_mapping
+    note: "No task-completion ratio is tracked."
+  entity_continuity:
+    match: no_mapping
+    note: "Quesen holds no cross-session identity/continuity state; each decision is independent."
+  cognitive_attestation:
+    match: no_mapping
+    note: "No attestation of cognitive/reasoning process is emitted."
+
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS (top-level, keyed by signal — established shape)
+# Scoped to the mapped POST /tsc/validate decision surface.
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+
+  governance_attestation:
+    enforcement_class: refusal_authority
+    enforcement_notes: |
+      BLOCK is an enforceable refusal condition emitted by the decision
+      surface. The verdict is enforceable-shaped, but the enforcement point
+      (where a call is actually refused) is the consumer — see
+      refusal_authority.
+    validity_temporal: at_processing
+    validity_notes: |
+      Evaluated at decision-time, immediately before the action. The verdict
+      speaks to the context as normalized at processing; it is not a standing
+      attestation that remains valid afterward.
+    refusal_authority: consumer_policy
+    refusal_notes: |
+      The engine issues a verdict (PASS / REVIEW / BLOCK / SKIP); actual
+      refusal authority lives with the consumer, which enforces at the call
+      site (the SDK's require_pass raises on a non-PASS). The engine produces
+      a decision the consumer can honour or ignore — not shared refusal
+      authority, which would require real refusal power on both sides.
+    invariant_survival: pre_action
+    invariant_notes: |
+      A pre-action decision surface: the consumer remains free to proceed
+      after the verdict, so the invariant does not survive through execution
+      toward the irreversible primitive. Receipt retention afterward is
+      record-keeping, not invariant survival.
+    replay_class: fingerprint_only
+    replay_notes: |
+      What is replayable from the recorded evidence alone. The response
+      carries digests (input_snapshot_hash + commit_sha), not the input, so
+      the record cannot reconstruct the request by itself. Three claims are
+      deliberately kept separate at their true strength: (a) input_snapshot_hash
+      is independently reproducible from the received context; (b) the public
+      reference decision contract is executable via evaluation/tsc_v2_poc.py,
+      which reproduces the live hash byte-for-byte; (c) the emitted commit pin
+      does not resolve in the public repository (0095b618… returns HTTP 422 on
+      Shxnque/quesen — as does an invented 40-char SHA, so the status code only
+      shows non-resolution, not that a private commit exists). Hence
+      fingerprint_only, not full_replay or decision_replay.
+    governed_action_class: ["read", "write", "transfer", "publish", "compose"]
+    governed_action_notes: |
+      Quesen is action-class-agnostic; the array lists the classes the public
+      artifact evidences via the POC's action.kind enum: data_read → read;
+      data_write / data_egress / file_access → write; payment → transfer;
+      message_post → publish; tool_call / http_request / code_exec → compose.
+      The concrete class of each evaluated context travels on its action.kind
+      field. delegate is intentionally omitted — it is not in the public
+      artifact's action.kind enum, so nothing public evidences it.
+
+

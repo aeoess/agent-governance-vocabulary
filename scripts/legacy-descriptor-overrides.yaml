@@ -16,6 +16,23 @@ overrides:
     resolution_issue: 57
     note: "Per #57 resolution — refusal_authority is location, not strength. Maintainer (@lktron00) cleanup pending."
 
+  # nobulex.yaml uses the flat top-level descriptor shape, which the validator
+  # did not walk before #145. The value below was therefore never checked
+  # against the enum; it is surfaced for the first time by the traversal fix in
+  # the same change. It is entered here rather than corrected in place because
+  # the correct value is a vocabulary question, not a traversal question: #146
+  # proposes a new attribute for who holds the signing key relative to the party
+  # the artifact describes, which is what this cell is reaching for. #73 settled
+  # self_enforced as refusal topology and explicitly silent on provenance, so
+  # `issuer` would be the wrong correction. Remove this entry when #146 lands
+  # and the cell moves to the attribute it belongs in.
+  - file: crosswalk/nobulex.yaml
+    path: descriptor_dimensions.refusal_authority
+    deprecated_value: self_enforced
+    canonical_value: null
+    resolution_issue: 146
+    note: "Pending #146 — no canonical value assigned yet; the actor-equals-enforcer case has no home in the current refusal_authority enum. Surfaced by the #145 traversal fix. Maintainer (@arian-gogani) cleanup pending resolution."
+
   # jep.yaml currently uses an alt-format flat mappings: array shape, so it
   # is skipped at the file level by the validator (no signal_types block to
   # walk). The override path here is the nested form that will exist if/when

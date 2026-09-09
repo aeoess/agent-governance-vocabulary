@@ -404,17 +404,62 @@ function validateDescriptorBlock(block, file, dotPathPrefix) {
   }
 }
 
+// Classify a top-level descriptor_dimensions block by its own contents rather
+// than assuming one shape.
+//
+//   nested — every entry is a per-signal block: { sigKey: { dim: value } }
+//   flat   — every entry is a descriptor value:  { dim: value | [values] }
+//   mixed  — both appear in one block
+//   empty  — nothing to classify
+//
+// `*_notes` keys are prose annotations that occur in both shapes and are
+// already skipped by validateDescriptorBlock, so they do not vote on shape.
+// Counting them would make an annotated nested block look mixed.
+function classifyDescriptorShape(dims) {
+  let nested = 0
+  let flat = 0
+  for (const [key, value] of Object.entries(dims)) {
+    if (key.endsWith('_notes')) continue
+    if (value && typeof value === 'object' && !Array.isArray(value)) nested++
+    else flat++
+  }
+  if (nested && flat) return 'mixed'
+  if (nested) return 'nested'
+  if (flat) return 'flat'
+  return 'empty'
+}
+
 function validateDescriptors(doc, file) {
-  // Top-level descriptor_dimensions, nested-per-signal shape:
-  //   { sigKey: { dim_name: value } }
-  // Existing behavior preserved: flat top-level shapes (e.g. agentlair,
-  // jep) are not validated here. Pre-resolution v0.1 crosswalks that use
-  // a flat top-level shape are out of scope for this hardening pass.
+  // Top-level descriptor_dimensions. Two shapes are in production:
+  //
+  //   nested-per-signal — { sigKey: { dim_name: value } }
+  //   flat              — { dim_name: value | [values] }
+  //
+  // The previous implementation walked this block assuming the nested shape,
+  // using `typeof dimBlock !== 'object'` as its skip guard. On a flat block
+  // that guard matched every entry, so thirteen crosswalks were never checked
+  // against any enum and nothing failed to say so. Detect the shape from the
+  // data instead of enumerating the affected files in a comment. (Issue #145.)
   const dims = doc.descriptor_dimensions
-  if (dims && typeof dims === 'object') {
-    for (const [sigKey, dimBlock] of Object.entries(dims)) {
-      if (!dimBlock || typeof dimBlock !== 'object') continue
-      validateDescriptorBlock(dimBlock, file, `descriptor_dimensions.${sigKey}`)
+  if (dims && typeof dims === 'object' && !Array.isArray(dims)) {
+    const shape = classifyDescriptorShape(dims)
+    if (shape === 'mixed') {
+      // Deliberately an error rather than a guess. Validating half of a mixed
+      // block under either reading would repeat the failure this check exists
+      // to catch: a traversal reporting success over values it never read.
+      err(
+        file,
+        'descriptor_dimensions: mixed shape — the block contains both per-signal ' +
+        'sub-blocks and top-level descriptor values. Use one shape: nested ' +
+        '({ signal_key: { dimension: value } }) or flat ({ dimension: value }).',
+      )
+    } else if (shape === 'flat') {
+      validateDescriptorBlock(dims, file, 'descriptor_dimensions')
+    } else if (shape === 'nested') {
+      for (const [sigKey, dimBlock] of Object.entries(dims)) {
+        if (!dimBlock || typeof dimBlock !== 'object') continue
+        validateDescriptorBlock(dimBlock, file, `descriptor_dimensions.${sigKey}`)
+      }
     }
   }
 

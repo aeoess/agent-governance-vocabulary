@@ -1,0 +1,226 @@
+# crosswalk/cloudflare-aam.yaml
+#
+# Maps the Agent Access Model (AAM), a reference architecture published
+# by Cloudflare on 2026-08-05 (author Matt Silverlock), onto the canonical
+# Agent Governance Vocabulary.
+#
+# AAM is a reference architecture, not a wire-level specification, and
+# says so. It has four active controls (Agent Identity Broker, Task-Scoped
+# Access Engine, Mediation Layer, Trust Ratchet) and two supporting systems
+# (Agent Activity Log, Grant Review Loop). The paper states that the
+# components "need a shared vocabulary" for operations, resources or
+# destinations, scope, task, and state version, which is the reason this
+# row exists.
+#
+# This is a third-party crosswalk authored by aeoess (the maintainer of
+# this vocabulary repository), not by Cloudflare. Every field-level claim
+# below is sourced from the single public article at system.source_urls,
+# fetched in full on 2026-09-11. Where AAM leaves something to policy or
+# to the deployment, the row says so rather than filling the gap.
+#
+# License: Apache-2.0
+
+system:
+  name: cloudflare-aam
+  home: https://blog.cloudflare.com/the-agent-access-model/
+  spec_version: "Reference architecture as published 2026-08-05 (article modified 2026-08-05T21:52Z)"
+  role: >
+    Access model for task-scoped agents. One rule: do not trust the run,
+    authorize every action against the task and its accumulated state.
+    Five principles: short-lived sender-constrained credentials;
+    enforcement in the harness and network, not the prompt; human
+    oversight is exceptional; grants are reviewed from evidence;
+    capability state moves in one direction. Identity is brokered per
+    task from existing standards (RFC 8693 token exchange, RFC 9449
+    DPoP); AAM does not define its own credential format and states it
+    does not depend on one protocol winning.
+  identity_layer: "Task-scoped credential from an Agent Identity Broker; encodes agent X acting for principal H on task T; sender-constrained to a harness-held proof key. Format delegated to OAuth token exchange, DPoP, or AAuth."
+  source_urls:
+    article: "https://blog.cloudflare.com/the-agent-access-model/"
+
+license: Apache-2.0
+
+maintainer:
+  github: aeoess
+  confirmed_at: "2026-09-11"
+  third_party_authored: true
+  note: >
+    Authored by aeoess as a third-party crosswalk of a public reference
+    architecture. Cloudflare is the system being crosswalked. Recalibration
+    by the AAM author or any Cloudflare contributor is welcome via PR.
+
+issuer: "Per deployment. The Identity Broker issues the credential; the Access Engine, harness, Trust Ratchet state store, and network enforcement point emit the activity log events. All are operator-run components."
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# One partial fit:
+#   governance_attestation — Access Engine per-action decision + Trust Ratchet transition
+# trust_verification and security_posture were checked against the canonical
+# definitions, not the labels, and are no_mapping.
+# behavioral_trust is a false_analog and is the most important row here:
+# the paper says "trust" in Trust Ratchet is capability state, not a
+# judgment about the model.
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "Access Engine authorization decision per action; Trust Ratchet state transition; Agent Activity Log record"
+    match: partial
+    notes: >
+      The Access Engine authorizes a frozen request representation
+      (operation, resource, scope-affecting arguments, tenant, recipient)
+      against the task's capability ceiling, and the adapter executes that
+      same representation. Each covered action produces a log record that
+      identifies the task execution graph, task template, initiating
+      principal, current actor, enforcing component, operation, requested
+      and resolved scope, resource or destination, policy result, Trust
+      Ratchet version, outcome, and correlation identifiers.
+
+      Match is partial because the record is operator-held. The article
+      states that the Agent Activity Log is append-only and queryable and
+      that "if tamper evidence is required, the storage system must
+      provide it." No signed, portable, offline-verifiable attestation is
+      specified. A consumer that trusts the operator's logging plane gets
+      the governance evidence; a consumer that requires independent
+      verification cannot get it from AAM as published.
+
+      Precedent for `partial` here rather than `no_mapping`: crosswalk/
+      cursor-hooks.yaml maps Cursor's platform-recorded hook decisions and
+      enterprise audit log, also unsigned and operator-held, to
+      governance_attestation as `partial` on the same reasoning. This row
+      follows that reading of `partial` (overlapping, not equivalent, with
+      the divergence stated) rather than treating `partial` as "emits the
+      canonical signal incompletely."
+
+      Descriptor dimensions are deliberately not declared on this row. The
+      canonical dimensions are enums, and the AAM properties that would
+      inform them belong to different components (the credential's task
+      lifetime, the harness and network refusal points, the Trust Ratchet's
+      monotone state, DPoP-style sender constraint on the credential), not
+      to one governance-attestation signal. Stated in prose instead:
+      enforcement is binding at the harness and network. The credential is
+      bounded by the task and renewal cannot extend the task's maximum
+      lifetime. The capability ceiling and Trust Ratchet state are monotone
+      non-increasing within a task. The credential is sender-constrained,
+      with the proof covering method and URI and not the body or tool
+      arguments. The harness records read, create, update and delete
+      distinctly. Both enforcement points evaluate before the action.
+    issuers_in_production: []
+    signed_payload_fields: []
+
+  trust_verification:
+    canonical: trust_verification
+    internal: none
+    match: no_mapping
+    notes: >
+      The canonical primitive is a verification status about the agent
+      (grade, KYC presence, principal endorsement). AAM's Identity Broker
+      credential is an assertion for one task (agent X, for principal H,
+      on task T) with no grade, no standing status, and no life beyond the
+      task. It answers "who is acting on what right now," not "how
+      verified is this agent." Listed under aam_specific_terms as
+      task_scoped_credential.
+
+  security_posture:
+    canonical: security_posture
+    internal: none
+    match: no_mapping
+    notes: >
+      The canonical primitive is a signed posture artifact discoverable
+      by wallet, where the signed subject is a repo, commit, or output.
+      AAM's Mediation Layer is runtime enforcement at the harness and
+      network. Different question, no substitution hazard, honest gap.
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    internal: "Trust Ratchet"
+    match: false_analog
+    notes: >
+      The name invites the mapping and the paper forbids it. "Trust" in
+      Trust Ratchet is stated to be shorthand for what the task execution
+      graph can still do, not a judgment about the model's intent or
+      reliability. It is a monotone capability state, not a score, and it
+      is never derived from observed behavior over time. A consumer that
+      wired Trust Ratchet state into a behavioral_trust slot would be
+      treating a capability ceiling as a reputation signal. Explicitly
+      false_analog for that reason.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: none
+    match: no_mapping
+    notes: >
+      No two-party signed acknowledgment exists in AAM. The activity log
+      is written by operator-run components and read by the operator's
+      SIEM.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded or scored standing for the agent; authority is set per task by template intersection."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: >
+      AAM explicitly excludes model self-report as authoritative evidence
+      and does not attest to reasoning. Enforcement events come from
+      external control points only.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "Out of AAM's stated scope."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No outcome receipt; the log records outcome as a field of the operator's own record."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No peer or counterparty review signal; the only review is the Grant Review Loop, which reviews policy templates, not agents."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "The Grant Review Loop aggregates unused grants and recurring denials across runs, but only as evidence for a policy owner; no ratio is issued as a signal."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "Continuity is deliberately broken: each task is a new graph with a new credential."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "AAM has no wallet or on-chain concept."
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "AAM has no wallet or on-chain concept."
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment; sanctions or counterparty screening is out of AAM's scope."
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment of completed tasks; the activity log records outcome as a field, not as an issued signal."
+
+# ──────────────────────────────────────────────────────────────
+# AAM-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET
+# Listed so the mapping is honest about what the vocabulary does not
+# yet name. Candidates for vocabulary growth, not claims.
+# ──────────────────────────────────────────────────────────────
+aam_specific_terms:
+  task_scoped_credential: "Short-lived, task-scoped, sender-constrained, attributable credential from the Identity Broker; format delegated to RFC 8693, RFC 9449, or AAuth. Not a verification status."
+  task_execution_graph: "All work belonging to one task-scoped run, governed by one capability ceiling and one trust level. The unit AAM authorizes against."
+  task_template: "Declared once per distinct task; instantiated per dispatch; the unit of policy configuration."
+  capability_ceiling: "Intersection at dispatch of the approved template with the initiating principal's and agent service's authority, then resource-owner and tenant policy. The agent may ask for less; nothing at runtime may raise it."
+  trust_ratchet_state_version: "Monotone counter fenced across Access Engine, harness, and network; every log record carries it."
+  protected_event: "Policy-declared trigger that engages the ratchet, with the restrictions each transition applies and the components that must acknowledge."
+  grant_review_loop: "Evidence-driven review of task templates for over- and under-permissioning; approved changes apply only to future templates."
+  multiplayer_access_control: "Named open problem: one agent acting for principals with different entitlements in shared context. AAM states it does not solve this."

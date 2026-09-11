@@ -18,8 +18,9 @@
 # (see Promotion path below).
 #
 # Public commitment:  agentic-commerce-protocol/agentic-commerce-protocol#231
-# Upstream proposals: google-agentic-commerce/AP2#252 (goodmeta sample,
-#                     rename to `reserve` pending merge)
+# Upstream proposals: google-agentic-commerce/AP2#252 (goodmeta sample, open
+#                     and unmerged since 2026-05-19; NOT the evidentiary basis
+#                     for the goodmeta column, see 2026-09-11 note below)
 #                     aeoess/agent-passport-system#25 (Cycles,
 #                     runcycles.io, @amavashev)
 # Reviewers:          @Ectsang (goodmeta), @amavashev (Cycles)
@@ -27,7 +28,9 @@
 # License: Apache-2.0. Copyright 2026 Tymofii Pidlisnyi.
 
 crosswalk_type: domain_incubation
-verified_at: 2026-06-13
+verified_at:
+  goodmeta: 2026-09-11
+  cycles: 2026-09-11
 status: INCUBATING
 
 upstream_references:
@@ -286,16 +289,26 @@ verbs:
       promotion arithmetic. The promotion is grandfathered pre-rule;
       reverify_by: 2026-09-10; status upgrades to rule-conformant on a
       public artifact or counterparty attestation for the goodmeta leg.
+
+      RESOLVED 2026-09-11: the public artifact exists and always did.
+      goodmeta/agent-verifier@18c48a26cc is Apache-2.0 and exposes this
+      operation as `verify` / `verifyById`. The goodmeta leg no longer rests
+      on principal attestation and the promotion is no longer grandfathered.
+      The AP2#252 rename clause above is superseded: the shipped client never
+      used `authorize`, and AP2#252 remains open and unmerged.
     definition: >-
       Hold capacity against delegation budget without spending.
       Returns reservation_id and expires_at. Headroom allocated,
       not yet committed in the ledger.
     implementations:
-      goodmeta: authorize            # rename to `reserve` pending AP2#252 merge
+      goodmeta: verify / verifyById  # places the budget hold; returns verificationId + holdExpiresAt
       cycles: reserve
     notes: |
-      Two production implementations. AP2#252 rename from
-      `authorize` to `reserve` is pending merge; tracked by @Ectsang.
+      Two production implementations, both source-pinned 2026-09-11.
+      goodmeta `verify` / `verifyById` places the budget hold and returns
+      `verificationId` and `holdExpiresAt`, which is this definition's
+      reservation id and expiry. The earlier `authorize` name recorded here
+      came from the AP2#252 draft, not from the shipped client.
 
   commit:
     status: candidate
@@ -303,30 +316,46 @@ verbs:
       Convert reservation into final spend. References reservation_id.
       Spend recorded against ledger.
     implementations:
-      goodmeta: commit
+      goodmeta: settle(success=true)
       cycles: commit
 
   release:
-    status: proposed
+    status: candidate
     definition: >-
       Return unspent reservation to budget before commit. Pre-commit
       only. Reservation cancelled, headroom restored.
     implementations:
-      goodmeta: release (self-attested)
+      goodmeta: release
       cycles: release
     evidence:
       goodmeta:
-        verification_method: principal_attestation
-        verified_at: 2026-06-12
-        reverify_after: 2026-09-10
+        basis: publicly_verifiable
+        ref: "goodmeta/agent-verifier@18c48a26cc"
+        source_path: "src/client.ts (async release)"
+      cycles:
+        basis: publicly_verifiable
+        ref: "runcycles/cycles-server@f1a7740d70"
+        source_path: "cycles-protocol-service/.../controller/ReservationController.java (POST /{reservation_id}/release)"
     notes: |
-      Two implementations recorded: cycles (`release`, source-pinned) and
-      goodmeta (`release`, self-attested, no public artifact). goodmeta
-      added first-class `release` in v0.5 (POST /v1/release), distinct from
-      post-commit `refund`. Pre-commit audit state. Candidate promotion
-      held pending a public stable artifact or an independent counterparty
-      attestation; goodmeta's self-attested cell is weightless for
-      promotion arithmetic (only cycles, source-pinned, counts). Carrying
+      PROMOTED to candidate 2026-09-11. The goodmeta cell previously rested
+      on a principal attestation that expired 2026-09-10 with no renewal
+      available, and was briefly withdrawn on that basis. Re-verification
+      against goodmeta's own public implementation found the attestation was
+      never the strongest evidence available: `release()` has shipped in
+      @goodmeta/agent-verifier since 0.4.0, is Apache-2.0 and source-pinnable,
+      and its doc comment draws the same pre-commit boundary this verb does
+      ("Release a pre-commit hold, returning the unspent reservation to the
+      budget. Use BEFORE a payment settles. For an already-settled payment,
+      use refund() instead"). Both cells are now publicly verifiable and
+      source-pinned, which is what promotion arithmetic counts, so the verb
+      has two qualifying implementations.
+
+      Scope of the goodmeta evidence: the client method posts to /v1/release
+      against a hosted API, and its tests stub fetch. What is established is a
+      shipped, source-pinned client contract, not an observation of the
+      backend transition. That meets the registry's publicly-verifiable bar,
+      which asks for open source or a public stable artifact, and it is
+      recorded here rather than left to be assumed. Carrying
       both `release` and `refund` first-class does not by itself assign the
       `ledger-fidelity` profile (the `minimal` profile carries one); profile
       selection stays pending per #98.
@@ -354,40 +383,65 @@ verbs:
       threshold met: Cycles `get_balances` (distinct verb) + goodmeta
       `query` (multiplexed). Post-AP2#252 the goodmeta verb splits into
       `query_budget`; tracked for follow-up PR per Ectsang.
+
+      SUPERSEDED 2026-09-11: the shipped goodmeta client exposes this as
+      `getMandateState`, not a multiplexed `query`, and the AP2#252 split is
+      not what happened. See the shape-drift note below.
     definition: >-
       Return current ledger state for a delegation (total committed,
       total reserved, headroom remaining). Audit snapshot, no state
       change.
     implementations:
-      goodmeta: query                # multiplexed via single query verb
+      goodmeta: getMandateState      # returns budgetTotal/budgetSpent/remainingBudget; no separate reserved member
       cycles: get_balances           # distinct verb; GET /v1/balances
     notes: |
-      Two production implementations. Cycles exposes a distinct
-      `get_balances` verb; goodmeta multiplexes through a single
-      `query` verb. Convergence on the canonical name `query_budget`
-      pending implementer choice.
+      Two production implementations, both source-pinned as of the
+      2026-09-11 re-verification. Cycles `GET /v1/balances` returns
+      `BalanceResponse`, whose `Balance` carries `remaining`, `reserved`,
+      `spent` and `allocated` as separate members, so it matches this
+      definition in full.
+
+      SHAPE DRIFT, goodmeta: the current client exposes this operation as
+      `getMandateState`, not the `query` verb recorded here before, and its
+      response carries `budgetTotal`, `budgetSpent`, `remainingBudget` and
+      `txCount`. It has no separate reserved or held member, so the "total
+      reserved" part of this definition is recoverable by arithmetic rather
+      than emitted. The status is unchanged because `candidate` in this file
+      means two production implementations of the canonical verb and
+      explicitly tolerates naming differences. Treating every clause of a
+      prose definition as a mandatory response member would be a stricter
+      compatibility rule than this file states, and is not applied
+      retroactively here. If that rule is wanted it should be written first
+      and then applied forward.
 
   query_reservation:
     status: proposed
     status_note: |
       Holds at proposed despite @Ectsang LGTM on goodmeta column accuracy
-      (PR #91 2026-05-13). Goodmeta multiplexes today via
+      (PR #91 2026-05-13). Goodmeta was recorded as multiplexing via
       `query(reservation_id)`, but per Ectsang post-AP2#252 table the
       sample drops the analog (only `query_budget()` remains). Promoting
-      now would bind us to a downgrade later. Promotion path: a third
-      implementer ships a distinct query-reservation verb, or AP2#252
-      lands with one in place.
+      now would bind us to a downgrade later.
+
+      SUPERSEDED 2026-09-11: the shipped goodmeta client has no
+      per-reservation lookup on any surface, so the mapping is removed
+      rather than pending. Promotion path is now a second implementer
+      shipping a distinct query-reservation verb. AP2#252 is not that path.
     definition: >-
       Return state of a specific reservation by ID. Audit snapshot,
       no state change.
     implementations:
-      goodmeta: query(reservation_id)   # multiplexed via single query verb
       cycles: get_reservation           # distinct verb; GET /v1/reservations/{id}
     notes: |
-      Two production implementations. Cycles exposes a distinct
-      `get_reservation` verb (plus `list_reservations` for the
-      collection form); goodmeta multiplexes through the single
-      `query` verb with an optional `reservation_id` parameter.
+      One production implementation as of 2026-09-11. Cycles exposes a
+      distinct `get_reservation` verb, `GET /v1/reservations/{id}` on
+      `ReservationController`, plus a collection form.
+
+      The goodmeta mapping recorded here previously, `query(reservation_id)`,
+      is removed. Re-verification against the current public client found no
+      per-verification or per-reservation lookup on any surface, so that
+      mapping is not established today. This is a removal of an unsupported
+      claim, not a statement that the capability was withdrawn.
 
 # Reservation lifecycle states + transitions + idempotency contract.
 #

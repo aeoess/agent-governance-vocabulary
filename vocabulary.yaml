@@ -18,10 +18,19 @@ status: "draft - open for WG review"
 signal_types:
   wallet_state:
     status: proposed
-    review_by: "2026-09-23"
+    review_by: "2026-12-11"
     promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
     definition: "Foundation-layer wallet attestation: balances, on-chain holdings, identity attachments."
     issuers_in_production: ["InsumerAPI"]
+    notes: |
+      Re-dated 2026-09-12 at the 2026-09-23 sunset (issue #164, per-row review).
+      Fresh evidence per CONTRIBUTING criterion (4), a published fixture or
+      conformance vector a third party can check: the InsumerAPI vector set,
+      pinned by git revision, tree object and SHA-256 digest in
+      crosswalk/insumerapi.yaml under signal_types.wallet_state.conformance_vectors,
+      and run at that revision on the re-date day. Still one implementation;
+      promotion_trigger unchanged. Next review_by is 90 days from re-verification,
+      matching the domain_incubation cadence.
 
   behavioral_trust:
     status: canonical

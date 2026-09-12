@@ -51,6 +51,29 @@ signal_types:
     kid: insumer-attest-v1
     default_ttl_seconds: 1800  # 30 minutes
 
+    conformance_vectors:
+      basis: publicly_verifiable
+      ref: "douglasborthwick-crypto/insumer-examples@b2bc560c94a92e06f44e1d50e8eed9a9b03ce073"
+      source_path: "vectors/"
+      tree: "507cc4e0e933bfc4a2eafb33b3deb74809477f80"
+      discovery_copy: "https://insumermodel.com/.well-known/state-attestation-test-vectors.json"
+      discovery_copy_sha256: "8feada049ba2b56d1cbf3e1a7e4e7b1ecef32a76e6c5bc7e772ba8eb615d6585"
+      verified_at: 2026-09-12
+      verification: >-
+        At the pinned revision the directory holds 23 vectors, 8 envelope fixtures, run.mjs
+        and check-well-known.mjs. `node vectors/run.mjs` reports 23/23 vectors matching
+        their expected verdicts, and `node vectors/check-well-known.mjs` reports the
+        discovery copy identical to the directory on every signed field. Each vector is
+        an artifact exactly as the API issued it, paired with the result a correct
+        verifier must produce. Vectors 01-11 (2026-08-28) are ES256 only; 12-17
+        (2026-09-01) exercise the ML-DSA-65 companion; 18-23 (2026-09-02) cover kid
+        binding and the trust-profile not-evaluated marker. Eleven of the 23 must be
+        refused (08, 09, 10, 11, 14, 15, 16, 19, 20, 21, 23: corrupted, mislabelled, or
+        presented under conditions a verifier refuses), spread across the three groups;
+        vector 22 is a twelfth case, mislabelled in a way a verifier reports without
+        refusing. Cited as the fresh evidence for the 2026-09-12 re-date of
+        signal_types.wallet_state in vocabulary.yaml (issue #164).
+
     endpoints:
       - path: POST /v1/attest
         purpose: "Evaluate 1–10 on-chain conditions (token_balance, nft_ownership, eas_attestation, farcaster_id). Returns signed boolean pass/fail per condition. 1 credit standard, 2 with Merkle proofs. Default output is raw P1363 base64 signature; optional `format: \"jwt\"` returns an ES256 compact JWS instead."
@@ -226,4 +249,5 @@ crosswalk_metadata:
   vocabulary_version: "0.1.0"
   last_reviewed: "2026-04-10"
   next_revisions:
+    - "Refresh the wallet_state endpoint metadata (kid set, chain and check counts, signature formats) against the current API; the block above was last reviewed 2026-04-10 and the 2026-09-12 re-date deliberately touched only conformance_vectors."
     - "Follow-up PR to reconcile `wallet_binding` canonical term (when added) with the A2A#1628 `subject_binding` three-state model (`wallet_bound` / `wallet_acknowledged` / `reference`) — referenced in MULTI-ATTESTATION-SPEC.md §2.5 wallet-binding taxonomy."

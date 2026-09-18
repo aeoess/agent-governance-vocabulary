@@ -28,9 +28,10 @@ signal_types:
       conformance vector a third party can check: the InsumerAPI vector set,
       pinned by git revision, tree object and SHA-256 digest in
       crosswalk/insumerapi.yaml under signal_types.wallet_state.conformance_vectors,
-      and run at that revision on the re-date day. Still one implementation;
-      promotion_trigger unchanged. Next review_by is 90 days from re-verification,
-      matching the domain_incubation cadence.
+      together with the verifier versions and the key snapshot that evidence was
+      checked under. Still one implementation;
+      promotion_trigger unchanged. Next review_by is 2026-12-11, ninety days from
+      the 2026-09-12 re-date, matching the domain_incubation cadence.
 
   behavioral_trust:
     status: canonical

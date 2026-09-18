@@ -53,26 +53,41 @@ signal_types:
 
     conformance_vectors:
       basis: publicly_verifiable
-      ref: "douglasborthwick-crypto/insumer-examples@b2bc560c94a92e06f44e1d50e8eed9a9b03ce073"
+      ref: "douglasborthwick-crypto/insumer-examples@8a0c38f77278ffa7b5d5d6d87e72685da99fd459"
       source_path: "vectors/"
-      tree: "507cc4e0e933bfc4a2eafb33b3deb74809477f80"
+      tree: "43bca3072b2d95fb08ef7408815ac4b48d90c415"
       discovery_copy: "https://insumermodel.com/.well-known/state-attestation-test-vectors.json"
-      discovery_copy_sha256: "8feada049ba2b56d1cbf3e1a7e4e7b1ecef32a76e6c5bc7e772ba8eb615d6585"
-      verified_at: 2026-09-12
+      discovery_copy_sha256: "f18511a416208fad861e7557e8203ece1376337712b1073e950833d848f774d5"
+      verified_at: 2026-09-18
+      verifier:
+        insumer-verify: "1.8.4"
+        "@noble/post-quantum": "0.7.1"
+      key_material:
+        jwks_snapshot: "vectors/jwks-2026-09-18.json"
+        sha256: "506d8ee2b056c65d4267237209b1802e3376bd5e3b08e988158bdacb9fc7a244"
+        note: "Twelve of the 23 vectors, 11 to 22, resolve their keys from the live JWKS when they run; the other eleven verify against the key built into insumer-verify and fetch nothing. This snapshot is the key set the published verdicts were produced against, so they stay reproducible across a key rotation. It sits inside the pinned tree above."
       verification: >-
-        At the pinned revision the directory holds 23 vectors, 8 envelope fixtures, run.mjs
-        and check-well-known.mjs. `node vectors/run.mjs` reports 23/23 vectors matching
-        their expected verdicts, and `node vectors/check-well-known.mjs` reports the
-        discovery copy identical to the directory on every signed field. Each vector is
-        an artifact exactly as the API issued it, paired with the result a correct
-        verifier must produce. Vectors 01-11 (2026-08-28) are ES256 only; 12-17
-        (2026-09-01) exercise the ML-DSA-65 companion; 18-23 (2026-09-02) cover kid
-        binding and the trust-profile not-evaluated marker. Eleven of the 23 must be
-        refused (08, 09, 10, 11, 14, 15, 16, 19, 20, 21, 23: corrupted, mislabelled, or
-        presented under conditions a verifier refuses), spread across the three groups;
-        vector 22 is a twelfth case, mislabelled in a way a verifier reports without
-        refusing. Cited as the fresh evidence for the 2026-09-12 re-date of
-        signal_types.wallet_state in vocabulary.yaml (issue #164).
+        At the pinned revision the directory holds 23 vectors, 8 envelope fixtures, run.mjs,
+        check-well-known.mjs, the package.json and lockfile pinning the verifier versions above,
+        and the JWKS snapshot named above. Eleven of the 23 are issuer responses saved exactly as
+        the API returned them (01 to 07, 12, 13, 17, 18); the other twelve are derived from those,
+        eleven by a deliberate edit to the signed bytes or to the labelling around them and the
+        twelfth (16) by presenting vector 01 under different verifier options. Under the pinned
+        versions, installed with npm ci from the lockfile, `node run.mjs` reports 23/23 vectors
+        matching their stated expectations and `node check-well-known.mjs` reports the discovery
+        copy identical to the directory on every signed field. That run is the issuer's own
+        reference verifier agreeing with the issuer's stated expectations rather than an
+        independent confirmation; the bytes, the options, the expected verdicts and the reasoning
+        behind each are published, so a third party can write their own verifier against them and
+        contradict any of it. Eleven of the 23 must be refused: 08, 09, 10, 11, 14, 15, 16, 19,
+        20, 21 and 23. The predicate is at least one expected false in `checks` outside `expiry`.
+        Every vector expects `expiry: false`, because every published vector is past its freshness
+        window, so that verdict does not separate them. `attestation.pass` is excluded: 02 and 05
+        expect a signed false about the wallet, which is a verdict rather than a verification
+        failure. Vector 22 is not among the eleven either; outside `expiry` it carries no expected
+        false, and its companion reports unverifiable, which is reported without refusing the
+        artifact. Cited as the fresh evidence for the 2026-09-12 re-date of
+        signal_types.wallet_state in vocabulary.yaml (issue #164, filed as PR #166).
 
     endpoints:
       - path: POST /v1/attest

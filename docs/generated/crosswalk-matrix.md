@@ -1,6 +1,6 @@
 # Crosswalk Matrix
 
-Auto-generated on 2026-09-11. 24 systems × 16 canonical signal types.
+Auto-generated on 2026-10-01. 24 systems × 16 canonical signal types.
 
 Cell legend:
 
@@ -33,7 +33,7 @@ Cell legend:
 | DCP-Ai            | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ✅                      | 🔵             | ✅                  | ⚪                | ⚪               | ⚪                  | 🟡          | —                | 🟡                | —                     | —                 |
 | Fidelity-Spec     | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     | —                 |
 | Insumerapi        | ✅            | ⚪                | ⚪                   | ⚪                   | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | —           | —                | —                 | —                     | —                 |
-| Moltrust          | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |
+| Moltrust          | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |
 | Mycelium-Trails   | ⚪            | ⚪                | —                   | —                   | ⚪               | 🟡                     | —              | —                  | —                | —               | ⚪                  | —           | —                | —                 | —                     | —                 |
 | Nobulex           | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                | —                 | —                     | —                 |
 | Pathcourse-Health | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |

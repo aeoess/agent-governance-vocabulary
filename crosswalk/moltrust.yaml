@@ -93,14 +93,32 @@ signal_types:
 
   governance_attestation:
     canonical: governance_attestation
-    match: no_mapping
+    match: exact
+    local_name: governance_attestation
+    endpoint: "https://api.moltrust.ch/guard/governance/validate-capabilities"
+    method: POST
+    artifact: "compact JWS, EdDSA, kid did:web:moltrust.ch#moltguard-key-1"
+    jwks: "https://moltrust.ch/.well-known/jwks.json"
     notes: >
-      MolTrust issues VerifiedSkillCredentials (skill-audit attestation)
-      and anchors Interaction Proof Records on Base L2, but these are
-      identity-bound integrity signals, not delegation-chain authority
-      attestations. Primary issuer: APS (governance attestation as
-      meta-binding over the full signal stack, evaluated against
-      delegation chains with verifiable authority paths).
+      Updated 2026-09-21. The previous entry recorded no_mapping on the
+      grounds that MolTrust emitted identity-bound integrity signals rather
+      than delegation-chain authority attestations. That was accurate for the
+      signals available in April and is no longer accurate.
+
+      validate-capabilities takes a set of requested capabilities and an
+      optional delegation_chain_hash, evaluates them against the subject's
+      Agent Authorization Envelope (MANDATE grants and CONSTRAINTS denials),
+      and returns a signed decision of permit, conditional, deny or withheld
+      with the permitted scope, a spend ceiling and a validity window. That is
+      a declared governance requirement evaluated against delegation scope,
+      which is what the canonical definition names.
+
+      Two properties worth recording because they bear on how a consumer
+      should read the artifact. A subject whose score could not be read
+      returns decision withheld with trust_score null and a stated reason,
+      never deny — an unevaluated subject is not a refused one. And every
+      field a consumer would act on, including the withholding, is inside the
+      signed payload rather than beside it.
 
   security_posture:
     canonical: security_posture

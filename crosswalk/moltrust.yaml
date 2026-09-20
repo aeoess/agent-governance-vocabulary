@@ -94,13 +94,16 @@ signal_types:
   governance_attestation:
     canonical: governance_attestation
     match: exact
-    local_name: governance_attestation
+    local_name: authorization_attestation
     endpoint: "https://api.moltrust.ch/guard/governance/validate-capabilities"
     method: POST
     artifact: "compact JWS, EdDSA, kid did:web:moltrust.ch#moltguard-key-1"
     jwks: "https://moltrust.ch/.well-known/jwks.json"
     notes: >
-      Updated 2026-09-21. The previous entry recorded no_mapping on the
+      Updated 2026-09-21. The emitted signal_type is
+      authorization_attestation as of attestation version 2; the canonical
+      name in this vocabulary remains governance_attestation, which is what
+      the mapping is for. The previous entry recorded no_mapping on the
       grounds that MolTrust emitted identity-bound integrity signals rather
       than delegation-chain authority attestations. That was accurate for the
       signals available in April and is no longer accurate.

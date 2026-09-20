@@ -93,14 +93,50 @@ signal_types:
 
   governance_attestation:
     canonical: governance_attestation
-    match: no_mapping
+    internal: "Authorization Attestation (MoltGuard capability gate)"
+    match: partial
     notes: >
-      MolTrust issues VerifiedSkillCredentials (skill-audit attestation)
-      and anchors Interaction Proof Records on Base L2, but these are
-      identity-bound integrity signals, not delegation-chain authority
-      attestations. Primary issuer: APS (governance attestation as
-      meta-binding over the full signal stack, evaluated against
-      delegation chains with verifiable authority paths).
+      Signed decision on whether one agent may take one action, under named
+      constraints, for a bounded time. Emitted as a compact JWS (EdDSA, kid
+      did:web:moltrust.ch#moltguard-key-1) and verifiable against the published
+      JWKS with no cooperation from the issuer.
+
+      Recorded as partial rather than exact: the canonical term covers
+      governance requirements in general, while what MolTrust signs is the
+      narrower authorization question. MolTrust proposes
+      authorization_attestation for that narrower signal and defers to the
+      maintainers on whether it warrants its own dimension or belongs as a
+      refinement of this one. Issue #125 (attenuating_delegation) names the
+      same gap from the delegation side.
+
+      Supersedes the previous no_mapping entry from 2026-04-19. That entry was
+      right about the signals it described — the skill-audit and IPR signals
+      genuinely are integrity signals rather than authority attestations — and
+      wrong to conclude no mapping, because it overlooked the capability gate,
+      which is an authority attestation and was already running at the time.
+      The correction is recorded rather than silently replaced.
+    payload_versions:
+      v1:
+        signal_type: governance_attestation
+        header: no version parameter
+      v2:
+        signal_type: authorization_attestation
+        header: "mt_attestation_version: 2"
+      notes: >
+        Both are accepted by the verifier. A token whose header and payload
+        disagree about the version is rejected rather than tolerated.
+    signed_payload_fields:
+      - signal_type           # string
+      - decision              # string — permit/conditional/deny/withheld
+      - active_constraints    # object — scope[], spend_limit, validity_window, trust_floor, passport_grade
+      - trust_score           # number — the score the decision rests on
+      - resolved_did          # string — present when a wallet-shaped DID was resolved; never substituted silently
+      - delegation_chain_hash # string|null — null unless a chain was supplied; never synthesised
+      - evaluation_timestamp  # RFC 3339
+      - expires_at            # RFC 3339 — one hour by default, seven days maximum
+    endpoints:
+      validate: "https://api.moltrust.ch/guard/governance/validate-capabilities"
+      jwks: "https://moltrust.ch/.well-known/jwks.json"
 
   security_posture:
     canonical: security_posture
@@ -226,5 +262,5 @@ descriptor_dimensions:
 
 crosswalk_metadata:
   authored_by: "@MoltyCel"
-  vocabulary_version: "0.1.0"
-  last_reviewed: "2026-04-19"
+  vocabulary_version: "0.2.0"
+  last_reviewed: "2026-09-21"

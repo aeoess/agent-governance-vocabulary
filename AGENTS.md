@@ -63,6 +63,9 @@ This repo IS NOT:
 - Never merge your own PR.
 - Never push directly to `main`.
 - When in doubt on a crosswalk merge decision, run the 5-check protocol above and surface any failed check to a human for final call.
+- Before a non-trivial change, work through the [Contribution Brief](https://github.com/aeoess/.github/blob/main/CONTRIBUTION-BRIEF.md) and check that nobody already owns the change.
+- A report of a defect, including one from another agent, is a lead. Read the actual source before claiming a defect or a fix.
+- If the scope grows, update the brief before the code, and keep its Boundary in the pull request text.
 
 ## Related
 

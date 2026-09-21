@@ -43,6 +43,10 @@ A crosswalk file maps your governance system's internal naming to the canonical 
 2. **The mapping is field-level precise.** Each canonical term either maps to a specific field with a cited source path, or carries an explicit `no_mapping` entry with a technical rationale.
 3. **Gaps are explicit, and so is inference.** If your system does not implement a canonical signal type, use `no_mapping` with a technical rationale rather than forcing a partial mapping. If the shape corresponds but your artifact never asserts the value, keep the match type and add `evidence: inferable`. See [Evidence state](#evidence-state).
 4. **Format is consistent with merged crosswalks.** New structural sections are welcome when they document primitives the existing shapes don't capture (verification patterns, derivation lineage, identity methods).
+5. **What a partial mapping loses is stated.** A `partial` mapping names what does not carry over, so a reader knows what the crosswalk cannot express.
+6. **No collision with open work.** Check open pull requests for the same system or term before starting.
+
+These are the [Contribution Brief](https://github.com/aeoess/.github/blob/main/CONTRIBUTION-BRIEF.md) applied to crosswalks.
 
 ---
 

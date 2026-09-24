@@ -41,7 +41,7 @@ signal_types:
 
   wallet_intelligence:
     status: reserved
-    review_by: "2026-09-23"
+    review_by: "2026-11-23"
     note: 'No production implementation. Default action at review_by: removal unless a production implementation surfaces.'
     definition: "Behavioral classification of wallet activity (sybil signals, volume patterns, sanctions proximity)."
     issuers_in_production: []
@@ -49,7 +49,7 @@ signal_types:
 
   reasoning_integrity:
     status: reserved
-    review_by: "2026-09-23"
+    review_by: "2026-11-23"
     note: 'No production implementation. Default action at review_by: removal unless a production implementation surfaces.'
     definition: "Attestation surface = the action, not the actor. Wallet-agnostic by design."
     issuers_in_production: []
@@ -57,7 +57,7 @@ signal_types:
 
   compliance_risk:
     status: reserved
-    review_by: "2026-09-23"
+    review_by: "2026-11-23"
     note: 'No production implementation. Default action at review_by: removal unless a production implementation surfaces.'
     definition: "Scored exposure assessment (counterparty flagged or clean). NOT a positive credential."
     issuers_in_production: []
@@ -78,7 +78,7 @@ signal_types:
 
   passport_grade:
     status: proposed
-    review_by: "2026-09-23"
+    review_by: "2026-11-23"
     promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
     definition: "Composite trust grade from agent passport issuance evidence."
     issuers_in_production: ["APS"]
@@ -91,14 +91,14 @@ signal_types:
 
   security_posture:
     status: proposed
-    review_by: "2026-09-23"
+    review_by: "2026-11-23"
     promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
     definition: "Wallet-discoverable: signed subject is the artifact (repo, commit, output), wallet is lookup key."
     issuers_in_production: ["AgentGraph"]
 
   job_performance:
     status: reserved
-    review_by: "2026-09-23"
+    review_by: "2026-11-23"
     note: 'No production implementation. Default action at review_by: removal unless a production implementation surfaces.'
     definition: "Wallet-bound assessment of completed task outcomes."
     issuers_in_production: []
@@ -106,7 +106,7 @@ signal_types:
 
   settlement_witness:
     status: proposed
-    review_by: "2026-09-23"
+    review_by: "2026-11-23"
     promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
     definition: >
       Signed post-execution attestation that a settlement (a payment or value
@@ -209,7 +209,7 @@ signal_types:
 
   entity_continuity:
     status: proposed
-    review_by: "2026-09-23"
+    review_by: "2026-11-23"
     promotion_trigger: 'A second independent implementation meeting the CONTRIBUTING criteria: independent maintainership, independent codebase, compatible emitted artifact, and a published fixture or conformance vector.'
     proposed_by: ["SBR Protocol (crosswalk/soulboundrobots.yaml)"]
     definition: >
@@ -239,7 +239,7 @@ signal_types:
 
   cognitive_attestation:
     status: reserved
-    review_by: "2026-09-23"
+    review_by: "2026-11-23"
     note: 'No production implementation. Default action at review_by: removal unless a production implementation surfaces.'
     proposed_by: ["AEOESS"]
     definition: >

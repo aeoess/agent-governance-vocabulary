@@ -1,8 +1,9 @@
 # vocabulary-lifecycle.yaml
 #
 # Maintainer-governed canonical authority-lifecycle concept set; drafted
-# from AUTHORITY-LIFECYCLE.md (agent-authority-lifecycle repo, branch
-# cases-v0.2, commit 1642093, https://github.com/aeoess/agent-authority-lifecycle),
+# from AUTHORITY-LIFECYCLE.md (agent-authority-lifecycle repo, main
+# branch, commit bbb470992682018c1c4c91ef6ac842ab3f14842e,
+# https://github.com/aeoess/agent-authority-lifecycle/blob/bbb470992682018c1c4c91ef6ac842ab3f14842e/AUTHORITY-LIFECYCLE.md#L22-L81),
 # governed here so vocabulary.yaml's signal_types stays reserved for
 # signed-envelope categories while this concept set has a single owned
 # definition surface. Follows the vocabulary-settlement.yaml precedent:

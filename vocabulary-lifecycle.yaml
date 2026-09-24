@@ -1,0 +1,315 @@
+# vocabulary-lifecycle.yaml
+#
+# Maintainer-governed canonical authority-lifecycle concept set; drafted
+# from AUTHORITY-LIFECYCLE.md (agent-authority-lifecycle repo, main
+# branch, commit bbb470992682018c1c4c91ef6ac842ab3f14842e,
+# https://github.com/aeoess/agent-authority-lifecycle/blob/bbb470992682018c1c4c91ef6ac842ab3f14842e/AUTHORITY-LIFECYCLE.md#L22-L81),
+# governed here so vocabulary.yaml's signal_types stays reserved for
+# signed-envelope categories while this concept set has a single owned
+# definition surface. Follows the vocabulary-settlement.yaml precedent:
+# a separate maintainer-governed file for a concept set that is not a
+# signal_type.
+#
+# Every definition below is quoted verbatim (word for word, punctuation
+# and capitalization preserved except a trailing period added where the
+# source line ended mid-sentence) from the cited section of
+# AUTHORITY-LIFECYCLE.md. Nothing here paraphrases or extends the
+# source. The source document's own status framework
+# (specified / tested / candidate / implemented / proposed / open)
+# applies to its invariants (L1-L12), not to this concept list; the
+# concept list itself carries one blanket status, quoted below.
+#
+# This concept set is one decomposition of authority lifecycle, not a
+# determination that these are the authority lifecycle model. Mappings
+# produced through this model do not count as evidence that the model
+# has converged, and canonical status in vocabulary.yaml is a separate,
+# higher bar (CONTRIBUTING.md, "Proposing new canonical terms") that
+# this file does not claim to meet.
+#
+# License: Apache-2.0. Copyright 2026 Tymofii Pidlisnyi.
+
+status: INCUBATING
+normative_force: descriptive_only_pending_convergence
+proposed_by: ["AUTHORITY-LIFECYCLE.md (agent-authority-lifecycle, aeoess)"]
+model_scope: experimental_decomposition
+may_be_used_as_promotion_evidence: false
+model_objections: []
+
+source_status_note: >-
+  Quoted verbatim from AUTHORITY-LIFECYCLE.md, "Lifecycle concepts are
+  separate" section: "Agent identity, principal binding, delegated
+  authority, signing key, approval, suspension, revocation and execution
+  carry over from 0.1.0-draft. The grouping and every other entry are
+  proposed, added in 0.1.1-draft or 0.1.2-draft. No public case tests
+  them yet." Every concept entry below inherits this proposed, untested
+  status from its source; no entry here should be read as more settled
+  than that.
+
+concepts:
+
+  # --- Parties and standing ---
+
+  agent_identity:
+    definition: >-
+      Says which agent is acting. Identity continuity does not establish
+      authority continuity.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Parties and standing"
+
+  principal:
+    definition: >-
+      The person, office, organization or other body on whose behalf
+      authority exists.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Parties and standing"
+
+  issuer:
+    definition: >-
+      Whoever issues or signs an authority artifact. The issuer and the
+      principal can be different.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Parties and standing"
+    note: >-
+      Distinct from the existing `issuers_in_production` field on
+      vocabulary.yaml signal_types, which names systems that emit a
+      signed signal. This concept names a role inside one authority
+      artifact's delegation chain, not a signal-emitting system. Same
+      English word, unrelated technical meaning; flagged for maintainer
+      attention rather than resolved here.
+
+  issuer_standing:
+    definition: >-
+      Why the issuer was allowed to create, narrow, suspend, revoke or
+      replace authority for the principal. A valid signature establishes
+      who signed. It does not by itself establish standing.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Parties and standing"
+
+  lifecycle_standing:
+    definition: >-
+      Who may suspend, revoke, replace or reaffirm an authority artifact.
+      This is not always the issuer. An organization, a quorum, a
+      successor, a court or a security function can have standing to
+      change authority it never issued.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Parties and standing"
+
+  principal_binding:
+    definition: >-
+      Says which principal an agent acts for. It can exist before any
+      grant and outlive one, for example an agent registered to an
+      organization between grants.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Parties and standing"
+
+  sponsor_or_responsible_owner:
+    definition: >-
+      Who is responsible for an agent's continued operation, where a
+      system has that role. Changing a sponsor does not by itself
+      transfer or replace existing authority.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Parties and standing"
+
+  # --- Authority and dependencies ---
+
+  delegated_authority:
+    definition: >-
+      Says X may do Y because principal Z granted it, under which
+      constraints, for which targets and for what period, through a
+      specific chain.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority and dependencies"
+
+  authority_path_and_dependency:
+    definition: >-
+      Which other authority a grant currently depends on. Historical
+      provenance and current dependency are not necessarily the same
+      thing.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority and dependencies"
+
+  presented_credential_or_session:
+    definition: >-
+      A session or derived token used to exercise authority in a
+      particular request. Ending a grant does not necessarily invalidate
+      every session or derived token already issued, and ending a
+      session does not by itself end the grant.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority and dependencies"
+
+  activation_condition:
+    definition: >-
+      When already issued authority becomes exercisable. A grant can be
+      validly issued and still wait on a date or a recorded event.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority and dependencies"
+
+  target_binding:
+    definition: >-
+      Which resource, counterparty or object the authority applies to.
+      Continuity of a name does not by itself establish continuity of
+      the thing named.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority and dependencies"
+
+  action_or_capability_binding:
+    definition: >-
+      Which operation, implementation or schema a grant refers to, where
+      that distinction matters. A tool can keep its name while what it
+      does changes, which widens effective authority without any change
+      to the grant.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority and dependencies"
+
+  # --- Authority lifecycle state ---
+
+  issuance:
+    definition: >-
+      The event that creates an authority artifact. Whether issuance was
+      valid depends on the issuer's standing at that time.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority lifecycle state"
+
+  suspension:
+    definition: >-
+      Pauses or narrows the use of authority without permanently ending
+      it.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority lifecycle state"
+
+  expiry_or_exhaustion:
+    definition: >-
+      Ends authority because a declared time, use count, budget, purpose
+      or other bound has been reached. Expiry is not revocation.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority lifecycle state"
+
+  revocation:
+    definition: >-
+      Permanently ends a named authority artifact. A reversible pause is
+      suspension, not revocation.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority lifecycle state"
+    note: >-
+      Adjacent to, but not the same primitive as, vocabulary.yaml's
+      existing `delegation_revocation` registered_purposes value on
+      bilateral_receipt (a receipt purpose for a revocation
+      acknowledgment). This entry is the lifecycle state itself; the
+      existing term is one signed-receipt use of it. Not a conflict, but
+      the two should stay distinguished if both land in the registry.
+
+  external_restriction:
+    definition: >-
+      A block from outside the grant chain, such as a sanction, a court
+      order, or a legal hold that blocks a deletion. It can stop some
+      effects while the grant itself stays valid.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority lifecycle state"
+
+  authority_epoch:
+    definition: >-
+      Where a system uses generations, separates current authority from
+      stale authority surviving in sessions, queues, replicas, snapshots
+      or restored state.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Authority lifecycle state"
+
+  # --- Decisions and effects ---
+
+  approval:
+    definition: >-
+      A principal or approver allows a proposed action. It is an input
+      to authorization, with its own scope, expiry and use count, and it
+      can be withdrawn before dispatch.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Decisions and effects"
+
+  policy_version:
+    definition: >-
+      Which policy an approval or decision was evaluated against. The
+      same action can be allowed under one version and denied under the
+      next.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Decisions and effects"
+
+  authorization_decision:
+    definition: >-
+      The record an enforcement point makes that an action was allowed
+      or denied, against the authority, policy and inputs it evaluated.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Decisions and effects"
+
+  invocation:
+    definition: "The exact action submitted for execution."
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Decisions and effects"
+
+  execution:
+    definition: "The attempt to carry out that invocation."
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Decisions and effects"
+
+  effect:
+    definition: "The externally observable result, if any."
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Decisions and effects"
+
+  in_flight_state:
+    definition: >-
+      Where an action is between authorization and a known outcome.
+      Authority can change inside that interval.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Decisions and effects"
+
+  # --- Verification and evidence ---
+
+  signing_key:
+    definition: >-
+      The key an identity signs with at a given time. Key lifecycle and
+      authority lifecycle are separate.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Verification and evidence"
+
+  verifier_trust_policy:
+    definition: >-
+      Which issuers, roots, status sources and rules a verifier accepts.
+      A verifier can stop trusting an issuer without anything being
+      revoked.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Verification and evidence"
+
+  status_observation:
+    definition: >-
+      What authority state a verifier could establish, from which
+      source, at what time and with what freshness. Current authority
+      and observed authority can differ.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Verification and evidence"
+
+  notice:
+    definition: >-
+      That a particular party or enforcement point learned of a
+      transition at a particular time. Recording a transition and
+      observing it are different events.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Verification and evidence"
+
+  evidence:
+    definition: >-
+      Records a decision, transition, invocation, execution or effect.
+      Ending authority does not by itself erase or invalidate evidence
+      of earlier events.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Verification and evidence"
+    note: >-
+      Same English word, different technical meaning from vocabulary.yaml's
+      `crosswalk_evidence_states` axis (emitted / inferable / referenced,
+      answering whether a crosswalk mapping carries, computes, or points
+      to a value) and from CONTRIBUTING.md's "Evidence standards" section
+      (publicly verifiable vs. principal attestation, about crosswalk
+      claims). This entry is about authority-lifecycle event records, not
+      about crosswalk mapping provenance. Not a conflicting definition of
+      the same primitive, but the collision is real enough to need a
+      maintainer decision on naming before this lands anywhere near
+      vocabulary.yaml proper.
+
+  evidence_attestor:
+    definition: >-
+      Who produced or signed a piece of evidence, and in what role. A
+      gateway attesting an execution makes a different claim from an
+      issuer signing a grant, and its key has its own lifecycle.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Verification and evidence"
+
+  coverage_and_completeness:
+    definition: >-
+      What set or interval the available evidence covers. Showing that
+      individual records are authentic is weaker than establishing that
+      all relevant events were observed.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Verification and evidence"
+
+  accountability_record:
+    definition: >-
+      Who a system identifies as responsible for an agent or action. It
+      does not by itself establish legal liability.
+    source_section: "AUTHORITY-LIFECYCLE.md > Lifecycle concepts are separate > Verification and evidence"
+
+boundary_note: >-
+  This file names lifecycle-state and delegation-chain concepts an
+  authority verifier reasons about (who may act, under what grant, in
+  what state). It is not a signal_type: none of these concepts is a
+  categorical label stamped into a signed envelope, so none belongs in
+  vocabulary.yaml's signal_types block without first meeting the
+  two-independent-implementation canonical bar in CONTRIBUTING.md, which
+  this file does not attempt. Two entries above (`issuer`, `evidence`)
+  reuse English words vocabulary.yaml already uses for unrelated
+  technical meanings (a signal-emitting system; a crosswalk-mapping
+  evidence axis) — flagged per-entry above, not resolved here.

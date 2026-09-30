@@ -45,6 +45,7 @@ Three things are recorded separately for every edge and never merged:
 | Frequency | @altrudev | Independent verification of claims, artifacts and cross-project relationships against explicit evidence, one result per claim. No commit designated for external testing yet | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885397094) |
 | Assay | @Rul1an | The project the standalone corpus-adequacy tool came out of. No interoperability boundary for Assay itself was proposed in #177 | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885883462) |
 | corpus-adequacy | @Rul1an | A standalone tool that came out of Assay. Mutation-adequacy report for a published corpus: which seeded checker faults the corpus kills and which survive, with a positive and an inert control | same comment |
+| Default Settlement / DefaultVerifier | @nutstrut | Independent evidence evaluation and portable verification artifacts for autonomous systems. Produces portable SAR v0.1 receipts with PASS, FAIL or INDETERMINATE verdicts over a frozen six-field signed core, and can consume pinned external artifacts for independently implemented evaluation. Claim ceiling: a valid SAR receipt establishes the signed evaluator result for the referenced task or evidence under the applicable profile. It does not by itself establish authority validity, execution occurrence, completeness, independent observation or adoption by another system. No edge until a first bounded pilot is chosen | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5902118417) |
 
 Supporting projects, listed separately: this vocabulary (crosswalks and match types) and the [Agent Authority Conformance lab](https://github.com/Agent-Authority-Conformance/aps-conformance-suite) (run records with per-claim attribution).
 
@@ -101,13 +102,13 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
  │ receipts    │                │ money moves      │
  └─────────────┘                └──────────────────┘
 
- ┌─────────────┐                ┌─────────────┐
- │   Insight   │                │    Assay    │
- │ signed      │                │ parent of   │
- │ safety      │                │ the adequacy│
- │ evidence    │                │ tool        │
- └─────────────┘                └─────────────┘
-   no boundary proposed in #177 for either yet
+ ┌─────────────┐                ┌─────────────┐                ┌────────────────────┐
+ │   Insight   │                │    Assay    │                │ Default Settlement │
+ │ signed      │                │ parent of   │                │ DefaultVerifier    │
+ │ safety      │                │ the adequacy│                │ independent        │
+ │ evidence    │                │ tool        │                │ evaluation, SAR    │
+ └─────────────┘                └─────────────┘                └────────────────────┘
+   no boundary proposed in #177 for any of these yet
 
 
                          ASSURANCE EDGES
@@ -245,7 +246,7 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 
 ### E9. AEP corpus -> conformance lab driver
 
-- **Producer and artifact.** The AEP conformance corpus for the component tuple published as `aep-certified-2026-09-13-03`: 28 fixtures with a manifest, pinned by component SHA and confirmed by the AEP maintainer.
+- **Producer and artifact.** The AEP conformance corpus for the component tuple published as `aep-certified-2026-09-13-03`: 28 fixtures with a manifest, pinned by component SHA and confirmed by the AEP maintainer. That target is historical and immutable. The current AEP certified target is `aep-certified-2026-09-16-01`, which supersedes `-03` ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-5901735000)). The recorded run's scope, pinned evidence and claim ceiling are unchanged.
 - **Consumer.** An outside driver that reports exactly which layers it independently checked. Importing the WasmAgent semantic evaluator does not count as independent semantic verification, per AEP's own implementer rules.
 - **Pinned artifact.** Lab record [`interop/wasmagent-aep-2026-09-13-03/RUN.md`](https://github.com/Agent-Authority-Conformance/aps-conformance-suite/blob/main/interop/wasmagent-aep-2026-09-13-03/RUN.md), with pinned component SHAs, checksums and byte-reproducible outputs.
 - **Progress.** `pinned`, `reproduced`.

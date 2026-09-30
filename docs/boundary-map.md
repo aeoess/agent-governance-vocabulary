@@ -176,7 +176,7 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 - **What it does not establish.** Independently observed chain execution, live APS currency at execution time, decision-level single use, that any transaction was sent, production use of either project.
 - **Pinned artifact.** Inputs above, report SHA-256 `d2c1bea5…`, reference time `2026-09-19T10:05:00.000Z`, recorded in lab [#138](https://github.com/Agent-Authority-Conformance/aps-conformance-suite/issues/138) and the open record PR [#139](https://github.com/Agent-Authority-Conformance/aps-conformance-suite/pull/139).
 - **Progress.** `pinned`, `reproduced`.
-- **Provenance.** Proposed through aps#163 and built by @imokokok. Run by @aeoess from a fresh clone: `npm run test:aps-priorseal` 26 of 26, report reproduced byte for byte. Claims 2 and 4 are independent (aeoess authored neither PriorSeal's signed objects nor its checks). Claims 1, 3, 5 and 6 have no independent record. @imokokok reported running the original APS verifier, which would be the independent record for claim 1 once its verbatim output is published.
+- **Provenance.** Proposed through aps#163 and built by @imokokok. Run by @aeoess from a fresh clone: `npm run test:aps-priorseal` 26 of 26, report reproduced byte for byte. Claims 2 and 4 are independent (aeoess authored neither PriorSeal's signed objects nor its checks). @imokokok published a Mode A run of the original APS verifier ([#139 comment](https://github.com/Agent-Authority-Conformance/aps-conformance-suite/pull/139#issuecomment-5901343345)). It is added to open lab PR #139 as a separate candidate independent record for claim 1 (commit `6ee1765`), inclusion pending the lab's review of #139. Claims 3, 5 and 6 have no independent record.
 - **Owners.** APS owns the producer fixtures. PriorSeal owns the pair and report.
 - **Remaining.** Review of #139. Independent verification (A1).
 
@@ -261,7 +261,7 @@ These sit outside the runtime action graph. They consume artifacts, corpora or c
 ### A1. Frequency -> E2 artifacts
 
 - **What it would emit.** One result per claim: APS evidence validity, `decision_ref` binding, PriorSeal authorization validity, exact call versus observation, APS cap compliance, temporal validity, and each explicitly unestablished layer with its own result. Own key pins. No import of APS or PriorSeal verifier logic.
-- **Progress.** `scoped` ([scope](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885842512)). No Frequency commit has been designated, and no implementation, mutation, benchmarking or publication involving Frequency is authorized until @altrudev designates one.
+- **Progress.** `scoped` ([scope](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885842512)). @altrudev has started building thin adapters on the Frequency side ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5902671142)) and asked for the pilot inputs and for the baseline to be frozen before any run. The run, its publication and any mutation work (A2) stay gated until he designates the exact Frequency commit.
 - **Owners.** Frequency owns its verifier and results.
 
 ### A2. corpus-adequacy -> Frequency's checker over the E2 corpus

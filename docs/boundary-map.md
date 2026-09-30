@@ -150,7 +150,7 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 
 ### E1. AgentAvow -> APS-side consumer
 
-- **Producer and artifact.** AgentAvow scan attestation for `github/github-mcp-server`, published as [tool-manifest-digest-vectors-v0](https://github.com/AgentAvow/AgentAvow/tree/main/docs/standards/tool-manifest-digest-vectors-v0): one JWS, its `toolManifestDigest`, and five expected outcomes for a consuming gate (digest match, digest mismatch, past expiry, wrong subject, tampered payload). Gate input is three fields: `subject_id`, `observed_manifest_digest`, `evaluation_time`.
+- **Producer and artifact.** AgentAvow scan attestation for `github/github-mcp-server`, published as [tool-manifest-digest-vectors-v0](https://github.com/AgentAvow/AgentAvow/tree/main/docs/standards/tool-manifest-digest-vectors-v0): one JWS, its `scan.toolManifestDigest`, and five expected outcomes for a consuming gate (digest match, digest mismatch, past expiry, wrong subject, tampered payload). Gate input is three fields: `subject_id`, `observed_manifest_digest`, `evaluation_time`.
 - **Consumer.** An APS-side consumer using `agent-passport-system` 7.2.0 primitives (JCS canonicalization, strict Ed25519 verification). Not yet an APS decision context. Using the attestation inside an APS tool decision is blocked on the two mappings below.
 - **Field mappings** (proposed, owners to confirm).
   - Binding from AgentAvow `subject.id` to an APS `requestedToolName`: not evaluated. The subject identifies a repository or server, and `scan.toolDigests` is keyed by file path, so the attestation carries no tool name for a binding either way.
@@ -161,9 +161,9 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 - **What it does not establish.** Which APS tool the attestation is about. That the AgentAvow digest equals any APS metadata pin. Anything about runtime behavior, per the fixture's own claim ceiling.
 - **Pinned artifact.** AgentAvow `4404df2c`, `tool-manifest-digest-v0-vectors.json`, read unchanged.
 - **Progress.** `pinned`, `reproduced`.
-- **Provenance.** Proposed by @kenneives. Run by @aeoess: all 30 expected axis results match, each negative failing exactly its own axis ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5899072203)). A second implementation, run by the consuming project. Not an independent record.
+- **Provenance.** Proposed by @kenneives. Run by @aeoess: all 30 expected axis results match, each negative failing exactly its own axis ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5899072203)). A second implementation, run by the consuming project. Not an independent record. @kenneives confirmed both `false_analog` mappings from the AgentAvow side ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-5905478185)), and the fixture README states both boundaries at AgentAvow [`50c144f`](https://github.com/AgentAvow/AgentAvow/commit/50c144f).
 - **Owners.** AgentAvow owns the fixture and its claim ceiling. APS owns the consumer.
-- **Remaining.** Whether the consumer is published as a profile beside the fixture (@kenneives' call). A binding from tool name to subject, which is the APS side's to propose.
+- **Remaining.** A binding from tool name to subject, which is the APS side's to propose. The consumer is published at APS [`fd47f34`](https://github.com/aeoess/agent-passport-system/commit/fd47f34) under `examples/interop/agentavow/`, and the fixture README links it with the second-implementation label at AgentAvow [`d2760c6`](https://github.com/AgentAvow/AgentAvow/commit/d2760c6).
 
 ### E2. APS -> PriorSeal
 
@@ -235,7 +235,7 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 - **Provenance.** Proposed by @darklordVirtual.
 - **Remaining.** A consuming verifier.
 
-### E8. AgentAvow `tool_manifest_digest` <-> REMORA declared tool set
+### E8. AgentAvow `scan.toolManifestDigest` <-> REMORA declared tool set
 
 - **Producer and artifact.** The digest from E1 on one side, REMORA's declared tool set for a runtime configuration on the other.
 - **Field mappings.** Not evaluated. Whether the two describe the same set, and at what time, is the question the edge would answer.
@@ -266,16 +266,16 @@ These sit outside the runtime action graph. They consume artifacts, corpora or c
 
 ### A2. corpus-adequacy -> Frequency's checker over the E2 corpus
 
-- **What it would emit.** Which seeded faults the pinned E2 corpus detects, with a positive and an inert control. Fault table at claim level: [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5892629762). Rows without a pinned negative input are expected to survive and would be reported as corpus discrimination limits, not verifier failures.
+- **What it would emit.** Which seeded faults the pinned E2 corpus detects, with a positive and an inert control. Fault table at claim level: [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5892629762). Rows without a pinned negative input are expected to survive and would be reported as corpus discrimination limits, not verifier failures. Scoring follows @Rul1an's note ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-5908062490)). A crash or a missing result does not count as detection. The report would count as detections only changes in the targeted claim and list any crash beside them. That differs from A3, where the agreed reading counts crash kills and labels them.
 - **Progress.** `scoped`. Nothing has been run. It runs only after Frequency publishes its own result and @altrudev consents. The full report goes to the three maintainers first, and public release needs each one's separate approval.
-- **Owners.** corpus-adequacy owns the method and report.
+- **Owners.** corpus-adequacy owns the tool and the report.
 
 ### A3. corpus-adequacy -> REMORA `evidence-sufficiency-v1`
 
 - **What it emits.** An adequacy report over REMORA's corpus.
 - **Progress.** Run reported, review in progress.
-- **Provenance.** @darklordVirtual reports that the first run found real gaps in what the corpus can distinguish, tracked in [REMORA-research#629](https://github.com/darklordVirtual/REMORA-research/issues/629) ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5895284356)). Not inspected by the editors of this file.
-- **Owners.** REMORA owns the corpus. corpus-adequacy owns the method.
+- **Provenance.** @darklordVirtual reports that the first run found real gaps in what the corpus can distinguish, tracked in [REMORA-research#629](https://github.com/darklordVirtual/REMORA-research/issues/629) ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5895284356)). Not inspected by the editors of this file. @Rul1an, who wrote the tool and the fault definitions and ran both runs, reports them as public ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-5908062490)). v1.0 ran at REMORA `31c4060` ([report](https://github.com/Rul1an/remora-es-v1-adequacy/blob/05f7a087b6462400f4eb9ea9e4fb7d4aa023ccd3/REPORT.md)). v1.1 ran at `57ee0351`, before the squash merge as `8772d85` ([report](https://github.com/corpus-adequacy/remora-es-v11-adequacy/blob/9f3851995bbe395e510dde9ce9a03ebb6f1f965a/REPORT.md)), with the maintainer's survivor classification in [corpus-adequacy/remora-es-v11-adequacy#1](https://github.com/corpus-adequacy/remora-es-v11-adequacy/issues/1). By his own statement neither record is independent, both reports count crash kills and label them, and a v1.2 rerun under maintainer review is not part of this entry. The editors checked that these links resolve and did not review the reports.
+- **Owners.** REMORA owns the corpus and the survivor classification. corpus-adequacy owns the tool and the run reports.
 
 ## Example composition (hypothetical)
 

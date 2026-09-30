@@ -4,33 +4,43 @@
 # scan-attestation envelope shape to the canonical vocabulary defined
 # in vocabulary.yaml v0.2.0.
 #
+# AgentGraph is now published as AgentAvow (https://agentavow.com). The
+# issuer identity is unchanged: `did:web:agentgraph.co`, kid
+# `agentgraph-security-v1`, JWKS and DID document on agentgraph.co. The
+# registry key and `system.name` stay `AgentGraph` for continuity, per
+# #82. The scan-attestation fields below were re-read against the live
+# scan endpoint on 2026-09-30.
+#
 # AgentGraph is the canonical (and only) production issuer of
 # `security_posture` per vocabulary.yaml — wallet-discoverable signals
 # whose signed subject is the artifact (`{owner}/{repo}` GitHub
-# repository, optionally commit-pinned) with the wallet/DID acting as a
-# lookup key rather than the signed principal. AgentGraph also serves
-# as substrate maintainer for CTEF (Composable Trust Evidence Format)
-# v0.3.x — JCS-canonical, Ed25519-signed evidence, byte-match validated
-# across 8 independent implementations + 7 canonicalizers + 2
-# reader-runnable verifier scripts. See
-# /.well-known/interop-harness.json for the full receipt aggregator.
+# repository; the scanned ref is recorded in the signed coverage block)
+# with the wallet/DID acting as a lookup key rather than the signed
+# principal. AgentGraph also serves as substrate maintainer for CTEF
+# (Composable Trust Evidence Format) v0.3.x — JCS-canonical,
+# Ed25519-signed evidence, byte-match validated across 9
+# implementations + 8 independent canonicalizers + 2 reader-runnable
+# verifier scripts (counts per /.well-known/interop-harness.json,
+# `as_of` 2026-05-05). See that file for the full receipt aggregator.
 
 system:
   name: AgentGraph
-  home: https://agentgraph.co
-  repo: https://github.com/agentgraph-co/agentgraph
+  display_name: "AgentAvow (fka AgentGraph)"
+  home: https://agentavow.com
+  repo: https://github.com/AgentAvow/AgentAvow
   spec: https://agentgraph.co/.well-known/cte-test-vectors.json
   jwks: https://agentgraph.co/.well-known/jwks.json
   did: did:web:agentgraph.co
   role: >
     Substrate maintainer for CTEF (Composable Trust Evidence Format)
-    v0.3.x; static security scanner for AI agent distribution surfaces
-    (x402 Bazaar, OpenClaw, MCP Registry, npm + PyPI agent packages,
-    sample of Microsoft Dreamspace AI-generated Solidity). Issues
-    Ed25519-signed scan attestations bound to `{owner}/{repo}` artifact
-    keys, returning a 0-100 numeric score + A-F grade with weekly
-    re-scan cadence. Canonical (and currently sole) production issuer
-    of `security_posture` per vocabulary.yaml.
+    v0.3.x; static security scanner for the tools an AI agent connects
+    to (GitHub repositories, npm / PyPI / crates / Docker / Hugging
+    Face packages, OpenClaw skills, live MCP server endpoints). Issues
+    Ed25519-signed scan attestations returning a 0-100 numeric score +
+    A-F grade, each valid for 24 hours from issuance. This crosswalk
+    maps the repository surface (`{owner}/{repo}` artifact keys).
+    Canonical (and currently sole) production issuer of
+    `security_posture` per vocabulary.yaml.
   license: Apache-2.0
   spec_alignment:
     ctef_version: "v0.3.1"
@@ -42,7 +52,7 @@ license: Apache-2.0
 
 maintainer:
   github: kenneives
-  confirmed_at: "2026-05-07"
+  confirmed_at: "2026-09-30"
 
 issuer: "did:web:agentgraph.co"
 
@@ -64,17 +74,23 @@ signal_types:
       surface); `behavioral` claim_type reserved for runtime signals
       where applicable, but AgentGraph delegates behavioral runtime
       evidence to Dominion Observatory under CTEF v0.3.2 §4.5 URI-
-      reference pattern.
+      reference pattern (delegation as recorded 2026-05; not
+      re-verified in the 2026-09-30 refresh — see the behavioral gap
+      note).
     match: exact
     notes: >
       AgentGraph IS the canonical issuer for this signal_type per
       vocabulary.yaml — the signed subject is the artifact
-      (`{owner}/{repo}` GitHub repository, optionally commit-pinned),
-      and the wallet/DID is a lookup key rather than the signed
-      principal. Each scan returns a point-in-time A-F grade + 0-100
-      score backed by a JWS-signed attestation; scans don't expire,
-      with a weekly re-scan cadence (Sunday 02:00 UTC) maintaining
-      freshness. Historical timeline available at
+      (`subject.id` = `github:{owner}/{repo}`; the scanned ref is
+      recorded in `scan.coverage`), and the wallet/DID is a lookup key
+      rather than the signed principal. Each scan returns a
+      point-in-time 0-100 score + A-F grade backed by a JWS-signed
+      attestation. The signed payload carries `scannedAt`, `issuedAt`
+      and `expiresAt`, and the attestation expires 24 hours after
+      issuance. On-demand results are cached for one hour and a weekly
+      job re-scans tracked repositories. The numeric score and the
+      tier are inside the signed payload; the letter grade is returned
+      beside the JWS, not inside it. Historical timeline available at
       `/api/v1/public/scan/{owner}/{repo}/history` (rate-limited
       10/min/IP per `src/config.py.rate_limit_history_reads_per_minute`
       — see the §103 hardening commit `8482010`).
@@ -85,26 +101,54 @@ signal_types:
     kid: agentgraph-security-v1
     jwks_uri: https://agentgraph.co/.well-known/jwks.json
     canonicalization: "RFC 8785 (JCS)"
-    default_ttl_seconds: null  # scans don't expire; weekly re-scan keeps freshness
-    rescan_cadence: "weekly, Sunday 02:00 UTC"
+    default_ttl_seconds: 86400  # `expiresAt` = `issuedAt` + 24h, inside the signed payload
+    rescan_cadence: "weekly re-scan job for tracked repositories; on-demand scans cached 1 hour"
     subject_identifier: >
-      `{owner}/{repo}` artifact key (GitHub repository), optionally
-      commit-pinned. Wallet/DID is a discoverability lookup key, NOT
-      the signed principal.
+      Signed `subject.id` = `github:{owner}/{repo}` with `subject.repo`
+      = `{owner}/{repo}` (GitHub repository). The scanned ref is
+      recorded in `scan.coverage.linked_repo`. Wallet/DID is a
+      discoverability lookup key, NOT the signed principal. Subject
+      identifiers for the package, skill and MCP-endpoint surfaces are
+      not mapped in this crosswalk.
 
+    # JWS payload of the scan attestation (`type:
+    # SecurityPostureAttestation`), as emitted by the scan endpoint on
+    # 2026-09-30. The payload is the RFC 8785 canonical bytes; the
+    # compact JWS is returned in the response's `jws` field.
     signed_payload_fields:
-      - entity_id            # UUID — internal entity identifier
-      - did                  # string — issuer DID (did:web:agentgraph.co)
-      - repo                 # string — `{owner}/{repo}` artifact key
-      - score                # integer 0-100 — composite security score
-      - grade                # string — A / B / C / D / F
-      - score_timeline       # array of {recorded_at, score} — historical points
-      - framework_scans      # array of {framework, scan_result, vulnerabilities_count, scanned_at}
-      - jws                  # compact JWS, EdDSA / Ed25519 (kid agentgraph-security-v1)
+      - "@context"               # https://schema.agentgraph.co/attestation/security/v1
+      - type                     # "SecurityPostureAttestation"
+      - issuer                   # {id: did:web:agentgraph.co, name, url}
+      - subject                  # {id: "github:{owner}/{repo}", repo: "{owner}/{repo}"}
+      - scannedAt                # when the analysis ran (evidence freshness)
+      - issuedAt                 # when this JWS was minted
+      - expiresAt                # issuedAt + 24h
+      - scan.trustScore          # integer 0-100
+      - scan.trustTier           # string tier
+      - scan.result              # summary result string
+      - scan.findings            # severity counts, per-category counts, items with file_path + line_number
+      - scan.positiveSignals     # array of strings
+      - scan.categoryScores      # per-category sub-scores
+      - scan.filesScanned        # with filesTotal + sampled: coverage disclosure
+      - scan.filesTotal
+      - scan.sampled             # boolean — true when the file sample cap applied
+      - scan.primaryLanguage
+      - scan.toolManifestDigest  # sha256 folded over scan.toolDigests; null when no tool definitions were observed
+      - scan.toolDigests         # {definition file path: sha256}
+      - scan.coverage            # when present: surface, scan_depth, db_snapshots, evidence_anchors, linked_repo
+      - scan.supplyChain         # when present
+      - recommendedLimits        # {requests_per_minute, max_tokens_per_call, require_user_confirmation}
+      - toolDrift                # present only when tool definitions changed since the previous scan
+    # The /history endpoint returns a separate JWS (payload: `@context`,
+    # `type`, `subject`, `history`, `issuedAt`, `expiresAt`; expires one
+    # hour after issuance) beside `score_timeline` and `framework_scans`
+    # in the response body.
 
     endpoints:
-      scan:                 "GET https://agentgraph.co/api/v1/public/scan/{owner}/{repo}"
-      history:              "GET https://agentgraph.co/api/v1/public/scan/{owner}/{repo}/history"
+      # The API is served on agentavow.com and, unchanged, on
+      # agentgraph.co. Identity documents stay on agentgraph.co.
+      scan:                 "GET https://agentavow.com/api/v1/public/scan/{owner}/{repo}"
+      history:              "GET https://agentavow.com/api/v1/public/scan/{owner}/{repo}/history"
       jwks:                 "https://agentgraph.co/.well-known/jwks.json"
       did_document:         "https://agentgraph.co/.well-known/did.json"
       cte_test_vectors:     "https://agentgraph.co/.well-known/cte-test-vectors.json"
@@ -113,9 +157,10 @@ signal_types:
 
     conformance:
       ctef_version: "v0.3.1 frozen"
-      ctef_spec_anchor: "agentgraph-co/agentgraph@8b44390"
-      byte_match_validated_implementations: 8
-      independent_canonicalizers: 7
+      ctef_spec_anchor: "AgentAvow/AgentAvow@8b44390"  # repository renamed from agentgraph-co/agentgraph; same commit
+      # Counts per interop-harness.json, `as_of` 2026-05-05.
+      byte_match_validated_implementations: 9
+      independent_canonicalizers: 8
       reader_runnable_verifier_scripts:
         - "verify-aps-byte-match.mjs (arian-gogani/nobulex)"
         - "verify-ctef-byte-match.mjs (arian-gogani/nobulex)"
@@ -161,7 +206,8 @@ signal_types:
       signals delegated to Dominion Observatory under CTEF v0.3.2 §4.5
       URI-reference pattern (Path C — live measurement, not fixture-
       embedding). Primary issuers: MolTrust, Dominion Observatory,
-      AgentLair.
+      AgentLair. Delegation as recorded 2026-05; not re-verified in
+      the 2026-09-30 refresh.
 
   completion_ratio:
     canonical: completion_ratio
@@ -275,7 +321,7 @@ descriptor_dimensions:
   security_posture:
     enforcement_class: advisory
     enforcement_notes: >
-      AgentGraph emits signed evidence (score, grade, framework_scans);
+      AgentGraph emits signed evidence (score, tier, findings);
       refusal authority lives with the consuming agent or policy layer.
       The `score` is composable input for downstream gating, not a
       direct refusal-bearing primitive.
@@ -283,11 +329,11 @@ descriptor_dimensions:
     validity_temporal: at_issuance
     validity_notes: >
       Each scan is a point-in-time snapshot bound to the artifact at
-      the time of scanning. `framework_scans[].scanned_at` records the
-      per-framework freshness; `score_timeline` provides the historical
-      trajectory. Scans don't expire, but freshness drifts between the
-      Sunday 02:00 UTC re-scan cadence and the consumer's evaluation
-      time — consumers should consult `score_timeline` for currency.
+      the time of scanning. The signed payload carries `scannedAt`
+      (when the analysis ran), `issuedAt` and `expiresAt` (24 hours
+      after issuance). A consumer evaluates freshness against
+      `expiresAt` and reads evidence age from `scannedAt`. The
+      `/history` endpoint provides the score trajectory.
 
     refusal_authority: consumer_policy
     refusal_notes: >
@@ -306,7 +352,7 @@ descriptor_dimensions:
     replay_class: decision_replay
     replay_notes: >
       Given the JWS attestation + JWKS, any verifier can replay the
-      signature decision offline and confirm the score/grade/findings
+      signature decision offline and confirm the score/tier/findings
       at the time of issuance. Full re-scan replay (re-running the
       static-analysis pipeline from source) is not part of the receipt
       surface — that requires re-querying the scan endpoint.
@@ -340,9 +386,9 @@ envelope:
 # ─────────────────────────────────────────────────
 transport:
   auth: "none for /api/v1/public/scan/* (rate-limited per src/config.py)"
-  api_base: "https://agentgraph.co/api/v1"
-  scan_endpoint: "https://agentgraph.co/api/v1/public/scan/{owner}/{repo}"
-  history_endpoint: "https://agentgraph.co/api/v1/public/scan/{owner}/{repo}/history"
+  api_base: "https://agentavow.com/api/v1"  # also served, unchanged, on agentgraph.co
+  scan_endpoint: "https://agentavow.com/api/v1/public/scan/{owner}/{repo}"
+  history_endpoint: "https://agentavow.com/api/v1/public/scan/{owner}/{repo}/history"
   history_rate_limit: "10 requests / minute / IP (src/config.py.rate_limit_history_reads_per_minute)"
   jwks_endpoint: "https://agentgraph.co/.well-known/jwks.json"
   did_document_endpoint: "https://agentgraph.co/.well-known/did.json"
@@ -377,6 +423,14 @@ gaps:
       interop-harness.json registry — substrate-and-primitive
       separation is the design principle.
 
+      Refresh note, 2026-09-30: the delegation and the Dominion
+      Observatory figure above are as recorded in 2026-05 and were not
+      re-verified. Separately, the scan API now offers an opt-in
+      sandboxed behavioral check for npm and PyPI packages
+      (`?behavioral=true`). Its result is returned beside the static
+      verdict and is outside the signed payload, so it is not mapped
+      to `behavioral_trust` here.
+
 
 # ─────────────────────────────────────────────────
 # CROSSWALK METADATA
@@ -384,20 +438,22 @@ gaps:
 crosswalk_metadata:
   authored_by: "@kenneives"
   vocabulary_version: "0.2.0"
-  last_reviewed: "2026-05-07"
+  last_reviewed: "2026-09-30"
   related_artifacts:
     - "https://agentgraph.co/.well-known/cte-test-vectors.json"  # CTEF v0.3.1 frozen wire format
     - "https://agentgraph.co/.well-known/interop-harness.json"   # 8-impl byte-match receipt aggregator
     - "https://agentgraph.co/.well-known/jwks.json"              # public key set
     - "https://agentgraph.co/.well-known/did.json"               # did:web:agentgraph.co document
   ctef_substrate_evidence:
-    implementations_byte_match_validated: 8
-    independent_canonicalizers: 7
+    # Counts per interop-harness.json, `as_of` 2026-05-05.
+    implementations_byte_match_validated: 9
+    independent_canonicalizers: 8
     reader_runnable_verifier_scripts: 2
     cross_repository_receipt_mirrors: 2
     fail_closed_negative_paths: 2
-    spec_anchor_commit: "agentgraph-co/agentgraph@8b44390"
+    spec_anchor_commit: "AgentAvow/AgentAvow@8b44390"
   next_revisions:
-    - "Refresh signed_payload_fields once CTEF v0.3.2 §A Conformance Appendix publishes (mid-May window) and the canonical-bytes diff fixture at corpollc/qntm#15 lands as a verifier-reproducible artifact."
-    - "Add a `behavioral` claim_type entry under signal_types if/when AgentGraph begins issuing runtime evidence directly (currently delegated to Dominion Observatory via URI-reference)."
+    - "Map the package, skill and MCP-endpoint surfaces (subject identifiers and per-surface digests) in a separate PR."
+    - "Decide a mapping for the opt-in behavioral check in a separate PR. It is outside the signed payload today, so it stays unmapped until it is signed."
+    - "Re-verify the Dominion Observatory delegation notes, or remove them."
     - "Populate maintenance_health crosswalk row (currently no_mapping) once the v0.4 §6.x.y claim_subtype proposal from openclaw-skill-quality-analyzer / Miaoqu AI is adopted."

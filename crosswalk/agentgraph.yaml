@@ -441,7 +441,7 @@ crosswalk_metadata:
   last_reviewed: "2026-09-30"
   related_artifacts:
     - "https://agentgraph.co/.well-known/cte-test-vectors.json"  # CTEF v0.3.1 frozen wire format
-    - "https://agentgraph.co/.well-known/interop-harness.json"   # 8-impl byte-match receipt aggregator
+    - "https://agentgraph.co/.well-known/interop-harness.json"   # byte-match receipt aggregator
     - "https://agentgraph.co/.well-known/jwks.json"              # public key set
     - "https://agentgraph.co/.well-known/did.json"               # did:web:agentgraph.co document
   ctef_substrate_evidence:

@@ -13,6 +13,7 @@
 #
 #   1. `action_ref` is sha256(agent_id UTF-8 || action_type UTF-8 ||
 #      scope UTF-8 || timestamp_ms int64 big-endian).
+#      SUPERSEDED for action_ref, see the 2026-09-29 correction below.
 #   2. `delegation_ref` is sha256(passport_uri || DelegationGrant.signature).
 #   3. `delegation_ref: null` for root passport actions (no synthetic root
 #      sentinel).
@@ -26,8 +27,26 @@
 #
 # Home:        https://argentum.rgiskard.xyz
 # Contributor: @giskard09
-# Status:      Proposed (v0.1). Mycelium-side review complete; giskard09
-#              confirmed values folded into v0.1 on 2026-05-13.
+# Status:      Proposed (v0.2). v0.1 values were confirmed by giskard09 on
+#              2026-05-13. The v0.2 action_ref correction below is pending
+#              giskard09's review.
+#
+# 2026-09-29 CORRECTION, action_ref only.
+#   v0.1 said Mycelium derives action_ref by raw byte concatenation with an
+#   int64 timestamp and that the identifier is therefore not byte-joinable
+#   with APS. That is out of date. argentum-core's action_ref spec v1.2
+#   (docs/spec/action-ref.md, checked at argentum-core 0a41ee7) defines v1 as
+#   SHA-256 over the RFC 8785 JCS bytes of {agent_id, action_type, scope,
+#   timestamp}, with timestamp an RFC 3339 UTC string with 3-digit
+#   milliseconds, and an ASCII-only, non-empty-scope input Domain enforced
+#   before hashing (OUT_OF_PROFILE_DOMAIN).
+#   The APS counterpart is the external action-ref-v1 correlation profile
+#   (computeExternalActionRefV1, conformance/action-ref-v1 in
+#   aeoess/agent-passport-system), not APS's native action_ref.
+#   The delegation_ref recipe, the null-root convention, the composition
+#   convention, the TrailRecord envelope and the descriptor dimensions are
+#   carried over from v0.1 unchanged. None of them was reverified by
+#   argentum-core#35 or by this correction.
 # =============================================================================
 
 system:
@@ -58,7 +77,7 @@ maintainer:
 
 system_attributes:
   hash_family: sha-256
-  canonicalization_profile: implementation-defined  # giskard09 confirmed: raw byte concatenation (UTF-8 strings + int64 big-endian for timestamp_ms); not a standard JCS variant, so mapped to the catch-all enum value
+  canonicalization_profile: implementation-defined  # v0.1, confirmed by giskard09 on 2026-05-13, not reverified. This dimension is the rule applied before signing. Separately, action_ref hashing uses RFC 8785 JCS as of argentum action-ref spec v1.2, see signal_types.governance_attestation.
   signature_capability: classical  # giskard09 confirmed: Ed25519
 
 issuers_in_production:
@@ -94,40 +113,61 @@ signal_types:
       # Field-name spellings (snake_case `action_ref` / `delegation_ref`)
       # match the Mycelium TrailRecord wire shape. Confirmed by giskard09
       # on review.
-      - "action_ref ← sha256(agent_id UTF-8 || action_type UTF-8 || scope UTF-8 || timestamp_ms int64 big-endian)"
+      - "action_ref (v1) ← SHA-256(RFC 8785 JCS of {agent_id, action_type, scope, timestamp}), timestamp as an RFC 3339 UTC string with 3-digit milliseconds, ASCII-only non-empty-scope Domain enforced before hashing (argentum action-ref spec v1.2)"
       - "delegation_ref ← sha256(passport_uri || DelegationGrant.signature)"
       - "delegation_ref: null for root passport actions (no synthetic root sentinel)"
       - "Multi-agent composition: N×TrailRecord with independent delegation_ref values per record"
     mycelium_definition: >
       A TrailRecord is a signed governance attestation that records an
-      AI-agent action and its authority chain. The four adoption points
-      above record Mycelium's own action_ref and delegation_ref
-      computation rules, as confirmed by giskard09, with the null-root
-      and per-agent composition conventions. The crosswalk maps the
+      AI-agent action and its authority chain. The fields above record
+      Mycelium's action_ref derivation as of argentum action-ref spec v1.2,
+      and its delegation_ref rule and null-root and per-agent composition
+      conventions as confirmed by giskard09 in v0.1. The crosswalk maps the
       field names (snake_case action_ref and delegation_ref) and the
       content-addressing role onto the APS governance-attestation signal
-      type; each system's byte recipe is its own.
+      type. The action_ref v1 byte recipe is shared over the common
+      accepted domain. The delegation_ref recipe remains
+      Mycelium-specific.
     match: partial
     divergence: >
-      Mycelium derives action_ref by raw byte concatenation with an
-      int64 big-endian timestamp, a different preimage from the APS
-      action_ref (RFC 8785 JCS over a JSON object with a string
-      timestamp), so the identifiers are not byte-joinable across the
-      two systems. The correspondence is at the field-name and
-      content-addressing-role level; the TrailRecord envelope is
-      Mycelium-specific while APS-side envelopes are DelegationGrant and
-      PaymentReceipt.
+      For v1 inputs accepted by both profiles, APS and argentum-core
+      canonicalize the same four-field preimage and derive the same SHA-256
+      digest. The profiles are not fully equivalent because their accepted
+      input domains differ. The APS external action-ref-v1 profile accepts
+      non-ASCII values (published vector av-003) and an empty scope
+      (published vector av-007). argentum-core action-ref spec v1.2 rejects
+      both with OUT_OF_PROFILE_DOMAIN before any hashing, non-ASCII since the
+      2026-07-29 Domain enforcement and empty scope since the 2026-08-15
+      change (issue #48). So the digest recipe is exact over the shared
+      accepted domain, and the mapping as a whole stays partial. argentum's
+      v2 derivation (domain-tagged, "v2:" prefix) has no APS external
+      counterpart and is not mapped here. APS's native action_ref is a
+      different identifier and is not mapped here either. The TrailRecord
+      envelope is Mycelium-specific, while APS-side envelopes are
+      DelegationGrant and PaymentReceipt.
     notes: >
-      v0.1 captures the four adoption points only. Per-envelope wire
-      fields, signature semantics, and descriptor enforcement_class
-      land in a follow-up after giskard09 confirms Mycelium-side
-      semantics. This crosswalk does NOT claim production integration;
-      it captures the byte-contract alignment so future cross-system
-      replay and audit join paths can be built against a stable, shared
-      identifier surface.
+      Evidence for the action_ref correction. argentum-core#35 at
+      argentum-core 62930b59 (2026-07-31): argentum's validators
+      action-ref-v1-domain-negative 7 of 7 and action-ref-v2 3 of 3 passed,
+      all five malformed timestamp variants were rejected with zero SHA-256
+      constructions during the call, APS vector av-007 was accepted with the
+      expected digest, and every accepted four-field preimage in argentum's
+      fixtures was replayed and matched. av-007 parity held at 62930b59 and
+      no longer holds at current argentum main, which rejects empty scope
+      since issue #48. A spot check on 2026-09-29, argentum-core 0a41ee7
+      against APS 809be18: one ASCII tuple gave the same digest on both
+      sides (2fa931f3aae02353ac3ba41b4819c6b4cc67edd507beff3782b5815eeeca89d0),
+      and argentum rejected an empty scope and a non-ASCII action_type with
+      OUT_OF_PROFILE_DOMAIN. The v2 check in #35 is evidence about argentum's
+      v2 vectors only, not an APS and argentum v2 equivalence. This
+      crosswalk does NOT claim production integration. The delegation_ref
+      and TrailRecord material is carried over from v0.1 and has not been
+      reverified.
     cross_references:
       - "APS adoption thread (4-point byte-contract adoption): aeoess/agent-passport-system#1, giskard09 2026-05-13 20:41:33Z"
-      - "APS-side action_ref reference: src/v2/types.ts on aeoess/agent-passport-system"
+      - "action_ref correction evidence: giskard09/argentum-core#35 (verified at 62930b59, comment 2026-07-31)"
+      - "argentum action_ref spec v1.2: docs/spec/action-ref.md on giskard09/argentum-core"
+      - "APS counterpart: external action-ref-v1 correlation profile, computeExternalActionRefV1 and conformance/action-ref-v1 on aeoess/agent-passport-system (not APS native action_ref)"
       - "APS-side delegation_ref content-addressed form: APS V2 delegation surface; exact path pending confirmation"
 
   compliance_risk:
@@ -190,7 +230,7 @@ descriptor_dimensions:
     note_validity: >
       v0.1 uses at_processing because the TrailRecord binds the action
       timestamp and is evaluated as an issued audit artifact, not as an
-      ongoing authorization grant. The action_ref binds a timestamp_ms
+      ongoing authorization grant. The action_ref binds a timestamp
       field so the record self-pins to its action time; the TrailRecord
       is valid from issuance and persistent thereafter. Confirm on
       review whether Mycelium also enforces a TTL or validity window
@@ -209,7 +249,7 @@ descriptor_dimensions:
       giskard09 on review. full_replay promotion deferred pending a
       future wire-shape decision about publishing the action_ref /
       delegation_ref preimage fields (agent_id, action_type, scope,
-      timestamp_ms; passport_uri, DelegationGrant.signature) alongside
+      timestamp; passport_uri, DelegationGrant.signature) alongside
       each record so consumers can recompute the hashes from canonical
       bytes standalone.
 
@@ -241,6 +281,10 @@ descriptor_dimensions:
 #   5. SYSTEM_ATTRIBUTES. declared at top level: SHA-256 hash family,
 #      raw byte concatenation canonicalization (UTF-8 strings + int64
 #      big-endian for timestamp_ms), Ed25519 signature capability.
+#      The old raw-byte-concatenation action_ref statement is superseded
+#      by the 2026-09-29 correction above. The top-level
+#      canonicalization_profile remains the v0.1 signing-envelope
+#      metadata and was not reverified here.
 #
 #   6. ISSUERS_IN_PRODUCTION. argentum.rgiskard.xyz declared at top
 #      level as the live reference implementation under the adopted

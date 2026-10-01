@@ -14,4 +14,4 @@ Nobody edits the generated page. Change a record, then run:
     npm run build:map
     npm run check:map
 
-`check:map` rejects broken references, duplicate identifiers, independence without authorship, evidence without a pin, a confirmation without a link, an edge cited for a role it does not exercise, an end-to-end result that is not an end-to-end run covering every pin on the journey, and a stale page. It does not check that any claim is true.
+`check:map` rejects broken references, duplicate identifiers, independence without authorship, evidence without a pin, a confirmation without a link, an edge cited for a role it does not exercise, an end-to-end reference that is not an end-to-end run record with a source link covering every pin on the journey, and a stale page. It checks references and declared evidence scope. It does not check that any claim is true or that a reported run executed. A reported end-to-end run is shown as a reference not validated by this checker, with its review state and the gaps still open.

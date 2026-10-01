@@ -1,0 +1,11 @@
+id: A1
+kind: assurance
+producer: {project: frequency, capabilities: [verification.per_claim]}
+observes: E2
+artifact: Frequency per-claim results over the E2 pinned artifacts
+proposed_by: {who: altrudev, ref: "https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885842512"}
+pins:
+  - {repo: altrudev/Frequency-Federation-Review, commit: 4162622af24c94efb843f53aa27940ffd1256ad6, tag: aps-priorseal-v0.1.1-review}
+evidence: [ev-a1-preflight-author, ev-a1-preflight-rerun-aeoess]
+limitations: [APS trust pins equal the fixture's published test keys, preflight only, formal run not run or published]
+does_not_establish: [formal pilot result, live execution, independent witness, adoption]

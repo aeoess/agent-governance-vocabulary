@@ -1,0 +1,10 @@
+id: ev-a1-preflight-author
+type: preflight
+source: https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5935328122
+record_state: development preflight, explicitly not the formal pilot result
+runner: altrudev
+runner_authored: [frequency adapter]
+independent_for: []
+not_independent_for: [all claims, author of the checker]
+results_as_emitted: {ESTABLISHED: 14, CONTRADICTED: 3, NOT_ESTABLISHED: 5}
+reviews: []

@@ -1,0 +1,12 @@
+id: ev-a1-preflight-rerun-aeoess
+type: preflight_rerun
+source: local, 2026-10-01, fresh clone per capsules/aps-priorseal-v0.1/RUN.md at 4162622a
+record_state: local only, not published
+runner: aeoess
+runner_authored: [aps fixtures]
+independent_for: []
+not_independent_for: [all aps claims, runner authored the aps fixtures]
+results_as_emitted: {ESTABLISHED: 14, CONTRADICTED: 3, NOT_ESTABLISHED: 5}
+reviews:
+  - {by: aeoess, date: "2026-10-01", revision: 4162622af24c94efb843f53aa27940ffd1256ad6, method: "fresh clone, RUN.md command, exit 0"}
+note: Trust pins for APS equal the fixture's own published test keys, so signature claims mean valid under those keys.

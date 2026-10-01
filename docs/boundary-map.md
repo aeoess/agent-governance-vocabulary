@@ -192,7 +192,7 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 - **Progress.** `pinned`, `reproduced`.
 - **Provenance.** Reported by @aeoess in #35 and fixed by @giskard09. Rerun by @aeoess at `62930b59` ([comment](https://github.com/giskard09/argentum-core/issues/35#issuecomment-5138236932)): argentum's validators `action-ref-v1-domain-negative` 7 of 7 and `action-ref-v2` 3 of 3, all five timestamp variants rejected with zero SHA-256 constructions during the call, `av-007` accepted with the expected digest, every accepted 4-field preimage in the fixtures replayed and matching. The validators are argentum's, so that part is independent of the runner. The parity side uses the APS helper, authored by the runner.
 - **Owners.** argentum-core owns the derivation and its sets. APS owns the helper and its vectors.
-- **Remaining.** The existing [`crosswalk/mycelium-trails.yaml`](../crosswalk/mycelium-trails.yaml) is v0.1 from May, calibrated against argentum spec 0.4.0, and has not been checked against the profile fixed in #35. The maintained crosswalk @giskard09 asked for does not exist yet. APS owes that refresh.
+- **Remaining.** The `action_ref` portion of [`crosswalk/mycelium-trails.yaml`](../crosswalk/mycelium-trails.yaml) was refreshed against argentum action-ref spec v1.2 in #180, merged 2026-10-01, with @giskard09's approval.
 
 ### E4. AgentAvow -> PIC
 

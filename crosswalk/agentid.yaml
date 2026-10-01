@@ -1,41 +1,59 @@
 # crosswalk/agentid.yaml
 #
 # Maps AgentID's internal naming and verify-endpoint payload to the
-# canonical vocabulary defined in vocabulary.yaml.
+# canonical vocabulary defined in vocabulary.yaml v0.2.0.
 #
-# AgentID is the identity layer for AI agents — `did:agentid:<id>`
-# native DID method, Ed25519 cryptographic binding, JCS RFC 8785
-# canonical receipts. Listed in `issuers_in_production` for
-# `trust_verification` and `completion_ratio`.
+# AgentID is the identity layer for AI agents. Each agent holds two
+# equivalent DID forms: `did:web:getagentid.dev:agent:<agent_id>`
+# (the form `/verify` emits as `did` / `subject_did`) and
+# `did:agentid:<agent_id>` (emitted as `did_agentid`). The two are
+# cross-linked via `alsoKnownAs` in the DID document and resolve
+# through the same DIF Universal Resolver binding. Ed25519 signatures
+# over the receipt compound digest are publicly verifiable against the
+# JWKS. Listed in `issuers_in_production` for `trust_verification` and
+# `completion_ratio`.
 #
-# Spec / endpoint surface aligned with CTEF v0.3.1 frozen substrate
-# at commit `89ebf2e` ("feat: align AgentID endpoints with CTEF v0.3.1
-# frozen surface", 2026-04-24).
+# DID method spec: https://getagentid.dev/specs/did-method-agentid-v1.0
+# (canonical source:
+# https://github.com/haroldmalikfrimpong-ops/agentid/blob/main/specs/did-method-agentid-v1.0.md).
+# Endpoint surface aligned with CTEF v0.3.1; the live field list below
+# was re-read against `/verify` on 2026-09-30.
 
 system:
   name: AgentID
   home: https://getagentid.dev
   repo: https://github.com/haroldmalikfrimpong-ops/getagentid
+  spec: https://getagentid.dev/specs/did-method-agentid-v1.0
   jwks: https://getagentid.dev/.well-known/jwks.json
   role: >
     Identity layer for AI agents. Issues cryptographic identity
-    attestations under the `did:agentid:` DID method, with Ed25519
-    signatures (kid `agentid-2026-03`, alg `EdDSA`) over JCS-canonical
-    receipts. Verify endpoint emits `claim_type: "identity"` aligned
-    with the CTEF v0.3.1 four-layer claim split, including
+    attestations for agents identified by
+    `did:web:getagentid.dev:agent:<agent_id>` and the equivalent
+    `did:agentid:<agent_id>` (method spec v1.0), with Ed25519
+    signatures (kid `agentid-2026-03`, alg `EdDSA`) over the receipt
+    compound digest. Verify endpoint emits `claim_type: "identity"`
+    aligned with the CTEF v0.3.1 four-layer claim split, including
     `subject_did` for principal binding and a compound digest signed
-    over the publicly verifiable surface.
+    over the publicly verifiable surface. Trust levels are integers
+    1-4, labelled L1-L4 (`trust_level_label`, e.g. `L2 — Verified`).
   spec_alignment:
     ctef_version: "v0.3.1"
     canonicalization: "JCS (RFC 8785)"
     signature_alg: "EdDSA / Ed25519 (raw digest bytes)"
+    did_resolution: "DIF Universal Resolver binding — GET https://getagentid.dev/1.0/identifiers/{did}"
 
 license: Apache-2.0
 
 maintainer:
   github: haroldmalikfrimpong-ops
-  confirmed_at: "2026-05-06"
+  confirmed_at: "2026-09-30"
 
+# Registry key; unchanged pending discussion with the registry maintainer.
+# The issuer DID document now resolves at
+# https://getagentid.dev/.well-known/did.json (`id: did:web:getagentid.dev`,
+# verificationMethod `#agentid-2026-03` = the JWKS key). The discovery
+# manifest at https://getagentid.dev/.well-known/agentid.json declares
+# `platform_did: did:web:getagentid.dev`.
 issuer: "did:agentid:agentid-issuer"
 
 system_attributes:
@@ -54,41 +72,94 @@ signal_types:
     internal: "Identity gate + Ed25519-signed compound digest on /verify"
     match: exact
     notes: >
-      AgentID's primary signal. Each registered agent holds a
-      `did:agentid:<id>` identifier with an Ed25519 public key bound at
-      registration. Verification returns the canonical
-      `claim_type: "identity"` envelope with `subject_did`, an
-      Ed25519 signature over the JCS-canonical compound digest,
-      scarring score, incident history, and (for `did:agentid:` DIDs)
-      trust-level metadata. The `compound_digest_signature` field is
-      an internal HMAC-SHA256 tamper-evidence artifact and is not
-      part of the publicly verifiable surface — public verification
-      uses `compound_digest_ed25519_signature` against the JWKS at
-      `/.well-known/jwks.json`. External DIDs (`did:web`, `did:key`,
-      etc.) resolve through an `identity_gate` — unresolvable
-      identities are rejected independent of any other score.
+      AgentID's primary signal. Each registered agent holds an Ed25519
+      public key bound at registration and is identified by
+      `did:web:getagentid.dev:agent:<agent_id>`, with
+      `did:agentid:<agent_id>` as an equivalent alias (the per-agent
+      DID document at `/agent/<agent_id>/did.json` lists the alias in
+      `alsoKnownAs`; the resolver at `/1.0/identifiers/{did}` accepts
+      either form and returns a DIF-shaped `didDocument` +
+      `didResolutionMetadata`). Verification returns the canonical
+      `claim_type: "identity"` envelope with `did`, `subject_did`
+      (both the did:web form) and `did_agentid`, an Ed25519 signature
+      over the compound digest, scarring score, incident history, and
+      trust-level metadata (integer 1-4, labelled L1-L4). The
+      `compound_digest_signature` field is an internal HMAC-SHA256
+      tamper-evidence artifact and is not part of the publicly
+      verifiable surface — public verification uses
+      `compound_digest_ed25519_signature` (64 bytes) over the raw 32
+      bytes of `compound_digest` against the JWKS at
+      `/.well-known/jwks.json`. The digest construction is published
+      in the discovery manifest (`receipt_format.compound_digest`:
+      SHA-256 over hash(HashReceipt) + hash(BlockchainMemo) +
+      action_ref + timestamp). External DIDs (`did:web` on other
+      hosts, `did:key`, etc.) resolve through the `identity_gate`
+      (`resolution_source: "external"`) — an unresolvable external
+      identity returns `verified: false, identity_gate: "failed"`
+      independent of any other score. An unknown local `agent_id`
+      returns `verified: false` with `message: "Agent not found"` and
+      no `identity_gate` or `claim_type` field.
+    # Fields emitted on the /verify response. The Ed25519 signature
+    # covers `receipt.compound_digest` (raw bytes); see the manifest
+    # `receipt_format` for which inputs the digest binds.
     signed_payload_fields:
       - claim_type            # string — "identity" (CTEF v0.3.1)
-      - did                   # string — did:agentid:<agent_id>
+      - did                   # string — did:web:getagentid.dev:agent:<agent_id>
       - subject_did           # string — principal binding (mirrors `did`)
+      - did_agentid           # string — did:agentid:<agent_id> (alias of `did`; DID-doc `alsoKnownAs`)
       - agent_id              # string — local identifier
-      - verified              # boolean — certificate_valid && agent.active
-      - identity_gate         # string — "passed" | "failed"
+      - verified              # boolean — certificate_valid && active
+      - identity_gate         # string — "passed" | "failed" (absent when the local agent_id is unknown)
+      - resolution_source     # string — "direct" (local registry) | "external" (resolved DID)
       - resolved_at           # ISO 8601
       - trust_level           # integer 1-4 (informational; legacy 0 normalizes to 1)
+      - trust_level_label     # string — "L1 — Registered" | "L2 — Verified" | "L3 — Secured" | "L4 — Certified"
+      - certificate_valid     # boolean
+      - active                # boolean
+      - supported_key_types   # array — e.g. ["ecdsa-p256", "ed25519"]
       - scarring_score        # number — incident-weighted history
       - negative_signals      # integer
       - resolved_signals      # integer
       - incident_history      # array of incident records
-      - receipt.compound_digest                         # string — JCS-canonical digest
+      - behaviour.risk_score  # integer 0-100 — informational, does not gate `verified`
+      - behaviour.warnings    # array of anomaly records {type, severity, description, detected_at, current_value, baseline_value}
+      - receipt.hash.receipt_id                         # string — UUID of this verification receipt
+      - receipt.hash.action                             # string — "verification"
+      - receipt.hash.agent_id                           # string
+      - receipt.hash.timestamp                          # ISO 8601
+      - receipt.hash.data_hash                          # string — SHA-256 hex
+      - receipt.hash.signature                          # string — HMAC-SHA256 (internal, not publicly verifiable)
+      - receipt.hash.verification_url                   # string — https://getagentid.dev/proof/{receipt_id}
+      - receipt.attestation_level                       # string — "self-issued" | "domain-attested"
+      - receipt.compound_digest                         # string — SHA-256 hex (construction per manifest `receipt_format`)
       - receipt.compound_digest_ed25519_signature       # Ed25519 over compound_digest (raw bytes), public-verifiable via JWKS
       - receipt.policy_hash                             # string — policy in force at issuance
-      - receipt.action_ref                              # optional — action being attested
+      - receipt.previous_policy_hash                    # string — prior link in the policy hash chain
+      - receipt.action_ref                              # string — see note below
+      - receipt.context_epoch                           # integer | null
+    # `receipt.action_ref` on `/verify` echoes a caller-supplied
+    # `action_ref` when one is provided; otherwise it falls back to
+    # the receipt UUID (equal to `receipt.hash.receipt_id`). The
+    # canonical action_ref construction —
+    # SHA-256(agent_id || action_type || scope || int64_be(ts_ms)),
+    # raw concatenation — is produced by the gateway
+    # `verifier-attestation` route, not by `/verify`. Do not treat the
+    # `/verify` value as the canonical form unless the caller supplied it.
     endpoints:
-      verify:    "POST https://getagentid.dev/api/v1/agents/verify"
-      register:  "POST https://getagentid.dev/api/v1/agents/register"
-      jwks:      "https://getagentid.dev/.well-known/jwks.json"
-      registry:  "https://getagentid.dev/registry"
+      verify:        "POST https://getagentid.dev/api/v1/agents/verify"
+      register:      "POST https://getagentid.dev/api/v1/agents/register"
+      jwks:          "https://getagentid.dev/.well-known/jwks.json"
+      registry:      "https://getagentid.dev/registry"
+      did_document:  "GET https://getagentid.dev/agent/{agent_id}/did.json"
+      did_resolver:  "GET https://getagentid.dev/1.0/identifiers/{did}"   # did:agentid:<agent_id> | did:web:getagentid.dev:agent:<agent_id> | did:web:getagentid.dev
+      issuer_did:    "GET https://getagentid.dev/.well-known/did.json"
+      certificate:   "GET https://getagentid.dev/api/v1/agents/{agent_id}/certificate"
+      credibility_packet: "GET https://getagentid.dev/api/v1/agents/credibility-packet?agent_id={agent_id}"
+      trust_header:  "GET https://getagentid.dev/api/v1/agents/trust-header?agent_id={agent_id}"
+      merkle_root:   "GET https://getagentid.dev/api/v1/agents/merkle-root?agent_id={agent_id}"
+      proof:         "GET https://getagentid.dev/proof/{receipt_id}"
+      manifest:      "GET https://getagentid.dev/.well-known/agentid.json"
+      did_method_spec: "https://getagentid.dev/specs/did-method-agentid-v1.0"
 
   completion_ratio:
     canonical: completion_ratio
@@ -101,7 +172,7 @@ signal_types:
       Cited as one of two production implementations in
       `vocabulary.yaml` (alongside APS at default 90d).
     signed_payload_fields:
-      - interaction_pattern.completion_ratio                       # number 0..1, three decimal places
+      - interaction_pattern.completion_ratio                       # number 0..1 (up to three decimals; emitted as integer 1 when exact)
       - interaction_pattern.relationship_to_completion_ratio       # number — completion conditional on partner-counter
       - interaction_pattern.sequence_depth                          # integer — interaction chain length
       - interaction_pattern.co_signed_outputs                       # integer — count of co-signed deliverables
@@ -169,7 +240,9 @@ signal_types:
     match: no_mapping
     notes: >
       AgentID does not produce repo/artifact-bound security signals.
-      Primary issuer: AgentGraph (signed subject is `github:owner/repo`).
+      Primary issuer: AgentGraph (registry key `agentgraph`; rebranding
+      as AgentAvow per aeoess/agent-governance-vocabulary#82) — signed
+      subject is `github:owner/repo`.
 
   settlement_witness:
     canonical: settlement_witness
@@ -189,7 +262,7 @@ signal_types:
     match: no_mapping
     notes: >
       AgentID does not perform sanctions / OFAC / regulatory screening.
-      Primary issuer: Revettr.
+      Status `reserved` upstream with `issuers_in_production: []`.
 
   wallet_intelligence:
     canonical: wallet_intelligence
@@ -208,8 +281,51 @@ signal_types:
     match: no_mapping
     notes: >
       AgentID does not issue task-outcome attestations.
-      Status `proposed` upstream; AgentID does not currently produce
+      Status `reserved` upstream; AgentID does not currently produce
       this signal.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: >
+      Status `reserved` upstream. AgentID attests identity, key
+      binding and behavioural anomaly state; it makes no claim about
+      the reasoning content an agent committed to at decision time and
+      carries no reduction map or faithfulness scope.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    match: no_mapping
+    notes: >
+      Status `reserved` upstream. AgentID verification receipts are
+      single-party (issuer-signed, `attestation_level: "self-issued"`)
+      and carry no counterparty signature or registered `purpose`.
+      `interaction_pattern.co_signed_outputs` is a count, not a
+      two-party receipt artifact.
+
+  decision_lineage:
+    canonical: decision_lineage
+    match: no_mapping
+    notes: >
+      AgentID does not issue per-action operational-trace attestations
+      (PDR's domain). The receipt `policy_hash` /
+      `previous_policy_hash` chain links policy state, not decisions.
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: >
+      `behaviour.warnings[]` on `/verify` reports anomalies against an
+      internal baseline (e.g. `frequency_spike` with `baseline_value`),
+      but there is no declared `baseline_revision` and the measurement
+      is not emitted as a first-class quantitative divergence signal.
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: >
+      AgentID emits a snapshot `trust_score` / `trust_level`; no
+      rate-of-change over a declared observation_window is issued.
 
 
 # ─────────────────────────────────────────────────
@@ -220,11 +336,14 @@ descriptor_dimensions:
   trust_verification:
     enforcement_class: refusal_authority
     enforcement_notes: >
-      The `identity_gate` is refusal-bearing: an unresolvable DID
-      causes `/verify` to return `verified: false, identity_gate:
-      "failed"` regardless of any other signal value. AgentID asserts
-      that downstream consumers MUST reject attestations referencing a
-      DID whose identity gate fails, independent of trust score.
+      The `identity_gate` is refusal-bearing for resolved identities:
+      an unresolvable external DID causes `/verify` to return
+      `verified: false, identity_gate: "failed"` regardless of any
+      other signal value. An unknown local `agent_id` returns
+      `verified: false` with `message: "Agent not found"` and no
+      `identity_gate` field. In both cases AgentID asserts that
+      downstream consumers MUST reject attestations referencing a
+      DID that does not verify, independent of trust score.
 
     validity_temporal: at_issuance
     validity_notes: >
@@ -235,9 +354,10 @@ descriptor_dimensions:
 
     refusal_authority: issuer
     refusal_notes: >
-      AgentID is the source-of-truth for `did:agentid:` identity
-      state. Revocation, key rotation, and incident scarring update
-      the canonical record, and subsequent verifications reflect the
+      AgentID is the source-of-truth for identity state under
+      `did:web:getagentid.dev:agent:<agent_id>` / `did:agentid:<agent_id>`.
+      Revocation, key rotation, and incident scarring update the
+      canonical record, and subsequent verifications reflect the
       updated state.
 
     invariant_survival: pre_action
@@ -249,10 +369,10 @@ descriptor_dimensions:
     replay_class: decision_replay
     replay_notes: >
       Given the receipt envelope + JWKS, any verifier can replay the
-      identity decision offline by re-checking the dual signatures
-      against the canonical bytes. Full replay of the underlying
-      registry state is not provided — that requires re-querying
-      the issuer.
+      identity decision offline by re-checking the Ed25519 signature
+      over the raw `compound_digest` bytes. Full replay of the
+      underlying registry state is not provided — that requires
+      re-querying the issuer.
 
     governed_action_class: ["read", "write", "delegate", "compose"]
 
@@ -286,11 +406,12 @@ descriptor_dimensions:
 # ─────────────────────────────────────────────────
 crosswalk_metadata:
   authored_by: "@haroldmalikfrimpong-ops"
-  vocabulary_version: "0.1"
-  last_reviewed: "2026-05-06"
+  vocabulary_version: "0.2.0"
+  last_reviewed: "2026-09-30"
   related_issues:
     - "aeoess/agent-governance-vocabulary#82"  # crosswalk hygiene
     - "aeoess/agent-governance-vocabulary#64"  # completion_ratio canonical (merged via PR#72)
     - "aeoess/agent-governance-vocabulary#36"  # interop-week-1 four-signal compose
   next_revisions:
-    - "Refresh the descriptor blocks once CTEF v0.3.2 §A Conformance Appendix publishes (May 19-22 window) and the canonical-bytes diff at corpollc/qntm#15 lands as a verifier-reproducible fixture."
+    - "Propose the `issuer` key change to `did:web:getagentid.dev` in a scoped PR now that https://getagentid.dev/.well-known/did.json resolves."
+    - "Publish a verifier-reproducible fixture for the compound_digest construction so the signed field set can be checked byte-for-byte."

@@ -1,6 +1,6 @@
 # Crosswalk Matrix
 
-Auto-generated on 2026-09-11. 24 systems × 16 canonical signal types.
+Auto-generated on 2026-10-01. 24 systems × 16 canonical signal types.
 
 Cell legend:
 
@@ -20,7 +20,7 @@ Cell legend:
 | ----------------- | ------------ | ---------------- | ------------------- | ------------------- | --------------- | ---------------------- | -------------- | ------------------ | ---------------- | --------------- | ------------------ | ----------- | ---------------- | ----------------- | --------------------- | ----------------- |
 | Agent-Did         | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     | —                 |
 | Agentgraph        | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ✅                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | —                     | —                 |
-| Agentid           | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | ✅                | 🟡                | —                     | —                 |
+| Agentid           | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | ✅                | 🟡                | ⚪                     | ⚪                 |
 | Agentlair         | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     | —                 |
 | Agentnexus        | ·            | —                | —                   | —                   | —               | ·                      | —              | —                  | —                | —               | —                  | —           | —                | —                 | —                     | —                 |
 | Agentrust-Trace   | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | —                 |
@@ -66,8 +66,8 @@ Cell legend:
 | `peer_review` | 17 / 24 | 71% |
 | `entity_continuity` | 14 / 24 | 58% |
 | `completion_ratio` | 6 / 24 | 25% |
-| `cognitive_attestation` | 4 / 24 | 17% |
-| `bilateral_receipt` | 1 / 24 | 4% |
+| `cognitive_attestation` | 5 / 24 | 21% |
+| `bilateral_receipt` | 2 / 24 | 8% |
 
 ### Top-3 most-mapped
 
@@ -77,8 +77,8 @@ Cell legend:
 
 ### Top-3 least-mapped
 
-- `bilateral_receipt` — 1/24 (4%)
-- `cognitive_attestation` — 4/24 (17%)
+- `bilateral_receipt` — 2/24 (8%)
+- `cognitive_attestation` — 5/24 (21%)
 - `completion_ratio` — 6/24 (25%)
 
 ---

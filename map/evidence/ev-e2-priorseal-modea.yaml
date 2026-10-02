@@ -1,0 +1,10 @@
+id: ev-e2-priorseal-modea
+type: component_run
+source: https://github.com/Agent-Authority-Conformance/aps-conformance-suite/pull/139#issuecomment-5901343345
+record_state: merged with lab PR 139 as independent-entry1-imokokok.md
+runner: imokokok
+runner_authored: [priorseal pair]
+independent_for: [aps evidence verifies]
+not_independent_for: []
+results_as_emitted: {}
+reviews: []

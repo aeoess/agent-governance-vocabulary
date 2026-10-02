@@ -1,0 +1,19 @@
+id: paid-call-within-limit
+status: candidate composition
+action: One paid tool call that must stay within a delegated per-action spend limit.
+record_owner: aeoess          # maintains this record only, no authority over participants
+acceptance: An end-to-end result needs execution evidence for the assembled path at the recorded pins.
+end_to_end_run: null
+steps:
+  - {capability: authority.delegation,              implementations: [aps],          via: null, gap: null}
+  - {capability: decision.pre_action,               implementations: [aps],          via: null, gap: null}
+  - {capability: authorization.exact_call,          implementations: [priorseal],    via: E2,   gap: null}
+  - {capability: enforcement.tool_boundary,         implementations: [pic],          via: E5,   gap: connection_proposed_not_exercised}
+  - {capability: execution.independent_observation, implementations: [],             via: null, gap: role_unrepresented}
+  - {capability: comparison.post_action,            implementations: [priorseal],    via: E2,   gap: null, note: observations are synthetic}
+  - {capability: revocation.during_execution,       implementations: [],             via: null, gap: role_unrepresented, note: APS publishes ancestor revocation fixtures but no record here shows a revocation reaching a call already authorized at PriorSeal}
+  - {capability: receipt.signed_action,             implementations: [veritas-acta], via: null, gap: interface_missing}
+  - {capability: receipt.billing_coverage,          implementations: [],             via: null, gap: role_unrepresented, note: proposed by Veritas Acta as E6 consumer, no project named}
+  - {capability: settlement.evidence,               implementations: [],             via: null, gap: role_unrepresented}
+  - {capability: attribution.per_action,            implementations: [],             via: null, gap: role_unrepresented, note: a Frequency schema proposal exists, not adopted}
+  - {capability: verification.per_claim,            implementations: [frequency],    via: A1,   gap: null, note: preflight only, formal run not run}

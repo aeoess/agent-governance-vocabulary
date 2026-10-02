@@ -1,0 +1,53 @@
+# Proposed capability roles. Architecture only. A role here is not a requirement
+# for every system, and an unfilled role is an invitation, not a claim that
+# nothing exists elsewhere.
+status: proposed
+capabilities:
+  - id: authority.delegation
+    job: Issue scoped authority from a principal to an agent, narrowing at each transfer.
+    inputs: [principal identity, requested scope]
+    outputs: [signed delegation record]
+  - id: decision.pre_action
+    job: Decide permit or deny for one proposed action before it runs and emit a signed decision record.
+    inputs: [action intent, delegation, policy]
+    outputs: [signed decision record with a stable reference]
+  - id: authorization.exact_call
+    job: Bind an external decision to the exact call parameters before execution.
+    inputs: [decision reference, exact call]
+    outputs: [principal-signed exact-call authorization]
+  - id: enforcement.tool_boundary
+    job: Allow or block the call at the protected tool, using external authority as evidence.
+    inputs: [action proposal, evidence]
+    outputs: [allow or block attestation]
+  - id: execution.independent_observation
+    job: Record which call actually executed, observed by a party other than the actor.
+    inputs: [runtime or chain access]
+    outputs: [signed observation]
+  - id: comparison.post_action
+    job: Compare an observed call with what was authorized and report each mismatch separately.
+    inputs: [authorization, observation]
+    outputs: [per-claim comparison result]
+  - id: revocation.during_execution
+    job: Make a revocation that lands after authorization stop or flag a call that has not executed yet.
+    inputs: [revocation record, pending authorization]
+    outputs: [refusal or flagged result]
+  - id: receipt.signed_action
+    job: Emit a signed receipt for a performed action that a third party can verify offline.
+    inputs: [action record]
+    outputs: [signed receipt or receipt chain]
+  - id: receipt.billing_coverage
+    job: Before money moves, check that every billed item has a signed receipt and none is missing.
+    inputs: [receipt chain, billed items]
+    outputs: [coverage result per item]
+  - id: settlement.evidence
+    job: Settle payment after an action and emit verifiable settlement evidence that references the action.
+    inputs: [authorization, receipt]
+    outputs: [settlement record]
+  - id: attribution.per_action
+    job: Record which projects' artifacts one action consumed, with evidence a reader can check.
+    inputs: [action reference, artifact references]
+    outputs: [attribution record]
+  - id: verification.per_claim
+    job: Re-check pinned artifacts from its own implementation and report one result per claim.
+    inputs: [pinned artifacts, trust configuration]
+    outputs: [per-claim results with claim ceilings]

@@ -1,0 +1,10 @@
+id: veritas-acta
+name: Veritas Acta
+repository: https://github.com/VeritasActa/verify
+maintainer: tomjwxf
+description_source: editors, from https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885617993
+owner_confirmation: null
+implements:
+  - capability: receipt.signed_action
+    source_ref: draft-farley-acta-signed-receipts
+limitations: [no consuming project named for the billing check]

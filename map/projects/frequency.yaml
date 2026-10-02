@@ -7,4 +7,4 @@ owner_confirmation: null
 implements:
   - capability: verification.per_claim
     source_ref: https://github.com/altrudev/Frequency-Federation-Review/tree/4162622af24c94efb843f53aa27940ffd1256ad6/capsules/aps-priorseal-v0.1
-limitations: [review-only terms, implementation private, formal run not published]
+limitations: [review only notice on the repository, formal run not published]

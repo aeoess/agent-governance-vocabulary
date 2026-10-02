@@ -100,7 +100,7 @@ if (errors.length) { console.error(errors.join('\n')); console.error(`FAIL ${err
 // rendering
 const name = id => P.get(id)?.name || id;
 const short = c => c.slice(0, 8);
-const pinLink = p => `[${p.repo}@${short(p.commit)}](https://github.com/${p.repo}/tree/${p.commit})${p.tag ? ` (tag \`${p.tag}\`)` : ''}`;
+const pinLink = p => `[${p.repo}@${short(p.commit)}](https://github.com/${p.repo}/tree/${p.commit})${p.tag ? ` (tag \`${p.tag}\`)` : ''}${p.role ? `, ${p.role}` : ''}`;
 const reviewText = v => (v.reviews || []).length
   ? v.reviews.map(r => `Reviewed by ${r.by} on ${r.date} at ${short(r.revision)}, ${r.method}`).join('; ')
   : 'Not reviewed by the map editors';
@@ -155,6 +155,7 @@ for (const e of edges) {
   out += `### ${e.id} (${e.kind})\n\n${e.artifact}.\n\n`;
   out += `- Proposed by @${e.proposed_by.who}: [link](${e.proposed_by.ref})\n`;
   out += `- Pins: ${(e.pins || []).length ? e.pins.map(pinLink).join(', ') : 'none'}\n`;
+  if ((e.scope_confirmations || []).length) out += `- Scope confirmations, each by one side: ${e.scope_confirmations.map(c => `${c.side} by @${c.by}${c.conditional ? ', conditional' : ''} ([link](${c.ref}))`).join(', ')}\n`;
   if ((e.field_mappings || []).length) out += `- Field mappings: ${e.field_mappings.map(m => `\`${m.from}\` to \`${m.to}\` ${m.match}, ${(m.confirmed_by || []).length ? 'confirmed by ' + m.confirmed_by.join(', ') : 'unconfirmed'}`).join('; ')}\n`;
   out += `- Limits: ${(e.limitations || []).join(', ') || 'none recorded'}\n`;
   out += `- Does not establish: ${e.does_not_establish.join(', ')}\n`;

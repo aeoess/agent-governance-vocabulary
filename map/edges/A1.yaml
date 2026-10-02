@@ -5,7 +5,12 @@ observes: E2
 artifact: Frequency per-claim results over the E2 pinned artifacts
 proposed_by: {who: altrudev, ref: "https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885842512"}
 pins:
-  - {repo: altrudev/Frequency-Federation-Review, commit: 4162622af24c94efb843f53aa27940ffd1256ad6, tag: aps-priorseal-v0.1.1-review}
+  - {repo: altrudev/Frequency-Federation-Review, commit: 4162622af24c94efb843f53aa27940ffd1256ad6, tag: aps-priorseal-v0.1.1-review, role: v0.1.1 preflight revision}
+  - {repo: altrudev/Frequency-Federation-Review, commit: cf7389097fe3a404b3557da2e72fdd8cbe962b81, role: designated A1 review execution commit}
+  - {repo: altrudev/Frequency-Federation-Review, commit: a40562268aa1d6e1f6d369e296c16261d623c4e0, role: RUN.md documentation commit for the A1 run}
+scope_confirmations:
+  - {side: priorseal, by: imokokok, ref: "https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5952032554"}
+  - {side: aps, by: aeoess, conditional: true, ref: "https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5956876272"}
 evidence: [ev-a1-preflight-author, ev-a1-preflight-rerun-aeoess]
-limitations: [APS trust pins equal the fixture's published test keys, preflight only, formal run not run or published]
+limitations: [APS trust pins equal the fixture's published test keys, preflight only, formal run not run or published, each scope confirmation is by one side, review repository carries a review only notice]
 does_not_establish: [formal pilot result, live execution, independent witness, adoption]

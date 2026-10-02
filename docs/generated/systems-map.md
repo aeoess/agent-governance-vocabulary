@@ -45,7 +45,7 @@ Only declared edges are drawn. Steps inside one project have no edge.
 | `receipt.billing_coverage` | Before money moves, check that every billed item has a signed receipt and none is missing. | none in this map |  | role unrepresented. proposed by Veritas Acta as E6 consumer |
 | `settlement.evidence` | Settle payment after an action and emit verifiable settlement evidence that references the action. | none in this map |  | role unrepresented |
 | `attribution.per_action` | Record which projects' artifacts one action consumed, with evidence a reader can check. | none in this map |  | role unrepresented. a Frequency schema proposal exists |
-| `verification.per_claim` | Re-check pinned artifacts from its own implementation and report one result per claim. | Frequency | A1 | pinned, see edge. preflight only. Limits: APS trust pins equal the fixture's published test keys, preflight only, formal run not run or published |
+| `verification.per_claim` | Re-check pinned artifacts from its own implementation and report one result per claim. | Frequency | A1 | pinned, see edge. preflight only. Limits: APS trust pins equal the fixture's published test keys, preflight only, formal run not run or published, each scope confirmation is by one side, review repository carries a review only notice |
 
 ## Edges
 
@@ -54,8 +54,9 @@ Only declared edges are drawn. Steps inside one project have no edge.
 Frequency per-claim results over the E2 pinned artifacts.
 
 - Proposed by @altrudev: [link](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885842512)
-- Pins: [altrudev/Frequency-Federation-Review@4162622a](https://github.com/altrudev/Frequency-Federation-Review/tree/4162622af24c94efb843f53aa27940ffd1256ad6) (tag `aps-priorseal-v0.1.1-review`)
-- Limits: APS trust pins equal the fixture's published test keys, preflight only, formal run not run or published
+- Pins: [altrudev/Frequency-Federation-Review@4162622a](https://github.com/altrudev/Frequency-Federation-Review/tree/4162622af24c94efb843f53aa27940ffd1256ad6) (tag `aps-priorseal-v0.1.1-review`), v0.1.1 preflight revision, [altrudev/Frequency-Federation-Review@cf738909](https://github.com/altrudev/Frequency-Federation-Review/tree/cf7389097fe3a404b3557da2e72fdd8cbe962b81), designated A1 review execution commit, [altrudev/Frequency-Federation-Review@a4056226](https://github.com/altrudev/Frequency-Federation-Review/tree/a40562268aa1d6e1f6d369e296c16261d623c4e0), RUN.md documentation commit for the A1 run
+- Scope confirmations, each by one side: priorseal by @imokokok ([link](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5952032554)), aps by @aeoess, conditional ([link](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5956876272))
+- Limits: APS trust pins equal the fixture's published test keys, preflight only, formal run not run or published, each scope confirmation is by one side, review repository carries a review only notice
 - Does not establish: formal pilot result, live execution, independent witness, adoption
 - Evidence:
   - `ev-a1-preflight-author` preflight by @altrudev, development preflight, explicitly not the formal pilot result, not independent. Source: [link](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5935328122). Not reviewed by the map editors. Results as emitted: ESTABLISHED 14, CONTRADICTED 3, NOT_ESTABLISHED 5.
@@ -89,7 +90,7 @@ APS authority for one bounded synthetic MCP action, checked at the protected too
 | project | maintainer | description from | maintainer confirmation | limits |
 |---|---|---|---|---|
 | [Agent Passport System](https://github.com/aeoess/agent-passport-system) | @aeoess | editors, pending maintainer confirmation | pending | fixture keys are published test keys, no live deployment represented |
-| [Frequency](https://github.com/altrudev/Frequency-Federation-Review) | @altrudev | editors, from the capsule at aps-priorseal-v0.1.1-review | pending | review-only terms, implementation private, formal run not published |
+| [Frequency](https://github.com/altrudev/Frequency-Federation-Review) | @altrudev | editors, from the capsule at aps-priorseal-v0.1.1-review | pending | review only notice on the repository, formal run not published |
 | [PIC Standard](#) | @madeinplutofabio | editors, from https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5890595191 | pending | how external evidence enters a PIC Action Proposal is not defined yet |
 | [PriorSeal](https://github.com/imokokok/PriorSeal) | @imokokok | editors, from https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885120538 | pending | observations in the pinned pair are synthetic, no transaction is sent |
 | [Veritas Acta](https://github.com/VeritasActa/verify) | @tomjwxf | editors, from https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885617993 | pending | no consuming project named for the billing check |

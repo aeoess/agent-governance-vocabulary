@@ -54,7 +54,7 @@ Only declared edges are drawn. Steps inside one project have no edge.
 Frequency per-claim results over the E2 pinned artifacts.
 
 - Proposed by @altrudev: [link](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885842512)
-- Pins: [altrudev/Frequency-Federation-Review@4162622a](https://github.com/altrudev/Frequency-Federation-Review/tree/4162622af24c94efb843f53aa27940ffd1256ad6) (tag `aps-priorseal-v0.1.1-review`), v0.1.1 preflight revision, [altrudev/Frequency-Federation-Review@cf738909](https://github.com/altrudev/Frequency-Federation-Review/tree/cf7389097fe3a404b3557da2e72fdd8cbe962b81), designated A1 review execution commit, [altrudev/Frequency-Federation-Review@a4056226](https://github.com/altrudev/Frequency-Federation-Review/tree/a40562268aa1d6e1f6d369e296c16261d623c4e0), RUN.md documentation commit for the A1 run
+- Pins: [altrudev/Frequency-Federation-Review@4162622a](https://github.com/altrudev/Frequency-Federation-Review/tree/4162622af24c94efb843f53aa27940ffd1256ad6) (tag `aps-priorseal-v0.1.1-review`), v0.1.1 preflight revision, [altrudev/Frequency-Federation-Review@cf738909](https://github.com/altrudev/Frequency-Federation-Review/tree/cf7389097fe3a404b3557da2e72fdd8cbe962b81) (tag `aps-priorseal-a1-exec-2026-10-02`), designated A1 review execution commit, [altrudev/Frequency-Federation-Review@a4056226](https://github.com/altrudev/Frequency-Federation-Review/tree/a40562268aa1d6e1f6d369e296c16261d623c4e0) (tag `aps-priorseal-a1-instructions-2026-10-02`), RUN.md documentation commit for the A1 run
 - Scope confirmations, each by one side: priorseal by @imokokok ([link](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5952032554)), aps by @aeoess, conditional ([link](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5956876272))
 - Limits: APS trust pins equal the fixture's published test keys, preflight only, formal run not run or published, each scope confirmation is by one side, review repository carries a review only notice
 - Does not establish: formal pilot result, live execution, independent witness, adoption
@@ -72,8 +72,8 @@ APS decision evidence (decision_ref) carried into a PriorSeal exact-call authori
 - Limits: APS signatures are under published test keys, observations are synthetic and no transaction is sent
 - Does not establish: independently observed execution, live APS currency at execution, decision single use, production use
 - Evidence:
-  - `ev-e2-lab-run` component run by @aeoess, open PR, not merged, independent for priorseal signatures verify, exact call versus observation. Source: [link](https://github.com/Agent-Authority-Conformance/aps-conformance-suite/pull/139). Not reviewed by the map editors. Results as emitted: within_limit COMPLIANT, over_limit NON_COMPLIANT TRANSACTION_VALUE_MISMATCH.
-  - `ev-e2-priorseal-modea` component run by @imokokok, reported, candidate for inclusion in PR 139, independent for aps evidence verifies. Source: [link](https://github.com/Agent-Authority-Conformance/aps-conformance-suite/pull/139#issuecomment-5901343345). Not reviewed by the map editors.
+  - `ev-e2-lab-run` component run by @aeoess, merged 2026-10-02 (aca2ff0c), interop/priorseal-aps-payment-limit-d749d269/, independent for priorseal signatures verify, exact call versus observation. Source: [link](https://github.com/Agent-Authority-Conformance/aps-conformance-suite/pull/139). Not reviewed by the map editors. Results as emitted: within_limit COMPLIANT, over_limit NON_COMPLIANT TRANSACTION_VALUE_MISMATCH.
+  - `ev-e2-priorseal-modea` component run by @imokokok, merged with lab PR 139 as independent-entry1-imokokok.md, independent for aps evidence verifies. Source: [link](https://github.com/Agent-Authority-Conformance/aps-conformance-suite/pull/139#issuecomment-5901343345). Not reviewed by the map editors.
 
 ### E5 (runtime)
 

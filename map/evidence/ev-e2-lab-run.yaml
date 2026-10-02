@@ -1,7 +1,7 @@
 id: ev-e2-lab-run
 type: component_run
 source: https://github.com/Agent-Authority-Conformance/aps-conformance-suite/pull/139
-record_state: open PR, not merged
+record_state: merged 2026-10-02 (aca2ff0c), interop/priorseal-aps-payment-limit-d749d269/
 runner: aeoess
 runner_authored: [aps fixtures]
 independent_for: [priorseal signatures verify, exact call versus observation]   # per lab record, runner authored neither

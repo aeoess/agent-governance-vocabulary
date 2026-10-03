@@ -8,7 +8,7 @@ Facts below were checked against the linked public sources on 2026-10-02.
 
 ## The case
 
-A fixed, offline pair. APS decision evidence at a pinned commit is copied byte for byte into PriorSeal, which binds it to signed payment authorization and execution receipts and reports one payment within the delegated limit and one over it.
+A fixed, offline pair. APS decision evidence at a pinned commit is copied byte for byte into PriorSeal, which binds it to signed payment authorization and execution receipts and reports two observations. One matches the signed exact call. The other differs from it and is also above the delegated limit.
 
 ## Pins
 
@@ -19,7 +19,7 @@ A fixed, offline pair. APS decision evidence at a pinned commit is copied byte f
 
 The 17 files covered by the APS manifest are byte identical in both repositories. PriorSeal's copy also carries APS's `LICENSE` and `NOTICE`. Its `verify-from-package-root.mjs` differs, because PriorSeal generates it from a TypeScript port, so the lab run used the original APS script for claim 1.
 
-Outcomes as emitted: within limit `COMPLIANT`, over limit `NON_COMPLIANT` with `TRANSACTION_VALUE_MISMATCH`.
+PriorSeal emits `COMPLIANT` for the observation that matches the signed exact call (`1000000000000000` wei). The over limit observation (`6000000000000000` wei) is `NON_COMPLIANT` with the single reason `TRANSACTION_VALUE_MISMATCH`, which names its difference from the signed exact call. That it is also above the APS `spend.per_action` cap (`5000000000000000` wei) is a separate numeric assertion in the pair's report (claim 5 below), not a PriorSeal reason.
 
 ## Records
 
@@ -38,9 +38,9 @@ Outcomes as emitted: within limit `COMPLIANT`, over limit `NON_COMPLIANT` with `
 
 The cited records contain no independent run for claims 3, 5 and 6. The lab record does not create an end to end verdict.
 
-## A1: Frequency review run
+## A1: Frequency review run (report pending)
 
-The bounded A1 review adapter at `cf7389097fe3a404b3557da2e72fdd8cbe962b81` (tag `aps-priorseal-a1-exec-2026-10-02`), with `RUN.md` at `a40562268aa1d6e1f6d369e296c16261d623c4e0` (tag `aps-priorseal-a1-instructions-2026-10-02`), in [altrudev/Frequency-Federation-Review](https://github.com/altrudev/Frequency-Federation-Review). Its README says the repository is "not Frequency, not Frequency-Dev, and not a public release of Frequency's internal assurance architecture", and it carries a review only notice. Adapter author and runner are on the Frequency side, which did not produce the APS or PriorSeal artifacts.
+The bounded A1 review adapter at `cf7389097fe3a404b3557da2e72fdd8cbe962b81` (tag `aps-priorseal-a1-exec-2026-10-02`), with `RUN.md` at `a40562268aa1d6e1f6d369e296c16261d623c4e0` (tag `aps-priorseal-a1-instructions-2026-10-02`), in [altrudev/Frequency-Federation-Review](https://github.com/altrudev/Frequency-Federation-Review). Its README says the repository is "not Frequency, not Frequency-Dev, and not a public release of Frequency's internal assurance architecture", and it carries a review only notice. Who authored the adapter and who performed the formal run are pending the full report, which the PriorSeal side has not yet received for review. Until that report is checked, this section records the scope of the run, not who ran it.
 
 Scope confirmed by the PriorSeal side ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5952032554)) and, with conditions, by the APS side ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5956876272)). APS confirmation requires the stated ceilings to accompany their claims and the pins to remain retained. It does not accept formal results or establish independence. No formal result has been published. Publication needs separate agreement from APS, PriorSeal and Frequency.
 

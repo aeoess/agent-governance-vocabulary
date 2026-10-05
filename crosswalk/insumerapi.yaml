@@ -273,7 +273,7 @@ gaps:
       This chain-aware routing is not currently expressible in
       vocabulary.yaml at the signal_types layer. If the vocabulary
       eventually adds a `chain_scope` descriptor, this crosswalk would
-      populate it as `multi_chain` with the 39-chain set referenced.
+      populate it as `multi_chain` with the 37-chain set referenced.
 
   - area: "`conditionHash` tamper detection"
     notes: |

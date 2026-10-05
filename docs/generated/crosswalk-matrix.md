@@ -35,7 +35,7 @@ Cell legend:
 | Insumerapi        | ✅            | ⚪                | ⚪                   | ⚪                   | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | —           | —                | —                 | —                     | —                 |
 | Moltrust          | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |
 | Mycelium-Trails   | ⚪            | ⚪                | —                   | —                   | ⚪               | 🟡                     | —              | —                  | —                | —               | ⚪                  | —           | —                | —                 | —                     | —                 |
-| Nenrin            | ⚪            | 🔵               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | 🔵                 | ⚪           | ⚪                | 🟡                | ⚪                     | 🟡                |
+| Nenrin            | ⚪            | 🔵               | ⚪                   | ⚪                   | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | 🔵                 | ⚪           | ⚪                | 🟡                | ⚪                     | 🔵                |
 | Nobulex           | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                | —                 | —                     | —                 |
 | Pathcourse-Health | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |
 | PIC               | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     | —                 |
@@ -57,7 +57,7 @@ Cell legend:
 | `compliance_risk` | 24 / 25 | 96% |
 | `settlement_witness` | 24 / 25 | 96% |
 | `behavioral_trust` | 23 / 25 | 92% |
-| `governance_attestation` | 23 / 25 | 92% |
+| `governance_attestation` | 22 / 25 | 88% |
 | `job_performance` | 22 / 25 | 88% |
 | `passport_grade` | 22 / 25 | 88% |
 | `reasoning_integrity` | 22 / 25 | 88% |

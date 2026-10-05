@@ -23,14 +23,17 @@
 #      a walk of https://gate.horizonshield.dev/a2a by an outside witness
 #      (signed_domain pipavlo82.github.io), anchored in ledger entry 65.
 #      https://ledger.horizonshield.dev/witness/07838de9bbcd913bf56a4b1a59ddeb27a7c45225a23a1af047b939a854f521b6
-#      Gap, stated plainly: this record was filed on 2026-09-29, before the ledger
-#      began storing witness signatures (2026-10-02). The ledger verified the
-#      signature at filing and kept only the public key and signed_domain, so a
-#      reader cannot verify this signature today. As of 2026-10-06 no witness
-#      record has been filed since 2026-10-02 (GET /witness/pending is empty and
-#      the last ledger entry, 68, is from 2026-10-02 00:30 UTC), so no record's stored
-#      signature can be cited yet. The first signed record filed after that date
-#      replaces this example in a revision of this file.
+#      This record was filed on 2026-09-29, before the ledger began storing
+#      witness signatures (2026-10-02). The ledger verified its signature at
+#      filing and kept only the public key and signed_domain, so a reader cannot
+#      verify that signature today. For that reason governance_attestation, which
+#      would rest on the signature, is left out of this file; it can return in a
+#      follow-up once a signed witness record a reader can verify is cited.
+#      State of the search, checked 2026-10-05T23:01Z, scope the public ledger
+#      at https://ledger.horizonshield.dev only: GET /witness/pending returned
+#      count 0, and GET /ledger/export.jsonl ended at entry 68, created
+#      2026-10-02T00:30:57Z, so no witness record had been filed since signatures
+#      began to be stored.
 #   A  workers/hs-ledger/nenrin/agreement-v0/first_agreement_record.json
 #      (agreement_id 488cfa9a43fa7d263f33a03741216fc1, signed by
 #      horizonshield.dev and api.babyblueviper.com).
@@ -85,50 +88,6 @@ system_attributes:
 # One entry per key under vocabulary.yaml signal_types.
 # ─────────────────────────────────────────────────
 signal_types:
-
-  governance_attestation:
-    canonical: governance_attestation
-    match: partial
-    evidence: emitted
-    source_path: "verdict.outcome"
-    internal: "jidec-path-v1 witness record (artifact W): verdict and assertions[]"
-    signed_payload_fields: ["schema", "purpose", "mode", "base", "walked_at", "walker", "witness", "conduct_ext", "card_signature", "nodes", "assertions", "verdict", "establishes", "does_not_establish", "vantage_limitation", "prev_path_refs", "replay"]
-    notes: |
-      Overlap: a signed record that an agent endpoint was checked against a
-      declared requirement, with a per-requirement result. The requirement is the
-      A2A Conduct Extension the agent itself declares on its card
-      (conduct_ext.declared_uri, https://gate.horizonshield.dev/ext/conduct/v1);
-      each assertions[] entry carries the check, the hash of the evidence it read
-      and result true, false or null. verdict.outcome is PASS or FAIL with
-      verdict.n_pass and verdict.n_total.
-      What does not carry over, three divergences:
-      (1) Signer. The signature is the witness's, an outside party, over the
-      record_canonical bytes exactly as filed (src/worker.js witnessVerifySig,
-      lines 374-379). It is not the governing party attesting that its own
-      requirement was met. Unsigned witness records are also accepted and are
-      marked signed: false; only signed records carry an attestation in the
-      registry's sense.
-      (2) Polarity. The record is a measurement, not a pass certificate. FAIL is
-      emitted on the same terms as PASS, and a requirement that could not be
-      observed is result null, never true.
-      (3) Scope. The requirement is a disclosure protocol (what the agent says
-      it does, echoed on the wire), not a policy or delegation scope. The record
-      lists what it does not establish, including the correctness of any
-      response and that the agent behaves the same at other instants.
-      signed_payload_fields lists the top-level members of the worked example;
-      the signature covers the whole record_canonical string, so every member is
-      signed. The signature itself travels beside the record, not inside it. For
-      records filed from 2026-10-02 the ledger stores it and serves it at
-      GET /witness/{sha} (src/worker.js line 1594); before that date the ledger
-      verified it at filing and kept the public key and signed_domain only.
-      Artifact S answers the delegation-scope half of this term (verdict
-      within_grant) but is unsigned by design, so it is not used for this row.
-      Emission checked: the worked example W carries verdict.outcome "PASS",
-      n_pass 7, n_total 7, signed_domain pipavlo82.github.io. Its signature
-      cannot be checked by a reader: the record predates signature storage
-      (see the gap note at the top of this file). Until a signed record filed
-      after 2026-10-02 is cited here, the signed part of this row rests on the
-      ledger's check at filing, which a reader cannot repeat.
 
   behavioral_trust:
     canonical: behavioral_trust
@@ -187,36 +146,26 @@ signal_types:
 
   bilateral_receipt:
     canonical: bilateral_receipt
-    match: partial
-    evidence: emitted
-    source_path: "signatures"
+    match: false_analog
     internal: "a2a-agreement-v1.1 record (artifact A)"
-    signed_payload_fields: ["schema", "agreement_id", "agreed_at", "lower_bound", "parties", "terms", "recorder", "record_paid_by", "establishes", "does_not_establish"]
     notes: |
-      Overlap, against the four required properties:
-      signatures: both parties sign the same preimage, the context string
-      "a2a-agreement-v1.1\n" followed by the canonical form of every member except
-      signatures (agreement_verify.py lines 56 and 188-194). Each party's public
-      key sits inside the signed bytes (parties[].public_key_ed25519_b64), so the
-      record verifies offline without fetching a key; the verifier never reports
-      accepted unless both signatures verify.
-      action_ref: met only in part. The hashes inside the signed bytes address
-      the parties' agent cards and conduct records (parties[].conduct_record.sha256
-      and the card digests). The event the record acknowledges is not among them:
-      it is reached through terms.disclosure_url (see the second divergence).
-      issued_at: agreed_at, plus lower_bound, a Bitcoin block hash and height
-      inside the signed bytes that bounds the signing time from below.
-      purpose: NOT carried. The record has no field drawn from the registered
-      purposes (delegation_revocation, covenant_binding), and its subject is free
-      text in terms.what. This is the documented divergence that makes the row
-      partial and keeps it out of the promotion trigger.
-      Second divergence: the event acknowledged in the worked example is named
-      by terms.disclosure_url (ledger entry 34), a resolvable pointer, while only
-      the conduct records and cards are content-addressed.
-      Third divergence: what is acknowledged is a prior event (the ring
-      reproduction behind ledger entry 34), not a delegation step. The record
-      has no delegator, delegatee or scope, so it receipts an acknowledgment
-      between two parties, not a delegation.
+      Recorded as false_analog because the shape invites the substitution while
+      the differences go past a missing purpose.
+      What overlaps: two signatures and a signed timestamp. Both parties sign the
+      same preimage, the context string "a2a-agreement-v1.1\n" followed by the
+      canonical form of every member except signatures (agreement_verify.py lines
+      56 and 188-194). Each party's public key sits inside the signed bytes
+      (parties[].public_key_ed25519_b64), so the record verifies offline, and the
+      verifier never reports accepted unless both signatures verify. agreed_at
+      and lower_bound (a Bitcoin block hash and height inside the signed bytes)
+      bound the signing time from below.
+      What does not: there is no delegation relationship (no delegator, delegatee
+      or scope); the record acknowledges a prior event, the ring reproduction
+      behind ledger entry 34. Its signed hashes identify the parties' agent cards
+      and conduct records (parties[].conduct_record.sha256 and the card digests),
+      not the acknowledged event, which is reached through terms.disclosure_url,
+      a resolvable pointer. It carries no registered purpose; its subject is free
+      text in terms.what.
       Canonicalization differs from RFC 8785; see descriptor_dimensions notes.
       Emission checked: worked example A carries two ed25519 signatures,
       domains horizonshield.dev and api.babyblueviper.com.
@@ -311,20 +260,17 @@ decision_trajectory:
 
   baseline_revision:
     canonical: baseline_revision
-    match: partial
-    evidence: emitted
-    source_path: "conduct_ext.declared_uri"
+    match: false_analog
     notes: |
-      Overlap: an identifier of the standard a walk was judged against, so two
-      PASS records against different revisions are not silently equal. In
-      artifact W it is conduct_ext.declared_uri (a versioned extension URI ending
-      /v1) together with walker.tool and walker.version.
-      Divergence: it names a disclosure-protocol version and the walking tool's
-      version, not a behavioral baseline of the agent. A pinned walker digest is
+      Recorded as false_analog. Artifact W names the standard it was judged
+      against, conduct_ext.declared_uri (a versioned extension URI ending /v1),
+      together with walker.tool and walker.version, so two PASS records against
+      different revisions are not silently equal. That identifies a disclosure
+      protocol and the walking tool's version, not the agent's behavioral
+      baseline, and no pinned part of the extension specification ties that
+      version to a baseline of the agent's behavior. A pinned walker digest is
       enforced by the conduct-witness GitHub Action (walker_sha256) but is not
       carried inside the record.
-      Emission checked: worked example W carries
-      "https://gate.horizonshield.dev/ext/conduct/v1" and walker version "1".
 
   divergence_signal:
     canonical: divergence_signal
@@ -432,30 +378,28 @@ out_of_vocabulary_primitives:
       Pins a signed TRACE Trust Record by the sha256 of its RFC 8785 form after
       checking its signature, refusing a postdated iat, and anchors it in the
       next batch, so the record stays checkable after its key or URIs change.
-      Relation to crosswalk/agentrust-trace.yaml: complementary. TRACE says what
-      ran; a pin adds an outside bound on when the record existed. As of the
-      pinned commit no TRACE record from an outside party has been pinned.
+      Relation to crosswalk/agentrust-trace.yaml: complementary. A pin adds an
+      outside upper bound on when the record's exact bytes existed; it says
+      nothing about the claims inside the record. As of the pinned commit no
+      TRACE record from an outside party has been pinned.
 
 summary: |
   NENRIN is a witness ledger: it records what outside parties observed an agent
   endpoint do, anchored in time, with disagreement and the subject's reply kept
   beside the observation. It issues no scores, holds no wallets and makes no claim
   about reasoning, so those terms are no_mapping.
-  Four rows are partial. governance_attestation rests on the signed witness
-  record, which is a third-party measurement against the agent's own declared
-  extension and emits FAIL as readily as PASS; its worked example predates
-  signature storage, so a reader cannot check that signature today.
-  bilateral_receipt rests on the two-party agreement record, which meets
-  signatures and issued_at, meets action_ref only for the party cards and
-  conduct records (the acknowledged event is reached by URL), carries no
-  registered purpose, and acknowledges an event rather than a delegation step. entity_continuity rests on the key handover
-  record, which covers key rotation only and has not yet been emitted in
-  production. baseline_revision rests on the extension URI and walker version.
-  Three rows are false_analog, each because the name invites a substitution:
-  behavioral_trust (the résumé is history without a score), settlement_witness
-  (a MUSUBI settlement is an unsigned, recomputable grant check, not a signed
-  payment receipt) and divergence_signal (a discrepancy record is disagreement
-  between observers, not a measured deviation).
+  One row is partial: entity_continuity rests on the key handover record,
+  which covers key rotation only and has not yet been emitted in production.
+  Five rows are false_analog, each because the name or shape invites a
+  substitution: behavioral_trust (the résumé is history without a score),
+  bilateral_receipt (two signatures and a signed timestamp over an
+  acknowledgment, with no delegation relationship and no hash of the
+  acknowledged event), baseline_revision (a disclosure-protocol and walker
+  version, not a behavioral baseline), settlement_witness (a MUSUBI settlement
+  is an unsigned, recomputable grant check, not a signed payment receipt) and
+  divergence_signal (a discrepancy record is disagreement between observers,
+  not a measured deviation). governance_attestation is left out until a signed
+  witness record a reader can verify can be cited.
   The operator is a party to the worked examples for A and S and the subject of
   the worked example for W; the examples show the shapes are emitted, not that
   they are in independent use.

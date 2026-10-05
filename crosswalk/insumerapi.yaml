@@ -172,7 +172,7 @@ signal_types:
           - id                # TRST-XXXXX identifier
           - wallet            # EVM wallet address, in signature scope
           - conditionSetVersion
-          - dimensions        # { stablecoins, governance, nfts, staking, institutional_stablecoins, plus solana / xrpl / bitcoin / tron when supplied }; each holds checks[], passCount, failCount, notEvaluatedCount, total
+          - dimensions        # { stablecoins, governance, nfts, staking, institutional_stablecoins, tokenized_treasuries, stablecoin_deposits, wrapped_bitcoin, names, plus solana / xrpl / bitcoin / tron when supplied }; each holds checks[], passCount, failCount, notEvaluatedCount, total
           - summary           # { totalChecks, totalPassed, totalFailed, totalNotEvaluated, dimensionsWithActivity, dimensionsChecked }
           - profiledAt        # ISO 8601
           - expiresAt         # ISO 8601, inside the preimage

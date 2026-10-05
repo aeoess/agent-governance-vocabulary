@@ -1,6 +1,6 @@
 # Crosswalk Matrix
 
-Auto-generated on 2026-09-11. 24 systems × 16 canonical signal types.
+Auto-generated on 2026-10-05. 25 systems × 16 canonical signal types.
 
 Cell legend:
 
@@ -35,6 +35,7 @@ Cell legend:
 | Insumerapi        | ✅            | ⚪                | ⚪                   | ⚪                   | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | —           | —                | —                 | —                     | —                 |
 | Moltrust          | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |
 | Mycelium-Trails   | ⚪            | ⚪                | —                   | —                   | ⚪               | 🟡                     | —              | —                  | —                | —               | ⚪                  | —           | —                | —                 | —                     | —                 |
+| Nenrin            | ⚪            | 🔵               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | 🔵                 | ⚪           | ⚪                | 🟡                | ⚪                     | 🟡                |
 | Nobulex           | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                | —                 | —                     | —                 |
 | Pathcourse-Health | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |
 | PIC               | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     | —                 |
@@ -45,41 +46,41 @@ Cell legend:
 
 ## Coverage
 
-- Systems represented: 24
+- Systems represented: 25
 - Canonical signal types: 16
 
 ### Per-signal coverage
 
 | Signal type | Systems mapped | Coverage |
 |---|---|---|
-| `wallet_state` | 24 / 24 | 100% |
-| `compliance_risk` | 23 / 24 | 96% |
-| `settlement_witness` | 23 / 24 | 96% |
-| `behavioral_trust` | 22 / 24 | 92% |
-| `governance_attestation` | 22 / 24 | 92% |
-| `job_performance` | 21 / 24 | 88% |
-| `passport_grade` | 21 / 24 | 88% |
-| `reasoning_integrity` | 21 / 24 | 88% |
-| `security_posture` | 21 / 24 | 88% |
-| `trust_verification` | 21 / 24 | 88% |
-| `wallet_intelligence` | 21 / 24 | 88% |
-| `peer_review` | 17 / 24 | 71% |
-| `entity_continuity` | 14 / 24 | 58% |
-| `completion_ratio` | 6 / 24 | 25% |
-| `cognitive_attestation` | 4 / 24 | 17% |
-| `bilateral_receipt` | 1 / 24 | 4% |
+| `wallet_state` | 25 / 25 | 100% |
+| `compliance_risk` | 24 / 25 | 96% |
+| `settlement_witness` | 24 / 25 | 96% |
+| `behavioral_trust` | 23 / 25 | 92% |
+| `governance_attestation` | 23 / 25 | 92% |
+| `job_performance` | 22 / 25 | 88% |
+| `passport_grade` | 22 / 25 | 88% |
+| `reasoning_integrity` | 22 / 25 | 88% |
+| `security_posture` | 22 / 25 | 88% |
+| `trust_verification` | 22 / 25 | 88% |
+| `wallet_intelligence` | 22 / 25 | 88% |
+| `peer_review` | 18 / 25 | 72% |
+| `entity_continuity` | 15 / 25 | 60% |
+| `completion_ratio` | 7 / 25 | 28% |
+| `cognitive_attestation` | 5 / 25 | 20% |
+| `bilateral_receipt` | 2 / 25 | 8% |
 
 ### Top-3 most-mapped
 
-- `wallet_state` — 24/24 (100%)
-- `compliance_risk` — 23/24 (96%)
-- `settlement_witness` — 23/24 (96%)
+- `wallet_state` — 25/25 (100%)
+- `compliance_risk` — 24/25 (96%)
+- `settlement_witness` — 24/25 (96%)
 
 ### Top-3 least-mapped
 
-- `bilateral_receipt` — 1/24 (4%)
-- `cognitive_attestation` — 4/24 (17%)
-- `completion_ratio` — 6/24 (25%)
+- `bilateral_receipt` — 2/25 (8%)
+- `cognitive_attestation` — 5/25 (20%)
+- `completion_ratio` — 7/25 (28%)
 
 ---
 

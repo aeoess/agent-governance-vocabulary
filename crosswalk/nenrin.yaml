@@ -1,0 +1,440 @@
+# NENRIN to agent-governance-vocabulary crosswalk
+#
+# Mapped system: NENRIN, the open conduct-witness ledger run by HORIZON SHIELD
+# (The HORIZONs Co., Ltd.), and the record formats it accepts. Every path below is
+# pinned to ogasurfproject-jpg/horizon-shield at commit
+# a2c1c0b49d5c417d7e836c0571b876924132470e (main on 2026-10-05). No claim here is
+# made about any later commit.
+#
+# Three emitted artifacts are mapped, and each row says which one it rests on:
+#
+#   W  the witness record: a jidec-path-v1 walk of an agent endpoint, filed at
+#      POST https://ledger.horizonshield.dev/witness, optionally Ed25519-signed by
+#      the witness with a key served on the witness's own domain
+#      (src/worker.js lines 1528-1600 at the pinned commit).
+#   A  the agreement record: a2a-agreement-v1.1, two parties signing the same
+#      canonical preimage (nenrin/agreement-v0/agreement_verify.py).
+#   S  the MUSUBI settlement: a2a-settlement-v1.x, the output of a deterministic
+#      settle function over a two-party signed contract and signed execution
+#      records (nenrin/musubi-v0/).
+#
+# Worked examples used to check emission:
+#   W  record 07838de9bbcd913bf56a4b1a59ddeb27a7c45225a23a1af047b939a854f521b6,
+#      a walk of https://gate.horizonshield.dev/a2a by an outside witness
+#      (signed_domain pipavlo82.github.io), anchored in ledger entry 65.
+#      https://ledger.horizonshield.dev/witness/07838de9bbcd913bf56a4b1a59ddeb27a7c45225a23a1af047b939a854f521b6
+#   A  workers/hs-ledger/nenrin/agreement-v0/first_agreement_record.json
+#      (agreement_id 488cfa9a43fa7d263f33a03741216fc1, signed by
+#      horizonshield.dev and api.babyblueviper.com).
+#   S  workers/hs-ledger/nenrin/musubi-v0/run0002/settlement_walk2.json
+#      (file sha256 11c27fcfe18895cef09f9683136984a50ffdf2bea10f0d9a44566653f052243f).
+#
+# The operator of the ledger is also a party to records A and S above and is the
+# subject of record W. That is disclosed here because it limits what the examples
+# show: they establish the shapes are emitted, not that independent parties use them.
+
+system:
+  name: NENRIN conduct-witness ledger
+  short_name: NENRIN
+  home: https://ledger.horizonshield.dev
+  github: https://github.com/ogasurfproject-jpg/horizon-shield/tree/a2c1c0b49d5c417d7e836c0571b876924132470e/workers/hs-ledger/nenrin
+  spec: https://github.com/ogasurfproject-jpg/horizon-shield/blob/a2c1c0b49d5c417d7e836c0571b876924132470e/workers/hs-ledger/nenrin/NENRIN_SPEC_v1.md
+  implementation: Cloudflare Worker hs-ledger (workers/hs-ledger/src/worker.js); offline verifiers npm nenrin-verify and PyPI nenrin-verify
+  version_tested: hs-ledger at a2c1c0b49d5c417d7e836c0571b876924132470e
+  role: >
+    An append-only ledger, anchored to Bitcoin through OpenTimestamps, of
+    observations of agent endpoints taken by parties other than the endpoint's
+    operator. Anyone may file a walk; disagreement between witnesses is kept as
+    its own record; the measured party may attach a signed reply. NENRIN reports
+    counts with denominators and never scores, ranks or allows. The same ledger
+    accepts two-party agreement records and MUSUBI contract executions, and its
+    settle function recomputes whether recorded acts stayed inside a signed grant.
+  upstream_license: >
+    MIT per the repository LICENSE at the pinned commit (copyright The HORIZONs
+    Co., Ltd.), with narrower files carrying their own: the npm and PyPI
+    verifiers under nenrin/sdk/ and nenrin/sdk-python/ are MIT, the conduct
+    walker under nenrin/a2a-conduct-js/ and the extension under
+    workers/hs-verify-gate/ext/ are Apache-2.0, and contributed fixtures under
+    nenrin/musubi-v0/fixtures/ keep their authors' terms (CC0 vectors, MIT code).
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: ogasurfproject-jpg
+    project: ogasurfproject-jpg/horizon-shield
+  crosswalk_contributor:
+    github: ogasurfproject-jpg
+    author: Toshikatsu Oga
+
+system_attributes:
+  signature_capability: classical           # Ed25519 for witness, agreement, contract, execution and key-handover signatures; no PQC algorithm
+  canonicalization_profile: implementation-defined  # see notes under descriptor_dimensions; not RFC 8785
+  hash_family: sha-256                      # record sha256, ledger claim_sha256 and every content address are SHA-256
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# One entry per key under vocabulary.yaml signal_types.
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: partial
+    evidence: emitted
+    source_path: "verdict.outcome"
+    internal: "jidec-path-v1 witness record (artifact W): verdict and assertions[]"
+    signed_payload_fields: ["schema", "purpose", "mode", "base", "walked_at", "walker", "witness", "conduct_ext", "card_signature", "nodes", "assertions", "verdict", "establishes", "does_not_establish", "vantage_limitation", "prev_path_refs", "replay"]
+    notes: |
+      Overlap: a signed record that an agent endpoint was checked against a
+      declared requirement, with a per-requirement result. The requirement is the
+      A2A Conduct Extension the agent itself declares on its card
+      (conduct_ext.declared_uri, https://gate.horizonshield.dev/ext/conduct/v1);
+      each assertions[] entry carries the check, the hash of the evidence it read
+      and result true, false or null. verdict.outcome is PASS or FAIL with
+      verdict.n_pass and verdict.n_total.
+      What does not carry over, three divergences:
+      (1) Signer. The signature is the witness's, an outside party, over the
+      record_canonical bytes exactly as filed (src/worker.js witnessVerifySig,
+      lines 374-379). It is not the governing party attesting that its own
+      requirement was met. Unsigned witness records are also accepted and are
+      marked signed: false; only signed records carry an attestation in the
+      registry's sense.
+      (2) Polarity. The record is a measurement, not a pass certificate. FAIL is
+      emitted on the same terms as PASS, and a requirement that could not be
+      observed is result null, never true.
+      (3) Scope. The requirement is a disclosure protocol (what the agent says
+      it does, echoed on the wire), not a policy or delegation scope. The record
+      lists what it does not establish, including the correctness of any
+      response and that the agent behaves the same at other instants.
+      signed_payload_fields lists the top-level members of the worked example;
+      the signature covers the whole record_canonical string, so every member is
+      signed. The signature itself travels beside the record, not inside it. For
+      records filed from 2026-10-02 the ledger stores it and serves it at
+      GET /witness/{sha} (src/worker.js line 1594); before that date the ledger
+      verified it at filing and kept the public key and signed_domain only.
+      Artifact S answers the delegation-scope half of this term (verdict
+      within_grant) but is unsigned by design, so it is not used for this row.
+      Emission checked: the worked example W carries verdict.outcome "PASS",
+      n_pass 7, n_total 7, signed_domain pipavlo82.github.io.
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: false_analog
+    internal: "NENRIN Résumé v1 (GET /resume) and trust-signal v1 (GET /trust-signal)"
+    notes: |
+      Recorded as false_analog because the substitution hazard is real. The
+      résumé is a per-endpoint history assembled from anchored observations over
+      time by independent witnesses, which is the input a behavioral_trust issuer
+      would score. NENRIN deliberately stops before the score: the résumé carries
+      counts{PASS,FAIL}, witness_diversity{distinct_names,distinct_vantages},
+      measurements[], discrepancies[] and freshness, and its red team refuses a
+      record carrying any score-shaped key as score_injection
+      (nenrin/resume-v1/RESUME_SPEC_v1.md lines 34 and 56). A consumer that wires
+      the résumé up as behavioral_trust would be supplying the scoring policy
+      itself and attributing it to NENRIN.
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: |
+      peer_review is a first-party attestation from the task delegator about the
+      executor's delivery. A NENRIN witness is by rule not the walked agent's
+      operator (a key served from the walked agent's own domain is refused as
+      self_witness, src/worker.js lines 1554-1558) and is not its delegator. In
+      artifact S the principal signs approvals, not an assessment of delivery.
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: |
+      NENRIN emits no ratio. The résumé carries PASS and FAIL counts of
+      measurements, which are observations of an endpoint, not completed task
+      delegations over a declared window.
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: partial
+    internal: "a2a-key-succession-v0 handover record (nenrin/agreement-v0/key_succession.py)"
+    notes: |
+      Overlap: a cryptographic record that the same signing identity persists
+      across a key rotation. A handover names the old and new Ed25519 keys and is
+      signed by both (by the new key alone only for reason compromise); handovers
+      chain by prev_succession_sha256; the retirement time is a Bitcoin block
+      height (effective_block), not a clock (key_succession.py lines 26-31 and
+      the rules in its module docstring).
+      What does not carry over: (1) only key rotation and compromise are
+      covered, not host migration or execution environment changes; (2) the
+      persisting identity is a domain's signing key for the purpose
+      "agreement", not an agent; (3) emission. The verifier accepts handover
+      chains served at a party's key_url, and the shape is exercised by vectors
+      in agreement_succession_cases.py and a JS/Python parity test, but as of the
+      pinned commit no party has rotated a production key, so no handover record
+      has been emitted. evidence is therefore left unset; this row is not
+      offered toward the term's promotion trigger.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    match: partial
+    evidence: emitted
+    source_path: "signatures"
+    internal: "a2a-agreement-v1.1 record (artifact A)"
+    signed_payload_fields: ["schema", "agreement_id", "agreed_at", "lower_bound", "parties", "terms", "recorder", "record_paid_by", "establishes", "does_not_establish"]
+    notes: |
+      Overlap, against the four required properties:
+      signatures: both parties sign the same preimage, the context string
+      "a2a-agreement-v1.1\n" followed by the canonical form of every member except
+      signatures (agreement_verify.py lines 56 and 188-194). Each party's public
+      key sits inside the signed bytes (parties[].public_key_ed25519_b64), so the
+      record verifies offline without fetching a key; the verifier never reports
+      accepted unless both signatures verify.
+      action_ref: the record pins each party's conduct record by sha256
+      (parties[].conduct_record.sha256) and each agent card by sha256.
+      issued_at: agreed_at, plus lower_bound, a Bitcoin block hash and height
+      inside the signed bytes that bounds the signing time from below.
+      purpose: NOT carried. The record has no field drawn from the registered
+      purposes (delegation_revocation, covenant_binding), and its subject is free
+      text in terms.what. This is the documented divergence that makes the row
+      partial and keeps it out of the promotion trigger.
+      Second divergence: the event acknowledged in the worked example is named
+      by terms.disclosure_url (ledger entry 34), a resolvable pointer, while only
+      the conduct records and cards are content-addressed.
+      Canonicalization differs from RFC 8785; see descriptor_dimensions notes.
+      Emission checked: worked example A carries two ed25519 signatures,
+      domains horizonshield.dev and api.babyblueviper.com.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: false_analog
+    internal: "MUSUBI settlement a2a-settlement-v1.x (artifact S)"
+    notes: |
+      Recorded as false_analog because the names invite the substitution.
+      settlement_witness attests that a payment or value exchange occurred and
+      was verified against its terms, and it is signed. A MUSUBI settlement
+      answers a different question: whether the authenticated, anchored records
+      under a signed contract stayed within its grant (verdict within_grant or
+      a deviation list), with finality under a declared Bitcoin depth. It is
+      unsigned on purpose (signatures is an empty array in the worked example):
+      its authority is that anyone recomputes it byte for byte from the contract,
+      the execution records and a header view, and it states that it does not
+      establish that HORIZON SHIELD judged anything. The worked example's contract
+      moves no money (bond_outcome "n/a").
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: |
+      NENRIN emits no identity grade, KYC assertion or principal endorsement. A
+      signed witness record binds a key to a domain (signed_domain) by fetching
+      key_url; that is domain attribution of the witness, not verification of
+      the walked agent's identity.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: NENRIN has no passport primitive and emits no grade.
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: |
+      The registry term is wallet-discoverable. NENRIN records are keyed by
+      endpoint URL and record sha256 and carry no wallet anywhere.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: No wallet, balance or holding primitive in any NENRIN record format.
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "Status note: reserved in vocabulary.yaml. No wallet primitive, so no classification of wallet activity."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: |
+      Status note: reserved in vocabulary.yaml. A walk records request and
+      response hashes at the wire. It never commits to the reasoning behind an
+      action.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "Status note: reserved in vocabulary.yaml. NENRIN makes no claim about model state or reasoning content."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "Status note: reserved in vocabulary.yaml. NENRIN emits no score, so no scored exposure assessment."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "Status note: reserved in vocabulary.yaml. Not wallet-bound and not outcome-scoring."
+
+# ─────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ─────────────────────────────────────────────────
+decision_trajectory:
+
+  decision_lineage:
+    canonical: decision_lineage
+    match: no_mapping
+    notes: |
+      Same construction, different question. NENRIN rings are per endpoint and
+      per calendar month, and each ring carries prev_ring_sha256, the hash of the
+      previous ring (NENRIN_SPEC_v1.md section 2, Layer 3), so the sequence is
+      walkable without trusting the ledger. But a ring bundles observations of an
+      endpoint by witnesses; it is not a sequence of decisions affecting the
+      agent. The ledger's own entries are hash-chained by prev_entry_sha256
+      (src/chain_v1.mjs) across all subjects, not per agent.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: partial
+    evidence: emitted
+    source_path: "conduct_ext.declared_uri"
+    notes: |
+      Overlap: an identifier of the standard a walk was judged against, so two
+      PASS records against different revisions are not silently equal. In
+      artifact W it is conduct_ext.declared_uri (a versioned extension URI ending
+      /v1) together with walker.tool and walker.version.
+      Divergence: it names a disclosure-protocol version and the walking tool's
+      version, not a behavioral baseline of the agent. A pinned walker digest is
+      enforced by the conduct-witness GitHub Action (walker_sha256) but is not
+      carried inside the record.
+      Emission checked: worked example W carries
+      "https://gate.horizonshield.dev/ext/conduct/v1" and walker version "1".
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: false_analog
+    notes: |
+      NENRIN's discrepancy record (NENRIN_SPEC_v1.md section 2, Layer 2; founding
+      instance NENRIN_DISCREPANCY_0001.md) is a first-class, content-addressed
+      record that two witnesses reported incompatible observations of the same
+      target over overlapping time. It is close enough in name and purpose to be
+      wired up as divergence_signal, which is why this row is false_analog and
+      not no_mapping. It is not a quantitative deviation of the agent from a
+      declared baseline: it is a disagreement between observers, kept because
+      either may be right, and it carries no magnitude.
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: NENRIN emits no trust score, so there is nothing to differentiate.
+
+# ─────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Evaluated for artifact W, the primary record. Differences for A and S are
+# stated in the notes.
+# ─────────────────────────────────────────────────
+descriptor_dimensions:
+  enforcement_class: advisory
+  validity_temporal: at_issuance
+  refusal_authority: consumer_policy
+  invariant_survival: post_action
+  replay_class: fingerprint_only
+  measurement_point: session_boundary
+  notes: |
+    enforcement_class: advisory. NENRIN never blocks, allows or denies; the
+    ledger accepts a FAIL record exactly as it accepts a PASS. Artifact A is
+    binding only in the sense that both parties signed it, and artifact S proves
+    a deviation without enforcing anything.
+    validity_temporal: at_issuance. walked_at is the observation time and the
+    record states it does not establish that the agent behaves the same at
+    other instants. The Bitcoin anchor bounds the filing time from above; it
+    does not extend validity.
+    refusal_authority: consumer_policy. Whether to act on a record is the
+    reader's decision. For artifact A the closer value is shared.
+    invariant_survival: post_action. A walk records what an endpoint already
+    answered.
+    replay_class: fingerprint_only for W. The record carries request and response
+    body hashes, not bodies, so a verifier can detect that the live endpoint now
+    differs (the record's own replay block says a changed card is a finding, not
+    an error) but cannot re-derive the assertions from the record alone. For S
+    the class is full_replay: the settlement is recomputed byte for byte from the
+    contract, the execution records and a header view, as run0002/README.md does.
+    measurement_point: session_boundary. One walk is one sequence of requests to
+    one endpoint.
+    governed_action_class is omitted. A walk observes; it does not govern a class
+    of action, and declaring one would assert a scope the record does not carry.
+    Canonicalization, for system_attributes.canonicalization_profile: UTF-8 JSON,
+    object keys sorted at every level, separators "," and ":" with no spaces,
+    non-ASCII unescaped, numbers as Python json.dumps writes them
+    (agreement_verify.py lines 115-118; conduct-v1 section 4). It differs from RFC
+    8785 in key order for characters outside the Basic Multilingual Plane (code
+    point order, not UTF-16 code units) and in number formatting. The JS verifier
+    is held to the Python bytes by committed float and string vectors
+    (agreement_float_repr_v1.json, agreement_strings_v1.json). Witness signatures
+    are over the record_canonical string exactly as filed. TRACE Trust Records
+    pinned through trace-pin-v0 are an exception: they are addressed by the
+    sha256 of their RFC 8785 form, as TRACE requires.
+
+# ─────────────────────────────────────────────────
+# NENRIN PRIMITIVES NOT IN VOCABULARY
+# Listed for completeness, not proposed as canonical terms here.
+# ─────────────────────────────────────────────────
+out_of_vocabulary_primitives:
+
+  witness_disagreement:
+    nenrin_field: "nenrin discrepancy record (NENRIN_SPEC_v1.md section 2, Layer 2)"
+    notes: |
+      Two incompatible observations of one target, kept side by side and
+      anchored rather than resolved. See the divergence_signal row for why this
+      is not that term.
+
+  subject_reply:
+    nenrin_field: "nenrin-response-v0 (nenrin/response-v0/)"
+    notes: |
+      The measured party's signed reply, up to 2000 characters, shown beside the
+      measurements it names at GET /witness/{sha}, /resume and /trust-signal. The
+      key must be served on the subject's own host. It never changes a verdict, a
+      count or a hash. Not anchored in v0.
+
+  external_time_anchor:
+    nenrin_field: "ledger entries stamped with OpenTimestamps; agreement lower_bound"
+    notes: |
+      Each batch of records is a ledger entry whose claim is stamped to Bitcoin,
+      which bounds the filing time from above. Agreement records also carry a
+      block hash inside the signed bytes, which bounds the signing time from below.
+
+  independent_mirror:
+    nenrin_field: "mirror-v0 (nenrin/mirror-v0/)"
+    notes: |
+      A holder outside the operator keeps the bytes and checks them against the
+      anchors offline; two honest mirrors agree on content_sha256 and
+      entries_sha256.
+
+  trace_record_pin:
+    nenrin_field: "trace-pin-v0 (nenrin/trace-pin-v0/, POST /evidence/trace)"
+    notes: |
+      Pins a signed TRACE Trust Record by the sha256 of its RFC 8785 form after
+      checking its signature, refusing a postdated iat, and anchors it in the
+      next batch, so the record stays checkable after its key or URIs change.
+      Relation to crosswalk/agentrust-trace.yaml: complementary. TRACE says what
+      ran; a pin adds an outside bound on when the record existed. As of the
+      pinned commit no TRACE record from an outside party has been pinned.
+
+summary: |
+  NENRIN is a witness ledger: it records what outside parties observed an agent
+  endpoint do, anchored in time, with disagreement and the subject's reply kept
+  beside the observation. It issues no scores, holds no wallets and makes no claim
+  about reasoning, so those terms are no_mapping.
+  Four rows are partial. governance_attestation rests on the signed witness
+  record, which is a third-party measurement against the agent's own declared
+  extension and emits FAIL as readily as PASS. bilateral_receipt rests on the
+  two-party agreement record, which meets signatures, action_ref and issued_at
+  but carries no registered purpose. entity_continuity rests on the key handover
+  record, which covers key rotation only and has not yet been emitted in
+  production. baseline_revision rests on the extension URI and walker version.
+  Three rows are false_analog, each because the name invites a substitution:
+  behavioral_trust (the résumé is history without a score), settlement_witness
+  (a MUSUBI settlement is an unsigned, recomputable grant check, not a signed
+  payment receipt) and divergence_signal (a discrepancy record is disagreement
+  between observers, not a measured deviation).
+  The operator is a party to the worked examples for A and S and the subject of
+  the worked example for W; the examples show the shapes are emitted, not that
+  they are in independent use.

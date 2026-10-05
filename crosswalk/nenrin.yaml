@@ -23,6 +23,14 @@
 #      a walk of https://gate.horizonshield.dev/a2a by an outside witness
 #      (signed_domain pipavlo82.github.io), anchored in ledger entry 65.
 #      https://ledger.horizonshield.dev/witness/07838de9bbcd913bf56a4b1a59ddeb27a7c45225a23a1af047b939a854f521b6
+#      Gap, stated plainly: this record was filed on 2026-09-29, before the ledger
+#      began storing witness signatures (2026-10-02). The ledger verified the
+#      signature at filing and kept only the public key and signed_domain, so a
+#      reader cannot verify this signature today. As of 2026-10-06 no witness
+#      record has been filed since 2026-10-02 (GET /witness/pending is empty and
+#      the last ledger entry, 68, is from 2026-10-02 00:30 UTC), so no record's stored
+#      signature can be cited yet. The first signed record filed after that date
+#      replaces this example in a revision of this file.
 #   A  workers/hs-ledger/nenrin/agreement-v0/first_agreement_record.json
 #      (agreement_id 488cfa9a43fa7d263f33a03741216fc1, signed by
 #      horizonshield.dev and api.babyblueviper.com).
@@ -116,7 +124,11 @@ signal_types:
       Artifact S answers the delegation-scope half of this term (verdict
       within_grant) but is unsigned by design, so it is not used for this row.
       Emission checked: the worked example W carries verdict.outcome "PASS",
-      n_pass 7, n_total 7, signed_domain pipavlo82.github.io.
+      n_pass 7, n_total 7, signed_domain pipavlo82.github.io. Its signature
+      cannot be checked by a reader: the record predates signature storage
+      (see the gap note at the top of this file). Until a signed record filed
+      after 2026-10-02 is cited here, the signed part of this row rests on the
+      ledger's check at filing, which a reader cannot repeat.
 
   behavioral_trust:
     canonical: behavioral_trust
@@ -188,8 +200,10 @@ signal_types:
       key sits inside the signed bytes (parties[].public_key_ed25519_b64), so the
       record verifies offline without fetching a key; the verifier never reports
       accepted unless both signatures verify.
-      action_ref: the record pins each party's conduct record by sha256
-      (parties[].conduct_record.sha256) and each agent card by sha256.
+      action_ref: met only in part. The hashes inside the signed bytes address
+      the parties' agent cards and conduct records (parties[].conduct_record.sha256
+      and the card digests). The event the record acknowledges is not among them:
+      it is reached through terms.disclosure_url (see the second divergence).
       issued_at: agreed_at, plus lower_bound, a Bitcoin block hash and height
       inside the signed bytes that bounds the signing time from below.
       purpose: NOT carried. The record has no field drawn from the registered
@@ -199,6 +213,10 @@ signal_types:
       Second divergence: the event acknowledged in the worked example is named
       by terms.disclosure_url (ledger entry 34), a resolvable pointer, while only
       the conduct records and cards are content-addressed.
+      Third divergence: what is acknowledged is a prior event (the ring
+      reproduction behind ledger entry 34), not a delegation step. The record
+      has no delegator, delegatee or scope, so it receipts an acknowledgment
+      between two parties, not a delegation.
       Canonicalization differs from RFC 8785; see descriptor_dimensions notes.
       Emission checked: worked example A carries two ed25519 signatures,
       domains horizonshield.dev and api.babyblueviper.com.
@@ -425,9 +443,12 @@ summary: |
   about reasoning, so those terms are no_mapping.
   Four rows are partial. governance_attestation rests on the signed witness
   record, which is a third-party measurement against the agent's own declared
-  extension and emits FAIL as readily as PASS. bilateral_receipt rests on the
-  two-party agreement record, which meets signatures, action_ref and issued_at
-  but carries no registered purpose. entity_continuity rests on the key handover
+  extension and emits FAIL as readily as PASS; its worked example predates
+  signature storage, so a reader cannot check that signature today.
+  bilateral_receipt rests on the two-party agreement record, which meets
+  signatures and issued_at, meets action_ref only for the party cards and
+  conduct records (the acknowledged event is reached by URL), carries no
+  registered purpose, and acknowledges an event rather than a delegation step. entity_continuity rests on the key handover
   record, which covers key rotation only and has not yet been emitted in
   production. baseline_revision rests on the extension URI and walker version.
   Three rows are false_analog, each because the name invites a substitution:

@@ -8,7 +8,7 @@
 # (the form `/verify` emits as `did` / `subject_did`) and
 # `did:agentid:<agent_id>` (emitted as `did_agentid`). The two are
 # cross-linked via `alsoKnownAs` in the DID document and resolve
-# through the same DIF Universal Resolver binding. Ed25519 signatures
+# through the same self-hosted DID resolution endpoint. Ed25519 signatures
 # over the receipt compound digest are publicly verifiable against the
 # JWKS. Listed in `issuers_in_production` for `trust_verification` and
 # `completion_ratio`.
@@ -22,7 +22,7 @@
 system:
   name: AgentID
   home: https://getagentid.dev
-  repo: https://github.com/haroldmalikfrimpong-ops/getagentid
+  repo: https://github.com/haroldmalikfrimpong-ops/agentid
   spec: https://getagentid.dev/specs/did-method-agentid-v1.0
   jwks: https://getagentid.dev/.well-known/jwks.json
   role: >
@@ -38,9 +38,9 @@ system:
     1-4, labelled L1-L4 (`trust_level_label`, e.g. `L2 — Verified`).
   spec_alignment:
     ctef_version: "v0.3.1"
-    canonicalization: "JCS (RFC 8785)"
+    canonicalization: "implementation-defined (staged): data_hash = sha256hex(JSON.stringify({action, agent_id, data, timestamp}) in insertion order); hash_receipt digest = sha256hex(JCS RFC 8785 of the hash receipt); compound_digest = sha256hex(hash_receipt_digest || memo_digest || action_ref || timestamp) as ASCII hex/string concatenation; Ed25519 signs the raw 32 digest bytes. JCS covers one stage only."
     signature_alg: "EdDSA / Ed25519 (raw digest bytes)"
-    did_resolution: "DIF Universal Resolver binding — GET https://getagentid.dev/1.0/identifiers/{did}"
+    did_resolution: "self-hosted DID resolution HTTP(S) endpoint (did:web + did:agentid) — GET https://getagentid.dev/1.0/identifiers/{did}; W3C did-extensions registration pending (w3c/did-extensions#762)"
 
 license: Apache-2.0
 
@@ -57,8 +57,12 @@ maintainer:
 issuer: "did:agentid:agentid-issuer"
 
 system_attributes:
+  # The signing pipeline is staged (JSON.stringify -> JCS -> hex concat ->
+  # raw-digest Ed25519); JCS applies to the hash receipt only, so the
+  # whole-pipeline profile is implementation-defined. Stages are spelled
+  # out under system.spec_alignment.canonicalization.
   signature_capability: classical
-  canonicalization_profile: jcs-rfc-8785
+  canonicalization_profile: implementation-defined
   hash_family: sha-256
 
 
@@ -102,41 +106,62 @@ signal_types:
     # Fields emitted on the /verify response. The Ed25519 signature
     # covers `receipt.compound_digest` (raw bytes); see the manifest
     # `receipt_format` for which inputs the digest binds.
+    # Fields committed by the Ed25519-signed compound digest, reproduced
+    # from the construction in the issuer code (lib/receipts.ts):
+    #   data_hash       = sha256hex(JSON.stringify({action, agent_id, data, timestamp}))
+    #                     data = {verified, trust_level, trust_level_label,
+    #                             certificate_valid, verified_by[, context_epoch, context_hash]}
+    #   hash_receipt    = {receipt_id, action, agent_id, timestamp, data_hash,
+    #                      signature, verification_url}
+    #   compound_digest = sha256hex(sha256hex(JCS(hash_receipt))
+    #                               || sha256hex(memo | "no-blockchain-receipt")
+    #                               || action_ref || timestamp)
+    #   signature       = Ed25519(raw 32 bytes of compound_digest), kid agentid-2026-03
+    # `receipt.hash.signature` is an HMAC internal to the issuer; it is
+    # inside the JCS'd hash receipt, hence committed, but not independently
+    # verifiable. The /verify hot path skips the on-chain memo, so the memo
+    # digest is sha256hex("no-blockchain-receipt") unless the receipt was
+    # anchored via /publish-onchain.
     signed_payload_fields:
-      - claim_type            # string — "identity" (CTEF v0.3.1)
-      - did                   # string — did:web:getagentid.dev:agent:<agent_id>
-      - subject_did           # string — principal binding (mirrors `did`)
-      - did_agentid           # string — did:agentid:<agent_id> (alias of `did`; DID-doc `alsoKnownAs`)
-      - agent_id              # string — local identifier
-      - verified              # boolean — certificate_valid && active
-      - identity_gate         # string — "passed" | "failed" (absent when the local agent_id is unknown)
-      - resolution_source     # string — "direct" (local registry) | "external" (resolved DID)
-      - resolved_at           # ISO 8601
-      - trust_level           # integer 1-4 (informational; legacy 0 normalizes to 1)
-      - trust_level_label     # string — "L1 — Registered" | "L2 — Verified" | "L3 — Secured" | "L4 — Certified"
-      - certificate_valid     # boolean
-      - active                # boolean
-      - supported_key_types   # array — e.g. ["ecdsa-p256", "ed25519"]
-      - scarring_score        # number — incident-weighted history
-      - negative_signals      # integer
-      - resolved_signals      # integer
-      - incident_history      # array of incident records
-      - behaviour.risk_score  # integer 0-100 — informational, does not gate `verified`
-      - behaviour.warnings    # array of anomaly records {type, severity, description, detected_at, current_value, baseline_value}
-      - receipt.hash.receipt_id                         # string — UUID of this verification receipt
+      - agent_id                                        # via data_hash and hash_receipt.agent_id
+      - verified                                        # via data_hash (data.verified)
+      - trust_level                                     # via data_hash (data.trust_level), integer 1-4
+      - trust_level_label                               # via data_hash
+      - certificate_valid                               # via data_hash
+      - receipt.hash.receipt_id                         # string — UUID
       - receipt.hash.action                             # string — "verification"
       - receipt.hash.agent_id                           # string
-      - receipt.hash.timestamp                          # ISO 8601
-      - receipt.hash.data_hash                          # string — SHA-256 hex
-      - receipt.hash.signature                          # string — HMAC-SHA256 (internal, not publicly verifiable)
+      - receipt.hash.timestamp                          # ISO 8601 — also the trailing component of the compound preimage
+      - receipt.hash.data_hash                          # string — SHA-256 hex over {action, agent_id, data, timestamp}
+      - receipt.hash.signature                          # string — issuer HMAC, committed via JCS(hash_receipt), not publicly verifiable
       - receipt.hash.verification_url                   # string — https://getagentid.dev/proof/{receipt_id}
-      - receipt.attestation_level                       # string — "self-issued" | "domain-attested"
-      - receipt.compound_digest                         # string — SHA-256 hex (construction per manifest `receipt_format`)
-      - receipt.compound_digest_ed25519_signature       # Ed25519 over compound_digest (raw bytes), public-verifiable via JWKS
-      - receipt.policy_hash                             # string — policy in force at issuance
-      - receipt.previous_policy_hash                    # string — prior link in the policy hash chain
-      - receipt.action_ref                              # string — see note below
-      - receipt.context_epoch                           # integer | null
+      - receipt.action_ref                              # string — component of the compound preimage (see note below)
+      - receipt.context_epoch                           # integer | null — committed via data_hash only when the caller supplies it
+    # Returned on `/verify` but NOT committed by the compound digest.
+    # Treat as response metadata; do not rely on the signature for them.
+    response_only_fields:
+      - claim_type
+      - did
+      - subject_did
+      - did_agentid
+      - identity_gate
+      - resolution_source
+      - resolved_at
+      - active
+      - supported_key_types
+      - scarring_score
+      - negative_signals
+      - resolved_signals
+      - incident_history
+      - behaviour.risk_score
+      - behaviour.warnings
+      - receipt.attestation_level
+      - receipt.policy_hash
+      - receipt.previous_policy_hash
+      - receipt.compound_digest                         # the digest itself (signature target, not a covered field)
+      - receipt.compound_digest_ed25519_signature       # the signature
+      - interaction_pattern.*
+      - context_continuity.*
     # `receipt.action_ref` on `/verify` echoes a caller-supplied
     # `action_ref` when one is provided; otherwise it falls back to
     # the receipt UUID (equal to `receipt.hash.receipt_id`). The
@@ -171,7 +196,9 @@ signal_types:
       sub-block of the `/verify` response under `interaction_pattern`.
       Cited as one of two production implementations in
       `vocabulary.yaml` (alongside APS at default 90d).
-    signed_payload_fields:
+    # Not committed by the compound digest (see trust_verification note);
+    # emitted as response metadata on `/verify`.
+    response_only_fields:
       - interaction_pattern.completion_ratio                       # number 0..1 (up to three decimals; emitted as integer 1 when exact)
       - interaction_pattern.relationship_to_completion_ratio       # number — completion conditional on partner-counter
       - interaction_pattern.sequence_depth                          # integer — interaction chain length
@@ -195,7 +222,8 @@ signal_types:
       trace (PDR's domain) and is not a soulbound-anchor receipt
       (SBR's domain). Same canonical primitive — "is this still the
       same agent?" — different evaluation surface.
-    signed_payload_fields:
+    # Not committed by the compound digest; response metadata on `/verify`.
+    response_only_fields:
       - context_continuity.score                # 0-100
       - context_continuity.auto_context_epoch   # detected epoch boundary
       - context_continuity.signals              # array of continuity signals

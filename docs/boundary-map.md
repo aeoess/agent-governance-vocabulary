@@ -48,6 +48,7 @@ Three things are recorded separately for every edge and never merged:
 | Default Settlement / DefaultVerifier | @nutstrut | Independent evidence evaluation and portable verification artifacts for autonomous systems. Produces portable SAR v0.1 receipts with PASS, FAIL or INDETERMINATE verdicts over a frozen six-field signed core, and can consume pinned external artifacts for independently implemented evaluation. Claim ceiling: a valid SAR receipt establishes the signed evaluator result for the referenced task or evidence under the applicable profile. It does not by itself establish authority validity, execution occurrence, completeness, independent observation or adoption by another system. No edge until a first bounded pilot is chosen | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5902118417) |
 | invinoveritas | @babyblueviper1 | A verification layer for autonomous agents. Before an irreversible action, it issues a signed verdict that anyone can check offline at [/verify-proof](https://invinoveritas.dev/verify-proof) (BIP-340 Schnorr against its published key). Every verdict goes to a public [ledger](https://invinoveritas.dev/ledger), and its hash is anchored to Bitcoin before the outcome is known. It judges and attests. It holds no authority over the action, enforces nothing, and takes no custody of anyone's funds. Open vectors and checkers for the formats it verifies: [preaction-governance-conformance](https://github.com/babyblueviper1/preaction-governance-conformance). Independent approver on MUSUBI ([horizon-shield#31](https://github.com/ogasurfproject-jpg/horizon-shield/issues/31)) | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6044710512) |
 | Motebit | @hakimlabs | An agent runtime built around a persistent Ed25519 identity the user owns, with signed execution receipts and policy and delegation enforced through explicit runtime boundaries. Signed `ExecutionReceipt`s and identity files (`motebit.md`) are checked offline with no Motebit runtime and no network, using `npx @motebit/verify` or the `@motebit/verifier` library. The construction is `JCS → SHA-256 → Ed25519`, specified under [`spec/`](https://github.com/motebit/motebit/tree/main/spec), with a Python reference verifier as a second implementation. A verdict reports what it actually checked. The protocol layer is Apache-2.0 and the runtime is BSL. Proposed boundary: the existing APS and Motebit vector exchange ([motebit/motebit#22](https://github.com/motebit/motebit/issues/22)), extended to an authority artifact that a receipt cites. Participates asynchronously through issues and fixtures | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6045292388) |
+| Horizon Shield / NENRIN | @ogasurfproject-jpg | NENRIN, run by Horizon Shield, a four-person company in Japan, is an open conduct-witness ledger for AI-facing services. Anyone can walk an MCP or A2A endpoint and file a signed witness record. The ledger batches records daily and anchors them to Bitcoin (OpenTimestamps). Disagreeing witnesses are kept side by side, and no score is given. Another project can verify a witness record from `GET https://ledger.horizonshield.dev/witness/<sha>` alone (canonical bytes, Ed25519 signature, and the key the witness's domain serves), MUSUBI contracts and settlements with `settle_v1_10.py` offline and deterministically, and Agent Card signatures against `a2a-card-sign-v01`. Boundary: it records and recomputes. It enforces nothing at runtime, judges no liability, and holds no funds or keys. Open vectors and checkers include interop-v0, v0.1, v0.2-edge, musubi-approval-v2 and a2a-card-sign-v01, and the [tsunagi board](https://github.com/ogasurfproject-jpg/horizon-shield/blob/main/ops/tsunagi/BOARD.md) reruns outside implementations nightly from their own repos | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6048922299) |
 
 Supporting projects, listed separately: this vocabulary (crosswalks and match types) and the [Agent Authority Conformance lab](https://github.com/Agent-Authority-Conformance/aps-conformance-suite) (run records with per-claim attribution).
 
@@ -98,6 +99,19 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
  │ corpus      │                │ record           │
  └─────────────┘                └──────────────────┘
 
+ ┌─────────────┐  E10 pinned,   ┌──────────────────┐
+ │     APS     │  reproduced    │      Motebit     │
+ │ delegation  │ ◀════════════▶ │ execution        │
+ │ vector      │  both ways     │ receipts         │
+ └─────────────┘                └──────────────────┘
+
+ ┌─────────────┐  E11           ┌──────────────────┐
+ │invinoveritas│  reproduced at │ Horizon Shield / │
+ │ approval    │ ────────────▶  │ NENRIN, MUSUBI   │
+ │ checker     │  a recorded    │ tsunagi board    │
+ │             │  commit        │                  │
+ └─────────────┘                └──────────────────┘
+
  ┌─────────────┐  E6 proposed   ┌──────────────────┐
  │ Veritas Acta│ ┄┄┄┄┄┄┄┄┄┄┄┄▶  │   paying side    │
  │ signed      │                │ receipt before   │
@@ -144,6 +158,7 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
    ════▶   pinned artifact, exercised
    ┄┄┄┄▶   proposed or scoped, not run
    ─▶      run reported by its owner, not inspected here
+   ────▶   reproduced at a recorded commit, run record inspected, not pinned
 ```
 
 **This is a graph, not a stack.** Arrows show independently owned boundaries that can compose. They do not mean every project is required, and a line does not imply that two projects share an internal protocol. Why each line is solid or dotted is recorded in the edge sections below, which are the source of truth for this picture.
@@ -255,6 +270,26 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 - **Provenance.** @telleroutlook reported in #177 that this boundary had already been exercised with the lab. The record's runner is @aeoess. Per layer: native JS record and chain observations and Rust DSSE observations are independent (Mode A, implementations by WasmAgent). The lab semantic recomputation is author-produced (Mode B, harness authored by the runner) and claims no independent record. 28 of 28 fixtures agree with the manifest.
 - **Owners.** AEP owns the corpus and rules. The lab owns the record.
 - **Remaining.** An independent semantic implementation, and reuse of the pattern by other projects, which is what @telleroutlook asked for.
+
+### E10. APS <-> Motebit
+
+- **Producer and artifact.** Two directions, recorded separately. Motebit to APS: two Motebit `ExecutionReceipt` fixtures pinned at motebit `fed97862`, `example-receipt.json` (sha256 `130af372ceb2923b0c7753d1daa2be991e7cf251bb3b50cc66a1686734dd6b67`) and `sovereign-receipt.json` (sha256 `220409fa0a02d35cf17093019c124daa2f079da817d74473f290f70d59b0312c`). APS to Motebit: the APS case-A authority-delegation vector `case-a-neutral-vector.CANDIDATE.json` from agent-passport-system/aps-openshell-reference-middleware at `2508f6a7` (sha256 `4918125741234d749e4ab23cb6ec98c12f6b86b951147eca984b04a76bb53d31`). It is a candidate vector, not an admitted conformance fixture.
+- **Consumer.** APS checks the Motebit receipts in [`tests/interop/motebit-receipts.test.ts`](https://github.com/agent-passport-system/agent-passport-system/blob/a8bdf52571c7e72035c8bb3a58e56059376e867f/tests/interop/motebit-receipts.test.ts), run by `npm run test:interop` in APS CI. Motebit checks the APS vector in `scripts/__tests__/interop-aps-vector.test.ts`, which reads its pins from `examples/interop/aps/INTEROP.md`. Neither side imports the other's code.
+- **Establishes.** APS side: the signed bytes canonicalize and verify under the key embedded in the receipt, and the signed `task_id` and the declared suite are covered by the signature. Motebit side: the vector reproduces both `delegation_id`s, both signatures verify under draft-pidlisnyi-aps-04 section 4.1, the chain links, narrowing by scope, time and depth holds, and ancestor revocation gives the expected results.
+- **Does not establish.** Who controls the Motebit signing key, or whether the task occurred. Full APS compatibility or conformance to the profile, since the claim covers this one vector. Spend, reputation, values and reversibility are not evaluated.
+- **Progress.** `pinned`, `reproduced`.
+- **Provenance.** Proposed by @hakimlabs ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-6048807710)). APS `main` CI run 37351561578 (2026-10-05) passed the Motebit subtests. Each direction is a second implementation, not an independent record. Each side wrote the code that checks the other's artifact, and each side's fixtures were produced by its own project. No third party run record is cited here.
+- **Owners.** Each project owns its artifact and its consumer.
+- **Remaining.** The authority-artifact linkage in the Motebit node stays `proposed` and separate from this edge.
+
+### E11. invinoveritas -> Horizon Shield (MUSUBI approvals)
+
+- **Producer and artifact.** invinoveritas's approval checker from [preaction-governance-conformance](https://github.com/babyblueviper1/preaction-governance-conformance), run against Horizon Shield's musubi-approval-v2 corpus.
+- **Consumer.** Horizon Shield's tsunagi board, which runs the checker nightly from its default branch and records the commit it ran.
+- **Progress.** `reproduced`, not `pinned`. Tsunagi run [37648725555](https://github.com/ogasurfproject-jpg/horizon-shield/actions/runs/37648725555) on 2026-10-07 recorded the checker at `bcf65929`. It reproduced all nine musubi-approval-v2 expectations, with the same result and reason for each vector as Horizon Shield's reference checker. `bcf65929` is the commit of that run, not a fixed pin for later nightly runs.
+- **Provenance.** Proposed by @babyblueviper1 ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-6045773729)). The saved run record was inspected. It was not rerun locally by the map editors.
+- **Owners.** invinoveritas owns the checker. Horizon Shield owns the corpus and the board.
+- **Remaining.** The approver role on [horizon-shield#31](https://github.com/ogasurfproject-jpg/horizon-shield/issues/31) is a second edge, `proposed` until the first contract is signed.
 
 ## Assurance edges
 

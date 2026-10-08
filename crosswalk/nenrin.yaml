@@ -104,7 +104,7 @@ signal_types:
     notes: |
       Overlap: a signed record that an agent endpoint was checked against a
       declared requirement, with a per-requirement result. The requirement is the
-      A2A Conduct Extension the agent itself declares on its card
+      A2A Conduct Extension declared on the card served at the walked endpoint
       (conduct_ext.declared_uri, https://gate.horizonshield.dev/ext/conduct/v1);
       each assertions[] entry carries the check, the hash of the evidence it read
       and result true, false or null. verdict.outcome is PASS or FAIL with

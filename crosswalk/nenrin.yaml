@@ -109,13 +109,14 @@ signal_types:
       each assertions[] entry carries the check, the hash of the evidence it read
       and result true, false or null. verdict.outcome is PASS or FAIL with
       verdict.n_pass and verdict.n_total.
-      What does not carry over, three divergences:
-      (1) Signer. The signature is the witness's, an outside party, over the
+      Where it differs, three points:
+      (1) What is attested. The signature is the witness's, over the
       record_canonical bytes exactly as filed (src/worker.js witnessVerifySig,
-      lines 374-379). It is not the governing party attesting that its own
-      requirement was met. Unsigned witness records are also accepted and are
-      marked signed: false; only signed records carry an attestation in the
-      registry's sense.
+      lines 374-379). It attests to what that witness observed when it walked
+      the endpoint, not that the governing party met its own requirement, and
+      the result is advisory: a consumer decides what to do with it. Unsigned
+      witness records are also accepted and are marked signed: false; only
+      signed records carry an attestation in the registry's sense.
       (2) Polarity. The record is a measurement, not a pass certificate. FAIL is
       emitted on the same terms as PASS, and a requirement that could not be
       observed is result null, never true.
@@ -133,7 +134,15 @@ signal_types:
       Artifact S answers the delegation-scope half of this term (verdict
       within_grant) but is unsigned by design, so it is not used for this row.
       Emission checked on W2: verdict.outcome "PASS", n_pass 7, n_total 7,
-      signed_domain pipavlo82.github.io. A reader can check the signature with
+      signed_domain pipavlo82.github.io. W2 has 8 assertions; the count covers
+      the 7 with a non-null result. The eighth, payment_required_as_declared,
+      is null: not applicable, because the card declares a paid model and the
+      request was answered without a charge, and from the witness's vantage a
+      free method and a waived charge look the same. W2 also did not verify the
+      agent card's signature: card_signature records present true, count 2,
+      verified null ("read, not verified"; that client does not reproduce the
+      card's canonical form). So the record shows what the served card said,
+      not who published it. A reader can check the signature with
       the served public key and compare that key with the one on the witness's
       domain. The record's own vantage_limitation discloses prior collaboration
       between the witness and the operator and makes no claim of unaffiliated
@@ -440,9 +449,10 @@ summary: |
   beside the observation. It issues no scores, holds no wallets and makes no claim
   about reasoning, so those terms are no_mapping.
   Two rows are partial: governance_attestation rests on a signed witness
-  record whose signature a reader can verify, but the signer is an outside
-  witness rather than the governing party and the record is a measurement
-  against a disclosure protocol, not a pass certificate for a policy; and
+  record whose signature a reader can verify, but what is attested is an
+  outside witness's advisory observation rather than the governing party's own
+  attestation, and the record is a measurement against a disclosure protocol,
+  not a pass certificate for a policy; and
   entity_continuity rests on the key handover record, which covers key
   rotation only and has not yet been emitted in production.
   Five rows are false_analog, each because the name or shape invites a

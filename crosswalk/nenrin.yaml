@@ -26,14 +26,19 @@
 #      This record was filed on 2026-09-29, before the ledger began storing
 #      witness signatures (2026-10-02). The ledger verified its signature at
 #      filing and kept only the public key and signed_domain, so a reader cannot
-#      verify that signature today. For that reason governance_attestation, which
-#      would rest on the signature, is left out of this file; it can return in a
-#      follow-up once a signed witness record a reader can verify is cited.
-#      State of the search, checked 2026-10-05T23:01Z, scope the public ledger
-#      at https://ledger.horizonshield.dev only: GET /witness/pending returned
-#      count 0, and GET /ledger/export.jsonl ended at entry 68, created
-#      2026-10-02T00:30:57Z, so no witness record had been filed since signatures
-#      began to be stored.
+#      verify that signature today. It is still used for the descriptor
+#      dimensions, which do not rest on the signature.
+#   W2 record 747ecd97635e104e75185212cfb70e3cc37310ea1f41966a818bfb5b5d57df15,
+#      a walk of the same endpoint by the same witness, filed
+#      2026-10-07T16:15:27Z, after signature storage began. GET /witness/{sha}
+#      serves the record_canonical bytes, public_key_ed25519_b64 and
+#      signature_ed25519_b64; the key equals the one served at
+#      https://pipavlo82.github.io/keys/witness.json, the signature verifies
+#      over the record_canonical bytes, and their sha256 equals the record id.
+#      Anchored in ledger entry 73 (claim_sha256
+#      56f7c78a036b91fed91a55c7ed92701191f29cfa2a68170a74da6e1706eaea09,
+#      Bitcoin block 970423). governance_attestation rests on this record.
+#      https://ledger.horizonshield.dev/witness/747ecd97635e104e75185212cfb70e3cc37310ea1f41966a818bfb5b5d57df15
 #   A  workers/hs-ledger/nenrin/agreement-v0/first_agreement_record.json
 #      (agreement_id 488cfa9a43fa7d263f33a03741216fc1, signed by
 #      horizonshield.dev and api.babyblueviper.com).
@@ -88,6 +93,61 @@ system_attributes:
 # One entry per key under vocabulary.yaml signal_types.
 # ─────────────────────────────────────────────────
 signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: partial
+    evidence: emitted
+    source_path: "verdict.outcome"
+    internal: "jidec-path-v1 witness record (artifact W, worked example W2): verdict and assertions[]"
+    signed_payload_fields: ["schema", "purpose", "mode", "base", "walked_at", "walker", "witness", "conduct_ext", "card_signature", "nodes", "assertions", "verdict", "establishes", "does_not_establish", "vantage_limitation", "prev_path_refs", "replay"]
+    notes: |
+      Overlap: a signed record that an agent endpoint was checked against a
+      declared requirement, with a per-requirement result. The requirement is the
+      A2A Conduct Extension declared on the card served at the walked endpoint
+      (conduct_ext.declared_uri, https://gate.horizonshield.dev/ext/conduct/v1);
+      each assertions[] entry carries the check, the hash of the evidence it read
+      and result true, false or null. verdict.outcome is PASS or FAIL with
+      verdict.n_pass and verdict.n_total.
+      Where it differs, three points:
+      (1) What is attested. The signature is the witness's, over the
+      record_canonical bytes exactly as filed (src/worker.js witnessVerifySig,
+      lines 374-379). It attests to what that witness observed when it walked
+      the endpoint, not that the governing party met its own requirement, and
+      the result is advisory: a consumer decides what to do with it. Unsigned
+      witness records are also accepted and are marked signed: false; only
+      signed records carry an attestation in the registry's sense.
+      (2) Polarity. The record is a measurement, not a pass certificate. FAIL is
+      emitted on the same terms as PASS, and a requirement that could not be
+      observed is result null, never true.
+      (3) Scope. The requirement is a disclosure protocol (what the agent says
+      it does, echoed on the wire), not a policy or delegation scope. The record
+      lists what it does not establish, including the correctness of any
+      response and that the agent behaves the same at other instants.
+      signed_payload_fields lists the top-level members of the worked example
+      W2; the signature covers the whole record_canonical string, so every
+      member is signed. The signature itself travels beside the record, not
+      inside it. For records filed from 2026-10-02 the ledger stores it and
+      serves it at GET /witness/{sha} (src/worker.js line 1594); before that date
+      the ledger verified it at filing and kept the public key and signed_domain
+      only.
+      Artifact S answers the delegation-scope half of this term (verdict
+      within_grant) but is unsigned by design, so it is not used for this row.
+      Emission checked on W2: verdict.outcome "PASS", n_pass 7, n_total 7,
+      signed_domain pipavlo82.github.io. W2 has 8 assertions; the count covers
+      the 7 with a non-null result. The eighth, payment_required_as_declared,
+      is null: not applicable, because the card declares a paid model and the
+      request was answered without a charge, and from the witness's vantage a
+      free method and a waived charge look the same. W2 also did not verify the
+      agent card's signature: card_signature records present true, count 2,
+      verified null ("read, not verified"; that client does not reproduce the
+      card's canonical form). So the record shows what the served card said,
+      not who published it. A reader can check the signature with
+      the served public key and compare that key with the one on the witness's
+      domain. The record's own vantage_limitation discloses prior collaboration
+      between the witness and the operator and makes no claim of unaffiliated
+      independence; one signed walk shows the shape is emitted and verifiable,
+      not that independent parties use it.
 
   behavioral_trust:
     canonical: behavioral_trust
@@ -388,8 +448,13 @@ summary: |
   endpoint do, anchored in time, with disagreement and the subject's reply kept
   beside the observation. It issues no scores, holds no wallets and makes no claim
   about reasoning, so those terms are no_mapping.
-  One row is partial: entity_continuity rests on the key handover record,
-  which covers key rotation only and has not yet been emitted in production.
+  Two rows are partial: governance_attestation rests on a signed witness
+  record whose signature a reader can verify, but what is attested is an
+  outside witness's advisory observation rather than the governing party's own
+  attestation, and the record is a measurement against a disclosure protocol,
+  not a pass certificate for a policy; and
+  entity_continuity rests on the key handover record, which covers key
+  rotation only and has not yet been emitted in production.
   Five rows are false_analog, each because the name or shape invites a
   substitution: behavioral_trust (the résumé is history without a score),
   bilateral_receipt (two signatures and a signed timestamp over an
@@ -398,8 +463,7 @@ summary: |
   version, not a behavioral baseline), settlement_witness (a MUSUBI settlement
   is an unsigned, recomputable grant check, not a signed payment receipt) and
   divergence_signal (a discrepancy record is disagreement between observers,
-  not a measured deviation). governance_attestation is left out until a signed
-  witness record a reader can verify can be cited.
+  not a measured deviation).
   The operator is a party to the worked examples for A and S and the subject of
-  the worked example for W; the examples show the shapes are emitted, not that
+  the worked examples W and W2; the examples show the shapes are emitted, not that
   they are in independent use.

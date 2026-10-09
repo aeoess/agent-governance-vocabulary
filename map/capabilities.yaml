@@ -15,6 +15,12 @@ capabilities:
     job: Bind an external decision to the exact call parameters before execution.
     inputs: [decision reference, exact call]
     outputs: [principal-signed exact-call authorization]
+  # Proposed by kenneives (AgentAvow) on #186. It sits before enforcement.tool_boundary,
+  # which consumes its output as evidence.
+  - id: evidence.tool_definition_binding
+    job: Before a tool is connected or called, bind a signed static verdict about the tool to the exact definition it will run under, so a changed definition fails closed.
+    inputs: [served tool definition, signed verdict]
+    outputs: [per-tool definition digest, per-axis binding result]
   - id: enforcement.tool_boundary
     job: Allow or block the call at the protected tool, using external authority as evidence.
     inputs: [action proposal, evidence]

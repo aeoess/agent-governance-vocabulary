@@ -8,6 +8,7 @@ steps:
   - {capability: authority.delegation,              implementations: [aps],          via: null, gap: null}
   - {capability: decision.pre_action,               implementations: [aps],          via: null, gap: null}
   - {capability: authorization.exact_call,          implementations: [priorseal],    via: E2,   gap: null}
+  - {capability: evidence.tool_definition_binding,  implementations: [],             via: null, gap: role_unrepresented, note: "proposed by AgentAvow on issue 186, its project record waits on issue 185"}
   - {capability: enforcement.tool_boundary,         implementations: [pic],          via: E5,   gap: connection_proposed_not_exercised}
   - {capability: execution.independent_observation, implementations: [],             via: null, gap: role_unrepresented}
   - {capability: comparison.post_action,            implementations: [priorseal],    via: E2,   gap: null, note: observations are synthetic}

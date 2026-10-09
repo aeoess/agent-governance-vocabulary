@@ -17,11 +17,12 @@ flowchart LR
   veritas_acta__receipt_signed_action["receipt.signed_action<br/>Veritas Acta"]
   frequency__verification_per_claim["verification.per_claim<br/>Frequency"]
   subgraph OPEN["Open roles in this journey"]
-    open0["execution.independent_observation"]
-    open1["revocation.during_execution"]
-    open2["receipt.billing_coverage"]
-    open3["settlement.evidence"]
-    open4["attribution.per_action"]
+    open0["evidence.tool_definition_binding"]
+    open1["execution.independent_observation"]
+    open2["revocation.during_execution"]
+    open3["receipt.billing_coverage"]
+    open4["settlement.evidence"]
+    open5["attribution.per_action"]
   end
   aps__decision_pre_action ==>|"E2 pinned, component runs"| priorseal__authorization_exact_call
   aps__decision_pre_action ==>|"E2 pinned, component runs"| priorseal__comparison_post_action
@@ -37,6 +38,7 @@ Only declared edges are drawn. Steps inside one project have no edge.
 | `authority.delegation` | Issue scoped authority from a principal to an agent, narrowing at each transfer. | Agent Passport System |  | within one project |
 | `decision.pre_action` | Decide permit or deny for one proposed action before it runs and emit a signed decision record. | Agent Passport System |  | within one project |
 | `authorization.exact_call` | Bind an external decision to the exact call parameters before execution. | PriorSeal | E2 | pinned, see edge. Limits: APS signatures are under published test keys, observations are synthetic and no transaction is sent |
+| `evidence.tool_definition_binding` | Before a tool is connected or called, bind a signed static verdict about the tool to the exact definition it will run under, so a changed definition fails closed. | none in this map |  | role unrepresented. proposed by AgentAvow on issue 186, its project record waits on issue 185 |
 | `enforcement.tool_boundary` | Allow or block the call at the protected tool, using external authority as evidence. | PIC Standard | E5 | connection proposed not exercised. Limits: how external evidence enters a PIC Action Proposal is not defined yet |
 | `execution.independent_observation` | Record which call actually executed, observed by a party other than the actor. | none in this map |  | role unrepresented |
 | `comparison.post_action` | Compare an observed call with what was authorized and report each mismatch separately. | PriorSeal | E2 | pinned, see edge. observations are synthetic. Limits: APS signatures are under published test keys, observations are synthetic and no transaction is sent |

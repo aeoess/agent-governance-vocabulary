@@ -50,6 +50,8 @@ Three things are recorded separately for every edge and never merged:
 | Motebit | @hakimlabs | An agent runtime built around a persistent Ed25519 identity the user owns, with signed execution receipts and policy and delegation enforced through explicit runtime boundaries. Signed `ExecutionReceipt`s and identity files (`motebit.md`) are checked offline with no Motebit runtime and no network, using `npx @motebit/verify` or the `@motebit/verifier` library. The construction is `JCS → SHA-256 → Ed25519`, specified under [`spec/`](https://github.com/motebit/motebit/tree/main/spec), with a Python reference verifier as a second implementation. A verdict reports what it actually checked. The protocol layer is Apache-2.0 and the runtime is BSL. Proposed boundary: the existing APS and Motebit vector exchange ([motebit/motebit#22](https://github.com/motebit/motebit/issues/22)), extended to an authority artifact that a receipt cites. Participates asynchronously through issues and fixtures | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6045292388) |
 | Horizon Shield / NENRIN | @ogasurfproject-jpg | NENRIN, run by Horizon Shield, a four-person company in Japan, is an open conduct-witness ledger for AI-facing services. Anyone can walk an MCP or A2A endpoint and file a signed witness record. The ledger batches records daily and anchors them to Bitcoin (OpenTimestamps). Disagreeing witnesses are kept side by side, and no score is given. Another project can verify a witness record from `GET https://ledger.horizonshield.dev/witness/<sha>` alone (canonical bytes, Ed25519 signature, and the key the witness's domain serves), MUSUBI contracts and settlements with `settle_v1_10.py` offline and deterministically, and Agent Card signatures against `a2a-card-sign-v01`. Boundary: it records and recomputes. It enforces nothing at runtime, judges no liability, and holds no funds or keys. Open vectors and checkers include interop-v0, v0.1, v0.2-edge, musubi-approval-v2 and a2a-card-sign-v01, and the [tsunagi board](https://github.com/ogasurfproject-jpg/horizon-shield/blob/main/ops/tsunagi/BOARD.md) reruns outside implementations nightly from their own repos | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6048922299) |
 | Agent Errata | @piiiico | A catalogue of failure modes in the tools agents verify with, such as a count that reads 0 because the command failed, a suite that exits 0 without running, or a gate that passes everything. Each entry has a check that prints a defect arm and a control arm with expected values, and an entry's standing is the number of independent agents it reproduced on. Several entries are about the boundary between a verifier's exit status and the result a run wrapper reports (E001, E002, E007, E018). No edge proposed | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5972172634), [listing request](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6077294084) |
+| AgenTrust | @imran-siddique | Described by its owner as a Linux Foundation project: TRACE trust records, cMCP and Agent Manifest. A TRACE record is checked offline with `trace-verify` 0.4.3 against the published schema and vectors. Proposed four edges (E12 to E15), pinned in its own repositories | [comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6105373945) |
+| Nobulex | @arian-gogani | Provisional, awaiting the owner's confirmation. A Python SDK that emits Ed25519-signed, RFC 8785 canonical receipts for agent actions. Each receipt carries `action_ref = SHA-256(JCS({agent_id, action_type, scope, timestamp_ms}))`. Its TRACE integration states that the receipts are not TRACE Trust Records | [integration README](https://github.com/agentrust-io/integrations/tree/e6998d8883ae1328995f4d0d38f6816a5d6bbdc8/integrations/nobulex/README.md), [run record on #177](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6094738216) |
 
 Supporting projects, listed separately: this vocabulary (crosswalks and match types) and the [Agent Authority Conformance lab](https://github.com/Agent-Authority-Conformance/aps-conformance-suite) (run records with per-claim attribution).
 
@@ -118,6 +120,25 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
  │ signed      │                │ receipt before   │
  │ receipts    │                │ money moves      │
  └─────────────┘                └──────────────────┘
+
+ ┌─────────────┐  E12 pinned,   ┌──────────────────┐
+ │     APS     │  reproduced    │ AgenTrust TRACE  │
+ │ signed      │ ════════════▶  │ record shape,    │
+ │ policy      │                │ not a schema-    │
+ │ decision    │                │ complete record  │
+ └─────────────┘                └──────────────────┘
+
+ ┌─────────────┐  E13, E14      ┌──────────────────┐
+ │ Veritas Acta│  pinned, as    │ AgenTrust TRACE  │
+ │ Nobulex     │  reported      │ record evidence  │
+ │             │ ────────────▶  │                  │
+ └─────────────┘                └──────────────────┘
+
+ ┌──────────────────┐  E15 pinned,   ┌─────────────┐
+ │ AgenTrust TRACE  │  as reported   │  Frequency  │
+ │ trust records    │ ────────────▶  │  TRACE      │
+ │                  │                │  adapter    │
+ └──────────────────┘                └─────────────┘
 
  ┌─────────────┐                ┌─────────────┐                ┌────────────────────┐
  │   Insight   │                │    Assay    │                │ Default Settlement │
@@ -297,6 +318,41 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 - **Provenance.** Proposed by @babyblueviper1 ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-6045773729)). The saved run record was inspected. It was not rerun locally by the map editors.
 - **Owners.** invinoveritas owns the checker. Horizon Shield owns the corpus and the board.
 - **Remaining.** The approver role on [horizon-shield#31](https://github.com/ogasurfproject-jpg/horizon-shield/issues/31) is a second edge, `proposed` until the first contract is signed.
+
+### E12. APS -> AgenTrust TRACE
+
+- **Producer and artifact.** One signed APS policy decision, the dict returned by `agent_passport.policy.evaluate_intent` in the Python SDK, mapped onto one TRACE record by `aps_trace` in [`integrations/aeoess-aps`](https://github.com/agentrust-io/integrations/tree/e6998d8883ae1328995f4d0d38f6816a5d6bbdc8/integrations/aeoess-aps) at agentrust-io/integrations `e6998d88`.
+- **Consumer.** TRACE tooling: `agentrust_trace.verify_record` and `trace-tests verify --level 0`.
+- **What this edge checks.** Before mapping, the APS evaluator signature against the `evaluatorPublicKey` embedded in the decision, its `expiresAt`, its shape and that its verdict is a known one. A decision that fails any of these produces no output. A validly signed decision is mapped whatever its verdict, including a deny. Separately, each emitted field is checked against the TRACE v0.2 JSON Schema, and a TRACE signature from an ephemeral key is applied and verified as a round trip. That TRACE signature is valid over the emitted claims, and the record is still refused on schema grounds as below.
+- **What it does not establish.** The emitted record is not a TRACE Trust Record. `model`, `data_class` and `build_provenance` cannot be sourced from an APS decision, so from `agentrust-trace` 0.10.0 `verify_record` refuses the record on schema grounds. The integration's role is `external-evidence-source` and it claims no conformance level. `appraisal.status` is `none`. Delegation chains and action receipts are verified by two other modules in the same directory, and neither emits a TRACE record. APS revocation is not mapped onto TRACE revocation.
+- **Pinned artifact.** agentrust-io/integrations `e6998d88`, `integrations/aeoess-aps/`. The fixed CI job installs `agentrust-trace` 0.10.0, `agentrust-trace-tests` 0.5.1 and `agent-passport-system` 4.0.0 (PyPI) from a hashed lock.
+- **Progress.** `pinned`, `reproduced`.
+- **Provenance.** Proposed by @imran-siddique ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6105373945)). The integration code, including the mapper, was written by @aeoess. AgenTrust maintainers set its `verified` tier, which in that repository means they ran it end to end against released packages. Its conformance workflow passed on `main` on 2026-10-05 ([run 37319129489](https://github.com/agentrust-io/integrations/actions/runs/37319129489)), and the integration directory, its workflow and its lock are unchanged between that run and `e6998d88`. Not an independent record for APS, because the mapper was written by the producer's own author.
+- **Owners.** APS owns the decision format and the integration code. AgenTrust owns TRACE and the tier.
+
+### E13. Veritas Acta -> AgenTrust TRACE
+
+- **Producer and artifact.** Signed Acta decision receipts used as TRACE action receipt evidence, six fixtures per the proposer, checked in CI by [`test_acta_fixtures.py`](https://github.com/agentrust-io/trace-spec/blob/4c7d6eccc468c87f2d00e02118b29164a4a5479b/tests/test_acta_fixtures.py) at agentrust-io/trace-spec `4c7d6ecc` against draft-farley-acta-signed-receipts-02 and the fixtures' declared expected results.
+- **Consumer.** TRACE, as action receipt evidence.
+- **Progress.** `pinned`, as reported by the proposer.
+- **Provenance.** Proposed by @imran-siddique. The editors checked only that the test file exists at the pinned commit. Not otherwise inspected. Veritas Acta to confirm its side.
+- **Owners.** Veritas Acta owns the receipt format. AgenTrust owns the fixtures' use in TRACE and the test.
+
+### E14. Nobulex -> AgenTrust TRACE
+
+- **Producer and artifact.** Nobulex signed action receipts, described by [`integrations/nobulex`](https://github.com/agentrust-io/integrations/tree/e6998d8883ae1328995f4d0d38f6816a5d6bbdc8/integrations/nobulex) at agentrust-io/integrations `e6998d88` as external execution evidence a verifier can check alongside a TRACE Trust Record (trace-spec #34). That README states the receipts are not TRACE Trust Records. Tier `verified`, role `external-evidence-source`.
+- **Consumer.** TRACE tooling.
+- **Progress.** `pinned`, as reported by the proposer.
+- **Provenance.** Proposed by @imran-siddique, who described it as Nobulex evidence into a TRACE record. The editors read the integration README and recorded its own wording. The integration was not run by the editors. The Nobulex node and this edge await confirmation by @arian-gogani.
+- **Owners.** Nobulex owns its evidence. AgenTrust owns TRACE and the tier.
+
+### E15. AgenTrust TRACE -> Frequency
+
+- **Producer and artifact.** Standalone TRACE Trust Records.
+- **Consumer.** Frequency's TRACE adapter in [`integrations/altrudev-frequency-agent-execution-assurance`](https://github.com/agentrust-io/integrations/tree/e6998d8883ae1328995f4d0d38f6816a5d6bbdc8/integrations/altrudev-frequency-agent-execution-assurance) at agentrust-io/integrations `e6998d88`, which verifies a record with a caller-supplied trusted issuer key and projects selected fields into a claim-limited Frequency external evidence record. Tier `community`, conformance level 0 per the proposer. In that repository, community tier means the structure was checked and the code was not run by AgenTrust.
+- **Progress.** `pinned`, as reported by the proposer.
+- **Provenance.** Proposed by @imran-siddique. Not inspected by the editors. Frequency to confirm its side. Separate from the A1 designation, which covers the bounded E2 review only.
+- **Owners.** AgenTrust owns TRACE. Frequency owns the adapter and its records.
 
 ## Assurance edges
 

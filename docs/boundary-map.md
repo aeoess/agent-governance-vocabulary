@@ -115,9 +115,9 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
  │             │  commit        │                  │
  └─────────────┘                └──────────────────┘
 
- ┌─────────────┐  E6 proposed   ┌──────────────────┐
- │ Veritas Acta│ ┄┄┄┄┄┄┄┄┄┄┄┄▶  │   paying side    │
- │ signed      │                │ receipt before   │
+ ┌─────────────┐  E6 pinned,    ┌──────────────────┐
+ │ Veritas Acta│  reproduced    │   paying side    │
+ │ signed      │ ════════════▶  │ receipt before   │
  │ receipts    │                │ money moves      │
  └─────────────┘                └──────────────────┘
 
@@ -262,13 +262,14 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 ### E6. Veritas Acta -> paying side
 
 - **Producer and artifact.** Acta receipts and receipt chains, verifiable offline against published vectors.
-- **Consumer.** The paying side, which checks before money moves that every billed item has a signed receipt, that none is missing, and what an independent re-check found.
+- **Consumer.** The paying side, which checks before money moves that every billed item has a signed receipt, that none is missing, and what an independent re-check found. In the run record below, Nobulex's `suite/e6_consumer.py` checks the fixture in this role. Every case expects `payment_ready` false, so the run is an evidence check, not a payment decision. No paying project is named.
 - **Field mappings.** None recorded for this edge.
-- **Progress.** `proposed`.
-- **Provenance.** Proposed by @tomjwxf, who wants one consuming project for a pilot.
-- **Owners.** Veritas Acta owns the receipt format and verifier. The consuming project is unnamed.
+- **Pinned artifact.** [`VeritasActa/e6-fixture`](https://github.com/VeritasActa/e6-fixture) `v1.0.0` (`0770f61`, `SHA256SUMS` sha256 `c744788d…`) and `v1.0.1` (`c0966c6`, `SHA256SUMS` sha256 `0d8afb13…`). `v1.0.1` changes only `README.md` and the README line of `SHA256SUMS`. Every data file is byte-identical to `v1.0.0`. Eleven cases.
+- **Progress.** `pinned`, `reproduced`.
+- **Provenance.** Proposed by @tomjwxf, who wants one consuming project for a pilot. Run by @arian-gogani at `v1.0.0` with `suite/e6_consumer.py` at [`arian-gogani/nobulex-registry@4a73724`](https://github.com/arian-gogani/nobulex-registry/tree/4a73724) (sha256 `745219a1…`): 11 of 11 agree, failure codes included ([run record](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6094738216)). Rerun by @aeoess with the same consumer at `v1.0.0` and `v1.0.1` (Python 3.13, `cryptography` 50.0.1), 11 of 11 on each. Veritas Acta authored the fixture and Nobulex the consumer. The original run was by the consumer's author and is recorded as reproduced, not independent. The rerun by @aeoess is recorded separately, claims no independence, and does not change the standing of the original run. Progress raised on @tomjwxf's confirmation ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6117865169)).
+- **Owners.** Veritas Acta owns the receipt format, the verifier and the fixture. Nobulex owns the consumer used in the run. The consuming project is unnamed.
 - **Adjacent existing work, not evidence for this edge.** [`crosswalk/aps-acta.yaml`](../crosswalk/aps-acta.yaml) is a pairwise composition crosswalk between APS and Acta, calibrated against APS 2.6.0 with Acta-side review pending, so it is not current.
-- **Remaining.** A consuming project.
+- **Remaining.** A pilot with a paying project, and a separately reviewed run record under the published independence rules.
 
 ### E7. REMORA -> a verifier maintained by another project
 

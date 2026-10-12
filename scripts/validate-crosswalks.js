@@ -181,9 +181,9 @@ function validateSystem(doc, file) {
 }
 
 // domain_incubation files are silent-skipped from strict signal_types
-// checks but carry their own gates: a required verified_at date field
-// and a 90-day sunset measured from that date. Promotion to a standard
-// crosswalk_type or deletion is required before sunset.
+// checks. This validator enforces the verified_at field and the 90-day
+// expiry measured from it. Renewal needs a reviewed re-verification of
+// every system under CONTRIBUTING Gate 3, which is not machine-checked.
 const DOMAIN_INCUBATION_SUNSET_MS = 90 * 24 * 60 * 60 * 1000
 
 function validateDomainIncubation(doc, file) {
@@ -220,7 +220,7 @@ function validateDomainIncubation(doc, file) {
     }
     if (bad) return
     if (earliestMs + DOMAIN_INCUBATION_SUNSET_MS < Date.now()) {
-      err(file, 'file is past 90-day sunset; re-verify or promote (oldest per-system verified_at)')
+      err(file, 'file is past 90-day sunset; re-verify every system (CONTRIBUTING Gate 3), promote, or delete (oldest per-system verified_at)')
     }
     return
   }
@@ -232,7 +232,7 @@ function validateDomainIncubation(doc, file) {
     return
   }
   if (verifiedMs + DOMAIN_INCUBATION_SUNSET_MS < Date.now()) {
-    err(file, 'file is past 90-day sunset; re-verify or promote')
+    err(file, 'file is past 90-day sunset; re-verify (CONTRIBUTING Gate 3), promote, or delete')
   }
 }
 

@@ -90,9 +90,9 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
  └─────────────┘ └─────────────────┘
 
 
- ┌─────────────┐  E8 proposed   ┌─────────────┐  E7 proposed   ┌──────────────────┐
- │  AgentAvow  │ ┄┄┄┄┄┄┄┄┄┄┄┄▶  │   REMORA    │ ┄┄┄┄┄┄┄┄┄┄┄┄▶  │ a verifier from  │
- │ tool digest │                │ declared    │                │ another project  │
+ ┌─────────────┐  E8 proposed   ┌─────────────┐  E7 pinned,    ┌──────────────────┐
+ │  AgentAvow  │ ┄┄┄┄┄┄┄┄┄┄┄┄▶  │   REMORA    │  reproduced    │ Probity reader   │
+ │ tool digest │                │ declared    │ ════════════▶  │ for the E7 cases │
  └─────────────┘                │ tool set    │                └──────────────────┘
                                 └─────────────┘
 
@@ -273,13 +273,16 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 
 ### E7. REMORA -> a verifier maintained by another project
 
-- **Producer and artifact.** One REMORA evidence artifact with the bounded claim above, and five test vectors: a valid artifact supports the claim, an undeclared tool invocation contradicts it, a changed runtime or authority binding prevents reliance on the original attribution, missing observation coverage prevents any claim about all activity, evidence of an alternative execution path defeats any exclusivity claim.
-- **Consumer.** A verifier maintained by another project, to be named.
+- **Producer and artifact.** One REMORA evidence artifact with the bounded claim above, and five test vectors: a valid artifact supports the claim, an undeclared tool invocation contradicts it, a changed runtime identity prevents reliance on the original attribution, missing observation coverage prevents any claim about all activity, evidence of an alternative execution path defeats any exclusivity claim.
+- **Consumer.** Probity's E7 reader in `probityai/agent-evidence-vectors`, maintained and operated by Probity. It imports neither REMORA runtime code nor REMORA's reference verifier.
 - **Field mappings.** None recorded.
 - **Must keep separate.** A contradicted claim from one that cannot be established. A narrower claim survives only where the remaining evidence still supports it.
-- **Progress.** `proposed`.
-- **Provenance.** Proposed by @darklordVirtual.
-- **Remaining.** A consuming verifier.
+- **What it does not establish.** The five frozen fixture premises only. `runtime_capability_surface_completeness` stays `NOT_ESTABLISHED`. No effect custody, production enforcement or runtime observation.
+- **Pinned artifact.** REMORA `runtime-surface-e7-v0.1` at `e4fe474f`, package digest `sha256:01dfdb78…`, `fixtures.json` sha256 `b09b937a…`.
+- **Progress.** `pinned`, `reproduced`.
+- **Provenance.** Proposed by @darklordVirtual. Run twice by Probity (@astrogilda): self-service with reader `8e9cc6c3` ([record](https://github.com/probityai/agent-evidence-atlas/blob/0e0a986f24dd2994446051db42a3e40692d7fa41/experiments/remora-e7-selfservice-2026-10-08/external-run-record-v1.json)), and `agent-evidence-vectors==0.17.6` from PyPI ([record](https://github.com/probityai/agent-evidence-atlas/blob/80f2679f56d4509d4e3b76f8997d633f6d537fe7/experiments/remora-e7-pip-2026-10-09/external-run-record-v1.json)). Both give the expected result on all five cases: 1 `ESTABLISHED`, 2 `CONTRADICTED`, 2 `NOT_ESTABLISHED`. REMORA recorded both in darklordVirtual/REMORA-research#824. A second implementation, run by the consuming project. Not an independent record under this map's rule. The records say `INDEPENDENT` in REMORA's narrower sense (external maintainer and operator, no REMORA code imported), which Probity confirmed on REMORA-research#707 ([comment](https://github.com/darklordVirtual/REMORA-research/issues/707#issuecomment-6113319343)). As @darklordVirtual states, Probity read the published expected answers before writing the reader, and a lint diagnostic later exposed parts of the retained reference verifier, which the reader neither imported nor ran ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-6126829914), corrected in [comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-6126916108)).
+- **Owners.** REMORA owns the artifact and its fixtures. Probity owns the reader.
+- **Remaining.** Field mappings, and an independent record under this map's rule.
 
 ### E8. AgentAvow `scan.toolManifestDigest` <-> REMORA declared tool set
 

@@ -115,6 +115,12 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
  │             │  commit        │                  │
  └─────────────┘                └──────────────────┘
 
+ ┌─────────────┐  E16 pinned,   ┌──────────────────┐
+ │argentum-core│  reproduced    │ Horizon Shield / │
+ │ decision-   │ ════════════▶  │ NENRIN, blind    │
+ │ bound output│                │ second readers   │
+ └─────────────┘                └──────────────────┘
+
  ┌─────────────┐  E6 pinned,    ┌──────────────────┐
  │ Veritas Acta│  reproduced    │   paying side    │
  │ signed      │ ════════════▶  │ receipt before   │
@@ -358,6 +364,15 @@ Supporting projects, listed separately: this vocabulary (crosswalks and match ty
 - **Progress.** `pinned`, as reported by the proposer.
 - **Provenance.** Proposed by @imran-siddique. @altrudev confirmed Frequency's side against the pinned integration ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-6112410125)), including the community tier, conformance level 0 and pinned status, and states that it does not establish hardware attestation, binding of the signing key to a runtime, independent conformance or actual external execution, and that the public adapter neither exposes Frequency Core nor authorizes agent actions. Not inspected by the editors. Separate from the A1 designation, which covers the bounded E2 review only.
 - **Owners.** AgenTrust owns TRACE. Frequency owns the adapter and its records.
+
+### E16. argentum-core (`decision-bound-output-v1`) -> Horizon Shield blind second readers
+
+- **Producer and artifact.** @giskard09's `decision-bound-output-v1` contract and vectors in [giskard09/execution-join-ref-remora-bridge](https://github.com/giskard09/execution-join-ref-remora-bridge), pinned at `4cbf5c85`. The clarification and three added cases that pin the reading left open in [probityai/agent-evidence-atlas#76](https://github.com/probityai/agent-evidence-atlas/issues/76) are at `062faff` in the same repository.
+- **Consumer.** Readers Horizon Shield wrote from the contract text and the records alone, without opening the producer's verifier, posting raw results before comparing. Record at horizon-shield `84b104b1`, `workers/hs-ledger/nenrin/decision-bound-reader-v0/`.
+- **Progress.** `pinned`, `reproduced`. At `4cbf5c85` the reader gives the producer's expected result on 8 of 8 cases, name for name. At `062faff` both readers give 11 of 11 and the producer's verifier passes all 11 checks.
+- **Provenance.** Proposed by @ogasurfproject-jpg ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-6180667764)), confirmed by @giskard09 ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-6190150708)), rerun at `062faff` by @ogasurfproject-jpg ([comment](https://github.com/aeoess/agent-governance-vocabulary/pull/179#issuecomment-6191107369)). A second implementation, not an independent record. Horizon Shield wrote the readers. The map editors checked that the pinned commits and the reader directory exist. They did not rerun the readers.
+- **Owners.** argentum-core owns the contract, the vectors and its verifier. Horizon Shield owns the readers and their record.
+- **Remaining.** The argentum-core node describes `action_ref` only. Its owner may extend the node to cover this contract.
 
 ## Assurance edges
 

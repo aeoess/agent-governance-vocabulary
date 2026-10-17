@@ -1,6 +1,6 @@
 # Crosswalk Matrix
 
-Auto-generated on 2026-10-15. 26 systems × 16 canonical signal types.
+Auto-generated on 2026-10-17. 26 systems × 16 canonical signal types.
 
 Cell legend:
 
@@ -42,7 +42,7 @@ Cell legend:
 | Quesen                  | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | —                 |
 | Signet                  | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | ·           | —                | —                 | —                     | —                 |
 | SINT                    | 🟡           | 🟡               | ⚪                   | ⚪                   | ⚪               | ✅                      | 🟡             | 🟡                 | 🟡               | 🟡              | 🟡                 | ⚪           | —                | 🟠                | —                     | —                 |
-| Universal-Trust-Adapter | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🟡ʰ                    | 🟡             | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | 🟡                | ⚪                     | ⚪                 |
+| Universal-Trust-Adapter | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🔵ʰ                    | 🔵             | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | 🔵                | ⚪                     | ⚪                 |
 | Veritasacta             | ⚪            | ⚪                | ⚪                   | 🟡                  | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | 🟠                 | —           | —                | —                 | —                     | —                 |
 
 ## Coverage

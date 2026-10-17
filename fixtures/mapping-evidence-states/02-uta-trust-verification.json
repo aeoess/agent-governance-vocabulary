@@ -1,0 +1,119 @@
+{
+  "scope": {
+    "profile": "mapping_evidence_states",
+    "normative_status": "non_normative",
+    "source_crosswalk": "crosswalk/universal-trust-adapter.yaml",
+    "calibration_owner": "eddyflores100-lang (UTA Trust API maintainer)",
+    "evidence_basis": "Live verify response emitted 2026-10-17 by the production worker (v2.3.0, ATC/1.0) at https://uta-trust-api.eddyflores100.workers.dev against the published conformance vector valid-atc (ATC-TEST-VALID-001, signed by the frozen ca-test-1 anchor; vectors-only throwaway CA). Settlement: 0.01 USDC on Base Sepolia (eip155:84532) via the public x402.org facilitator, transaction 0xc7467392f0ca06c8a92d877d7224290186b35e63dece7fcd9a1c64c4971844f7, receipt carried in the X-PAYMENT-RESPONSE header. The card is a published test vector and asserts nothing about any real agent.",
+    "canonical_term": "trust_verification",
+    "purpose": "Reviewer-requested evidence for the `emitted` claims in the crosswalk: the endpoint requires payment, so this fixture records a real paid 200 response. The digest is independently checkable WITHOUT paying — sha256 over the published canonical JCS bytes (valid-atc.canonical.txt in the UTA repo) equals the digest the response carries."
+  },
+  "artifact": {
+    "request": {
+      "method": "POST",
+      "url": "https://uta-trust-api.eddyflores100.workers.dev/v1/trust/verify",
+      "date": "2026-10-17",
+      "payment": "X-PAYMENT header carrying an x402 v2 payload (EIP-3009 transferWithAuthorization, USDC eip155:84532, amount 10000 = 0.01 USDC, payTo 0xfD856E89Ac88757C339c67E9717528af0cD1d7Ee)"
+    },
+    "card": {
+      "card_id": "ATC-TEST-VALID-001",
+      "status": "active",
+      "payload": {
+        "card_id": "ATC-TEST-VALID-001",
+        "schema_version": "2.0.0",
+        "agent_id": "test-agent-valid",
+        "agent_name": "Valid Test Agent",
+        "identity": {
+          "public_key": "MCowBQYDK2VwAyEAgH8DWr5g+urV5s5puKrGIf126zfl4KMqRu0C/6YQ4J0=",
+          "key_algorithm": "Ed25519"
+        },
+        "trust": {
+          "sentinel_review_score": 8,
+          "sentinel_score": 8,
+          "audit_layers_passed": { "L1.5": true, "L2.5": true },
+          "composite_trust": 8,
+          "risk_level": "low"
+        },
+        "capabilities": { "provides": ["search", "read"], "protocol_language": "mcp", "translate": true },
+        "payment": { "method": "none", "wallet_address": null },
+        "metadata": {
+          "issued_at": "2026-08-20T00:00:00Z",
+          "expires_at": "2027-08-20T00:00:00Z",
+          "issuer": "MarketNow Sentinel CA"
+        }
+      },
+      "signature": {
+        "algorithm": "Ed25519 (RFC 8032)",
+        "value": "db280c57f55f6049c78816835007b28a9c616b934decb69e40f57456a39283d8c0de442ecdd05f40e88370731604ca4bc6f8d60fffba33ee4fd9a84f1a36640b",
+        "signed_by": "MarketNow Sentinel Test CA (throwaway, vectors-only)",
+        "signed_at": "2026-08-20T00:00:00Z",
+        "canonical_json": "RFC_8785_JCS"
+      }
+    },
+    "verify_response": {
+      "protocol": "ATC/1.0",
+      "verified": true,
+      "risk": "low",
+      "stages": {
+        "signature_verification": "pass",
+        "trust_anchor_key_selection": "pass",
+        "expiry_check": "pass",
+        "status_check": "pass"
+      },
+      "digest": "25b460863524d58579c24ca7bd0184e640d93ba119e51b41b1bdef829f22ece6",
+      "reason": "verified",
+      "payer": "0xfD856E89Ac88757C339c67E9717528af0cD1d7Ee",
+      "http_status": 200,
+      "service_signature": "none — the response is deliberately unsigned; only the digest and the rail receipt travel with it"
+    },
+    "settlement_receipt": {
+      "success": true,
+      "transaction": "0xc7467392f0ca06c8a92d877d7224290186b35e63dece7fcd9a1c64c4971844f7",
+      "network": "eip155:84532",
+      "payer": "0x62Ce5E4cEaAFB6Ecc2fea03CD89d9017e17360b0",
+      "carried_in": "X-PAYMENT-RESPONSE header (issued by the facilitator/rail, not signed by this service)"
+    },
+    "canonical_bytes": {
+      "spec_version": "ATC/1.0 (worker v2.3.0)",
+      "canonicalization": "RFC 8785 JCS over the signed subtree (the card without its signature key)",
+      "sha256": "25b460863524d58579c24ca7bd0184e640d93ba119e51b41b1bdef829f22ece6",
+      "published_source": "UTA repo, uta-monorepo/packages/conformance/vectors/ (valid-atc.canonical.txt, valid-atc.bytes.hex, valid-atc.sha256; index _index.json schema 1.7.0, published 2026-09-09)",
+      "note": "sha256(published canonical bytes) == verify_response.digest — any third party can recompute and re-verify the signature step without paying for a verification."
+    }
+  },
+  "finding": {
+    "term": "trust_verification",
+    "crosswalk_claimed": {
+      "match": "exact",
+      "evidence": "emitted"
+    },
+    "observed": {
+      "emitted_fields": [
+        "protocol",
+        "verified",
+        "risk",
+        "stages.signature_verification",
+        "stages.trust_anchor_key_selection",
+        "stages.expiry_check",
+        "stages.status_check",
+        "digest",
+        "reason",
+        "payer"
+      ],
+      "grade_1_3_present": false,
+      "kyc_presence_present": false,
+      "principal_endorsement_present": false,
+      "response_signed_by_service": false,
+      "digest_matches_published_canonical_bytes": true
+    },
+    "conclusion": "The response is exactly an identity-layer verification status, so the primitive is present and `emitted` is accurate. But the canonical definition (Grade 1-3, KYC presence, principal endorsement) is broader than the artifact, so `exact` overstates the correspondence. Recorded as `partial` with the missing properties listed; this fixture stays as the checkable evidence for what `emitted` covers."
+  },
+  "corrected_entry": {
+    "canonical": "trust_verification",
+    "match": "partial",
+    "evidence": "emitted",
+    "missing_properties": ["Grade 1-3 grading", "KYC presence", "principal endorsement"],
+    "inference_basis": "Live 200 response for the published vector valid-atc: verified true, risk low, four per-stage outcomes, sha256 digest equal to the published canonical-bytes hash, settlement receipt on-chain (Base Sepolia tx 0xc7467392f0ca06c8a92d877d7224290186b35e63dece7fcd9a1c64c4971844f7).",
+    "counts_toward_independent_implementation": false
+  }
+}

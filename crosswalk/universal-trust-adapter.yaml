@@ -31,6 +31,12 @@ system:
     ships 14/14 conformance vectors and x402-paywall adapters for
     express/fastapi.
   license: "MIT OR Apache-2.0"
+  license_note: >
+    MIT OR Apache-2.0 covers the adapter, SDKs, integrations and docs at the
+    repo root. The proprietary/ subtree (trust-engine, sentinel, interceptor,
+    adapters) is licensed separately under the AliceLabs Source-Available
+    License v1.0 (AL-1.0 — see proprietary/LICENSE-AL-1.0 and
+    proprietary/COMMERCIAL-LICENSE.md).
 
 maintainer:
   name: Eddy Flores
@@ -97,60 +103,81 @@ signal_types:
 
   trust_verification:
     canonical: trust_verification
-    match: exact
+    match: partial
     evidence: emitted
-    source_path: "https://uta-trust-api.eddyflores100.workers.dev/openapi.json#/paths/~1v1~1trust~1verify/post/responses/200 (response shape documented in https://uta-trust-api.eddyflores100.workers.dev/llms-full.txt)"
+    source_path: "https://uta-trust-api.eddyflores100.workers.dev/openapi.json#/paths/~1v1~1trust~1verify/post/responses/200 (live paid response recorded as fixture: fixtures/mapping-evidence-states/02-uta-trust-verification.json)"
+    divergence: >
+      Missing properties relative to the canonical definition: Grade 1-3
+      grading, KYC presence, and principal endorsement — none are emitted
+      by the artifact. What the response does emit is the identity-layer
+      verification status the canonical term names: a per-call verdict
+      (verified boolean), a coarse risk band, and per-stage outcomes
+      (signature_verification, trust_anchor_key_selection, expiry_check,
+      status_check), verified against pinned trust anchors with a
+      two-sided validity window.
     notes: >
-      The verify response is exactly the identity-layer verification status
-      the canonical term names: a per-call verdict (verified boolean), a risk
-      band, and per-stage outcomes (signature_verification,
-      trust_anchor_key_selection, expiry_check, status_check). Verification
-      is against pinned trust anchors with a two-sided validity window;
-      Grade 1-3 / KYC-style grading does not appear in the artifact, but the
-      primitive (identity-layer verification status as an emitted field) is
-      present 1:1. Batch form: POST /v1/trust/batch verifies 1..10 cards in
-      one settlement.
+      The live 200 response for the published conformance vector valid-atc
+      is recorded, with its on-chain settlement receipt and the digest
+      recomputable from published canonical bytes, in
+      fixtures/mapping-evidence-states/02-uta-trust-verification.json.
+      Batch form: POST /v1/trust/batch verifies 1..10 cards in one
+      settlement.
 
   governance_attestation:
     canonical: governance_attestation
-    match: partial
+    match: false_analog
     evidence: inferable
     inferred_from: ["digest", "stages", "risk"]
     inference_basis: >
-      The sha256 digest of the signed subtree plus the per-stage outcomes let
-      a third party recompute and anchor "this card satisfied the declared
-      verification policy at time T"; the service itself never signs the
-      response, so the signed-attestation property of the canonical term is
-      recoverable by the consumer, not asserted by the issuer.
-    divergence: >
-      Scope is limited to the declared verification policy (validity window,
-      card status, rotation flags, trust anchors). The canonical term also
-      covers delegation-scope and compliance-check attestations, which this
-      system does not emit.
+      A third party can recompute and anchor "this card satisfied the
+      declared verification policy at time T" from the emitted sha256 digest
+      plus the per-stage outcomes; the service itself never signs the
+      response, so the recoverable value is the consumer's construction, not
+      an attestation asserted by an issuer.
+    notes: >
+      Substitution hazard is why this is not partial: a recorded verify
+      response (stages + digest) reads like an attestation that the card
+      satisfied a declared policy at time T, and a consumer could plausibly
+      wire it up as the canonical primitive. The canonical term requires an
+      issuer-signed attestation; this response is deliberately unsigned, so
+      wiring it up as the canonical primitive would fabricate a signature
+      that was never made. The sha256 digest does let a third party
+      recompute and anchor "this card satisfied the declared verification
+      policy at time T" — but that construction is the consumer's, not an
+      attestation this system emits, and its scope is limited to the
+      declared verification policy (validity window, card status, rotation
+      flags, trust anchors), not delegation scope or compliance checks.
 
   passport_grade:
     canonical: passport_grade
-    match: partial
+    match: false_analog
     evidence: emitted
-    source_path: "https://uta-trust-api.eddyflores100.workers.dev/llms-full.txt (risk band field of the verify response; per-stage derivation in https://github.com/alicelabs-llc/universal-trust-adapter)"
-    divergence: >
-      The risk field is a coarse composite grade (low | elevated | high |
-      info) derived from live challenge-time verification evidence (stage
-      outcomes). The canonical term grades from agent passport issuance
-      evidence; nothing in the artifact carries a passport document or its
-      issuance provenance, so the grade provenance does not carry over.
+    source_path: "https://uta-trust-api.eddyflores100.workers.dev/llms-full.txt (risk band field of the verify response; live fixture: fixtures/mapping-evidence-states/02-uta-trust-verification.json)"
+    notes: >
+      Substitution hazard: the coarse band (low | elevated | high | info)
+      is emitted under a field named `risk` and reads like a grade, so a
+      consumer could plausibly wire it up as a passport-grade primitive.
+      The canonical term grades from agent passport issuance evidence; the
+      band is a live challenge-time verification outcome (per-stage
+      results), so that wiring substitutes verification evidence for
+      issuance provenance. Nothing in the artifact carries a passport
+      document or its issuance provenance.
 
   entity_continuity:
     canonical: entity_continuity
-    match: partial
+    match: false_analog
     evidence: emitted
     source_path: "https://uta-trust-api.eddyflores100.workers.dev/llms-full.txt (stages.trust_anchor_key_selection, stages.expiry_check, stages.status_check)"
-    divergence: >
-      Each verification re-binds the card to its pinned key and re-checks the
-      two-sided validity window and rotation/status flags, so repeating
-      verification over time evidences that the same key identity persists.
-      The artifact has no continuity ledger or cross-time observation record;
-      continuity is per-verification evidence, not a longitudinal primitive.
+    notes: >
+      Substitution hazard: repeating verification over time evidences that
+      the same key keeps passing, which reads like continuity evidence a
+      consumer could wire up as the canonical primitive. The canonical term
+      asks a different question — cryptographic proof that the same agent
+      identity persists ACROSS an infrastructure change (key rotation, host
+      migration, execution environment swap) — and a per-request re-bind to
+      a pinned key cannot answer it. The artifact has no continuity ledger
+      or cross-time observation record; the emitted signal is
+      per-verification evidence only.
 
   settlement_witness:
     canonical: settlement_witness
@@ -175,9 +202,13 @@ signal_types:
     canonical: behavioral_trust
     match: no_mapping
     notes: >
-      Velocity and history vectors feed the risk band as inputs, but the
+      The risk band is derived exclusively from the per-call stage outcomes
+      of the verification pipeline (see verification_pattern above).
+      Velocity and history vectors are NOT inputs to the band, and the
       artifact never emits a standalone behavioral trust score or a
-      multi-dimensional composite.
+      multi-dimensional composite. Runtime behavioral profiling exists in a
+      separate, non-emitted component of the codebase and is out of scope
+      for the verify artifact.
 
   peer_review:
     canonical: peer_review

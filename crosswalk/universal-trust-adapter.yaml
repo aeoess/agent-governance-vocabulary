@@ -97,12 +97,16 @@ verification_pattern:
 artifact_shapes:
   atc_card:
     signer: >
-      the card ISSUER CA whose public key is one of the pinned trust anchors
-      (in the published evidence: "MarketNow Sentinel Test CA
-      (throwaway, vectors-only)"). The agent's own key
-      (payload.identity.public_key) is the SUBJECT carried inside the card,
-      not the signing key — the current artifact establishes no separate
-      subject-agent signature.
+      the pinned identity key: the conformance rules require
+      payload.identity.public_key to belong to the pinned trust-anchor set
+      and the signature to be produced by that key. In the published
+      evidence the roles coincide — payload.identity.public_key and
+      signature.ca_key_id hold the same value ("MarketNow Sentinel Test CA
+      (throwaway, vectors-only)"). Issuer and subject are distinct roles in
+      the card model, but the current evidence shows one pinned key serving
+      both: it signs the card and is the subject identity carried inside
+      it. No separate issuer-vs-subject key pair, and no separate
+      subject-agent signature, is established by the current artifact.
     algorithm: Ed25519
     canonicalization: RFC 8785 JCS over the signed subtree (card minus signature)
     fields: "metadata (issued_at, expires_at, status, rotation flags), subject key, claims"
@@ -111,10 +115,10 @@ artifact_shapes:
       trust-anchor set (stage: trust_anchor_key_selection); self-signed and
       trust-on-first-use keys are rejected.
     note: >
-      The signed card (issuer-signed) and the unsigned service response are
-      distinct artifacts. The service verifies the card against the pinned
-      trust anchors and emits the verification result, which it does not
-      sign.
+      The signed card (signed by the pinned identity key) and the unsigned
+      service response are distinct artifacts. The service verifies the
+      card against the pinned trust anchors and emits the verification
+      result, which it does not sign.
   verify_response:
     signer: none (unsigned HTTP JSON; the sha256 digest allows third-party recomputation and anchoring)
     fields:
@@ -124,11 +128,12 @@ artifact_shapes:
       digest: "sha256 of the signed subtree (covers the card, not this response)"
       reason: "machine-readable failure reason when verified is false"
       payer: >
-        documented quirk: the deployed worker emits the challenge payTo under
-        this field (payer = accepted.payTo from the preceding 402), so it
-        names the RECIPIENT, not the paying wallet; the actual payer is only
-        established by the settlement receipt carried in X-PAYMENT-RESPONSE
-        (recorded in the fixture annotation).
+        documented quirk, maintainer-attested (worker v2.3.0 deployment; the
+        deployed script is not public): the deployed worker emits the
+        challenge payTo under this field (payer = accepted.payTo from the
+        preceding 402), so it names the RECIPIENT, not the paying wallet;
+        the actual payer is only established by the settlement receipt
+        carried in X-PAYMENT-RESPONSE (recorded in the fixture annotation).
     receipt: "X-PAYMENT-RESPONSE header carries the on-chain settlement receipt (from the facilitator, not a service signature)"
 
 signal_types:

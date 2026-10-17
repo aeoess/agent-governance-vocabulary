@@ -63,7 +63,7 @@ classification_model:
 verified_at:
   x402: 2026-10-15    # v2 spec + exact/auth-capture schemes (auth-capture v1.1 paymentFlow); facilitator API
   ap2:  2026-10-15    # v0.2.0 specification.md + flows.md + payment_mandate.md (no newer release)
-  acp:  2026-10-15    # 2026-04-17 OpenAPI + OpenRPC + delegate_payment RFC (main moved only in spec/unreleased)
+  acp:  2026-10-15    # 2026-04-17 OpenAPI + OpenRPC + delegate_payment RFC (main moved only in unreleased changelog, examples and spec files)
   mpp:  2026-10-15    # draft-httpauth-payment-01 + charge and subscription intents (main), PR #226 closed unmerged
   ucp:  2026-10-15    # v2026-08-25 checkout + order specs (REST + MCP), payment extensions
 
@@ -105,8 +105,8 @@ upstream_references:
     upstream_stability: closed_unmerged
     reverified_at: 2026-10-15
     note: >
-      PR #226 was closed without merging ("closing this out as it is
-      stale"). No authorize intent exists on main at 782abaeb. Kept as a
+      PR #226 was closed without merging on 2026-07-29 ("closing this out
+      as it is stale"). No authorize intent exists on main at 782abaeb. Kept as a
       historical record only, not as a live proposal.
 
 # ----------------------------------------------------------------------
@@ -233,6 +233,8 @@ verbs:
           operation ("Collects and distributes the funds in one step,
           with no hold"), selected by paymentFlow authorization. This is
           the same one-step shape as x402_exact settle, which is mapped.
+          The amount differs: charge settles a server-chosen amount up to
+          the client-authorized maximum, where exact moves a fixed amount.
         disputes: []
       ap2:
         status: not_found

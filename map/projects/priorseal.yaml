@@ -1,0 +1,12 @@
+id: priorseal
+name: PriorSeal
+repository: https://github.com/imokokok/PriorSeal
+maintainer: imokokok
+description_source: editors, from https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5885120538
+owner_confirmation: null   # not confirmed in this prototype
+implements:
+  - capability: authorization.exact_call
+    source_ref: https://github.com/imokokok/PriorSeal/tree/d749d2691c3e6be139de4020e7b27cdafca2c428/examples/aps-priorseal-decision-binding-v1
+  - capability: comparison.post_action
+    source_ref: https://github.com/imokokok/PriorSeal/tree/d749d2691c3e6be139de4020e7b27cdafca2c428/examples/aps-priorseal-decision-binding-v1
+limitations: [observations in the pinned pair are synthetic, no transaction is sent]

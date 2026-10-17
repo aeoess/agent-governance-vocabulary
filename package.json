@@ -15,7 +15,9 @@
     "test:match-migration": "node scripts/validators/test-match-type-migration.js",
     "check:matrix": "node scripts/generate-crosswalk-matrix.js --check",
     "check:purpose-gate": "node scripts/validators/check-bilateral-receipt-purpose-gate.js",
-    "test:descriptor-shape": "node scripts/validators/test-descriptor-shape-traversal.js"
+    "test:descriptor-shape": "node scripts/validators/test-descriptor-shape-traversal.js",
+    "build:map": "node scripts/build-map.js",
+    "check:map": "node scripts/build-map.js --check"
   },
   "repository": {
     "type": "git",

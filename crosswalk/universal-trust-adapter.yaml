@@ -74,6 +74,21 @@ verification_pattern:
     - "status_check: card status must be active"
     - "digest: sha256 of the signed subtree"
     - "risk band: coarse band derived from stage outcomes (low | elevated | high | info)"
+  band_derivation:
+    rule: >
+      risk = verified ? low : (!signature_verification ||
+      !trust_anchor_key_selection) ? high : elevated; informational responses
+      (no card parsed) emit info.
+    evidence_basis: principal_attestation
+    verification_method: principal_attestation
+    verified_at: "2026-10-17"
+    reverify_after: "2027-04-17"
+    basis: >
+      maintainer-attested (worker v2.3.0 deployment): the deployed worker is
+      not built from a public repo and no public doc defines the rule, so the
+      rule is stated here in full and any observed response can be checked
+      against it. Publishing the derivation converts this to publicly
+      verifiable.
   sources:
     openapi: "https://uta-trust-api.eddyflores100.workers.dev/openapi.json#/paths/~1v1~1trust~1verify"
     docs: "https://uta-trust-api.eddyflores100.workers.dev/llms-full.txt"
@@ -81,22 +96,39 @@ verification_pattern:
 
 artifact_shapes:
   atc_card:
-    signer: the agent (card subject key)
+    signer: >
+      the card ISSUER CA whose public key is one of the pinned trust anchors
+      (in the published evidence: "MarketNow Sentinel Test CA
+      (throwaway, vectors-only)"). The agent's own key
+      (payload.identity.public_key) is the SUBJECT carried inside the card,
+      not the signing key — the current artifact establishes no separate
+      subject-agent signature.
     algorithm: Ed25519
     canonicalization: RFC 8785 JCS over the signed subtree (card minus signature)
     fields: "metadata (issued_at, expires_at, status, rotation flags), subject key, claims"
+    anchor_rule: >
+      verification requires the signing key to belong to the pinned
+      trust-anchor set (stage: trust_anchor_key_selection); self-signed and
+      trust-on-first-use keys are rejected.
     note: >
-      The card is signed by the agent, not by the service. The service
-      verifies it against pinned trust anchors and emits the verification
-      result.
+      The signed card (issuer-signed) and the unsigned service response are
+      distinct artifacts. The service verifies the card against the pinned
+      trust anchors and emits the verification result, which it does not
+      sign.
   verify_response:
     signer: none (unsigned HTTP JSON; the sha256 digest allows third-party recomputation and anchoring)
     fields:
       verified: boolean outcome of the pipeline
       risk: "coarse band: low | elevated | high | info"
       stages: "per-stage outcomes: signature_verification, trust_anchor_key_selection, expiry_check, status_check"
-      digest: "sha256 of the signed subtree"
+      digest: "sha256 of the signed subtree (covers the card, not this response)"
       reason: "machine-readable failure reason when verified is false"
+      payer: >
+        documented quirk: the deployed worker emits the challenge payTo under
+        this field (payer = accepted.payTo from the preceding 402), so it
+        names the RECIPIENT, not the paying wallet; the actual payer is only
+        established by the settlement receipt carried in X-PAYMENT-RESPONSE
+        (recorded in the fixture annotation).
     receipt: "X-PAYMENT-RESPONSE header carries the on-chain settlement receipt (from the facilitator, not a service signature)"
 
 signal_types:
@@ -129,11 +161,14 @@ signal_types:
     evidence: inferable
     inferred_from: ["digest", "stages", "risk"]
     inference_basis: >
-      A third party can recompute and anchor "this card satisfied the
-      declared verification policy at time T" from the emitted sha256 digest
-      plus the per-stage outcomes; the service itself never signs the
-      response, so the recoverable value is the consumer's construction, not
-      an attestation asserted by an issuer.
+      LIMITED recoverable construction: a third party can recompute the CARD
+      checks (sha256 over the signed subtree plus Ed25519, against the
+      published canonical bytes) and RECORD the service's reported result
+      alongside them. The digest covers the card only — not the response
+      verdict, risk, or stages, which can be altered without breaking the
+      card checks — and the response carries no evaluation time and no
+      pinned verification policy, so "this card satisfied the declared
+      verification policy at time T" is NOT established by this artifact.
     notes: >
       Substitution hazard is why this is not partial: a recorded verify
       response (stages + digest) reads like an attestation that the card
@@ -141,12 +176,11 @@ signal_types:
       wire it up as the canonical primitive. The canonical term requires an
       issuer-signed attestation; this response is deliberately unsigned, so
       wiring it up as the canonical primitive would fabricate a signature
-      that was never made. The sha256 digest does let a third party
-      recompute and anchor "this card satisfied the declared verification
-      policy at time T" — but that construction is the consumer's, not an
-      attestation this system emits, and its scope is limited to the
+      that was never made. What survives recomputation is exactly: card
+      digest + card signature (against published canonical bytes) plus the
+      consumer's own record of what the service reported, scoped to the
       declared verification policy (validity window, card status, rotation
-      flags, trust anchors), not delegation scope or compliance checks.
+      flags, trust anchors) — not delegation scope or compliance checks.
 
   passport_grade:
     canonical: passport_grade
@@ -161,7 +195,12 @@ signal_types:
       band is a live challenge-time verification outcome (per-stage
       results), so that wiring substitutes verification evidence for
       issuance provenance. Nothing in the artifact carries a passport
-      document or its issuance provenance.
+      document or its issuance provenance. Evidence basis of the band
+      itself (maintainer-attested): the band is the outcome of the
+      derivation rule in verification_pattern.band_derivation — maintainer
+      attestation, worker v2.3.0 deployment; no public doc defines the
+      rule (differing-input captures from the failing conformance vectors
+      would convert this to emitted evidence; not recorded yet).
 
   entity_continuity:
     canonical: entity_continuity
@@ -183,13 +222,12 @@ signal_types:
     canonical: settlement_witness
     match: no_mapping
     notes: >
-      Verdicts are issuance-time identity evidence about the agent. The only
+      The verify response is challenge-time verification evidence about a
+      card, not settlement evidence, and carries no verdict ID. The only
       settlement artifact in the system (X-PAYMENT-RESPONSE receipt) is
       issued by the facilitator/rail and is carried, not attested, by this
       service; the service never asserts that a payment or delivery met its
-      expected terms. Verdict IDs are designed to be referenced by external
-      dispute records, but the referenced attestation is the consumer's
-      construction.
+      expected terms.
 
   wallet_state:
     canonical: wallet_state

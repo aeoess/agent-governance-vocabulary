@@ -14,7 +14,6 @@
       "payment": "X-PAYMENT header carrying an x402 v2 payload (EIP-3009 transferWithAuthorization, USDC eip155:84532, amount 10000 = 0.01 USDC, payTo 0xfD856E89Ac88757C339c67E9717528af0cD1d7Ee)"
     },
     "card": {
-      "provenance": "verbatim extract of the published vector file valid-atc.json (pin: commit 472329572e4fc3dff4536fffc33c135fd46609ef); sha256 of the canonical signed subtree matches the published valid-atc.sha256",
       "card_id": "ATC-TEST-VALID-001",
       "status": "active",
       "payload": {
@@ -53,7 +52,6 @@
       }
     },
     "verify_response": {
-      "provenance_note": "the 7 fields below are the verbatim HTTP 200 body, in emitted order; nothing inside this object is annotated or edited",
       "protocol": "ATC/1.0",
       "verified": true,
       "risk": "low",
@@ -68,12 +66,10 @@
       "payer": "0xfD856E89Ac88757C339c67E9717528af0cD1d7Ee"
     },
     "settlement_receipt": {
-      "provenance_note": "decoded X-PAYMENT-RESPONSE payload (base64), issued by the facilitator/rail; carried, not signed, by this service",
       "success": true,
       "transaction": "0xc7467392f0ca06c8a92d877d7224290186b35e63dece7fcd9a1c64c4971844f7",
       "network": "eip155:84532",
-      "payer": "0x62Ce5E4cEaAFB6Ecc2fea03CD89d9017e17360b0",
-      "carried_in": "X-PAYMENT-RESPONSE header (issued by the facilitator/rail, not signed by this service)"
+      "payer": "0x62Ce5E4cEaAFB6Ecc2fea03CD89d9017e17360b0"
     },
     "canonical_bytes": {
       "spec_version": "ATC/1.0 (worker v2.3.0)",
@@ -85,11 +81,14 @@
   },
   "annotations": {
     "http_status": "200 (transport fact, not part of the JSON body)",
+    "card_note": "artifact.card is the byte-faithful extract of the published vector file valid-atc.json (pin: commit 472329572e4fc3dff4536fffc33c135fd46609ef); sha256 of the canonical signed subtree matches the published valid-atc.sha256",
+    "verify_response_note": "the 7 fields recorded in artifact.verify_response are the verbatim HTTP 200 body, in emitted order; nothing inside that object is annotated or edited",
+    "settlement_receipt_note": "artifact.settlement_receipt holds the decoded X-PAYMENT-RESPONSE payload (base64), issued by the facilitator/rail and carried in the X-PAYMENT-RESPONSE header; carried, not signed, by this service",
     "service_signature": "none — the response is deliberately unsigned; only the digest and the rail receipt travel with it",
     "payer_field_quirk": {
       "observed": "the response body's `payer` is 0xfD856E89Ac88757C339c67E9717528af0cD1d7Ee — the challenge payTo (recipient) — while the settlement receipt names 0x62Ce5E4cEaAFB6Ecc2fea03CD89d9017e17360b0 as the paying wallet",
-      "ground_truth": "this is what the deployed worker actually emits, not a fixture edit: the deployed script computes payer = (payload.accepted && payload.accepted.payTo) || payload.payer || null from the preceding 402 challenge, so `payer` names the recipient. The actual payer is only established by the settlement receipt.",
-      "status": "documented as a quirk in crosswalk/universal-trust-adapter.yaml (artifact_shapes.verify_response.fields.payer); fixing the field is a service change outside this crosswalk's scope"
+      "ground_truth": "maintainer-attested derivation, not public code (the deployed script is not public; stated by the service maintainer, worker v2.3.0 deployment): the deployed worker computes payer = (payload.accepted && payload.accepted.payTo) || payload.payer || null from the preceding 402 challenge, so `payer` names the recipient. This is what the deployed worker actually emits — not a fixture edit. The actual payer is only established by the settlement receipt.",
+      "status": "documented as a maintainer-attested quirk in crosswalk/universal-trust-adapter.yaml (artifact_shapes.verify_response.fields.payer); fixing the field is a service change outside this crosswalk's scope"
     },
     "band_provenance": "risk 'low' here is consistent with the maintainer-attested derivation rule in verification_pattern.band_derivation of the crosswalk (all four stages pass → low); the rule itself is attestation, not public code"
   },

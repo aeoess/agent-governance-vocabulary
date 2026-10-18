@@ -93,7 +93,7 @@ A change that records an independent run, or moves a claim or an edge to indepen
 - **Any verifier.** Any project's verifier qualifies, and no particular verifier is required. It must be pinned to a commit or a released version.
 - **Pinned inputs.** The fixtures or other inputs are pinned to a commit, and each input file has a digest.
 - **Run record.** A public run record is linked from the pull request. It names the verifier and its commit or version, the input commit and each input digest. It also names who ran it and when, and gives the result for each case in the verifier's own terms.
-- **Result.** The result matches the published expected outcomes, or the record states each difference.
+- **Result.** The result matches the published expected outcome for every case. A run with any difference is still recorded, with each difference stated, and the claim keeps its current standing.
 
 A rerun by the author of the fixtures or of the verifier is a reproduction, not independent evidence. Independence is stated per claim, not per run. If the run record is missing a field, the claim stays at its current standing until the record is complete.
 

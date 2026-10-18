@@ -24,6 +24,8 @@ Either project on an edge can withdraw from that edge on its own. Any other chan
 
 A change that alters how a shared file describes a project needs that project's explicit confirmation on the pull request. Silence is not confirmation. No vote or other group decision overrides it. This process does not govern anything inside a project's own repository.
 
+These protections hold on every kind of change in the table below, including corrections and records that need no review window. A change described as a correction still needs a project's explicit confirmation if it alters how a shared file describes that project's node, claim semantics or keys.
+
 A change to this section needs confirmation from every project it would affect, and it never applies to a project that has not confirmed it.
 
 ## Participating projects
@@ -54,18 +56,28 @@ Each participating project has one voice. A person counts once, whichever projec
 
 Every change is a public pull request. Review and objections happen on the pull request.
 
-| Change | Review window | Approvals needed |
+The review window depends on what a change does.
+
+**Early stage.** The federation is in its early stage. No federation pilot is running yet and the map is a working draft, so routine upkeep of checked records should not wait as long as decisions about shared direction. The windows below are set for this stage. When the first federation pilot starts, the participating projects review them through a change to this file. Until a revision is adopted, they stay as written.
+
+| Change | Review window | Approvals and confirmations needed |
 |---|---|---|
-| Ordinary change to a shared file | 7 days | one, from a participating project other than the author's |
-| Change to `PRINCIPLES.md` or to this file | 14 days | two, from two different participating projects other than the author's |
+| Corrections and records: a broken link, a spelling or formatting fix, a newly pinned fixture version, a reproducible run record, or a factual correction. Every example in this row qualifies only if it changes no claim, edge progress or standing, or shared rule | none | one approval, from a participating project other than the author's |
+| Verified progress and standing changes: a change to an edge's progress or standing, such as recording an independent run | 48 hours | one approval, from a participating project other than the author's, and confirmation from every project whose claims the change affects |
+| New edges and substantive shared claims | 7 days | one approval, from a participating project other than the author's, and explicit confirmation from both projects on an edge |
+| Change to `PRINCIPLES.md` or to this file | 14 days | two approvals, from two different participating projects other than the author's |
 
-A pull request that touches more than one kind of file follows the strictest rule that applies to any part of it.
+A pull request that contains more than one kind of change follows the strictest rule that applies to any part of it. If participants disagree about which kind a change is, the longer window applies.
 
-**Author's project.** Every project whose maintainer wrote or co-authored the change is an author's project. Its approvals don't count for that change.
+**Faster review for one change.** A specific change can use a shorter window than its kind requires if every participating project explicitly approves the shorter window for that change on its pull request. The agreement and the window it sets stay recorded on the pull request. Every other requirement still applies. Changes to `PRINCIPLES.md` and to this file keep their 14-day window. Adopting this file has its own rule under Bootstrap.
 
-**Window.** The window starts when the pull request is opened, or when it leaves draft if it was opened as a draft.
+Every agreement to a shorter window, including under Bootstrap, names a commit and must be renewed after a substantive revision.
 
-**Approvals.** An approval is an explicit approval by a participating project's representative, recorded on the pull request, of a named commit. A change to the text after an approval ends that approval unless the approver confirms the new commit. A change that alters any requirement, condition, outcome or project description restarts the window. Any participating project can say on the pull request that a change did so, and the window then restarts. Spelling, link and formatting fixes do not restart it.
+**Author's project.** Every project whose maintainer wrote or co-authored the change is an author's project. Its approvals do not count toward the table's approval threshold. Its explicit agreement is still required for a shorter window.
+
+**Window.** Except during Bootstrap, the window starts when the pull request is opened, or when it leaves draft if it was opened as a draft.
+
+**Approvals.** An approval is an explicit approval by a participating project's representative, recorded on the pull request, of a named commit. A change to the text after an approval ends that approval unless the approver confirms the new commit. A change that alters any requirement, condition, outcome or project description restarts the window. Any participating project can say on the pull request that a change did so, and the window then restarts. Spelling, link and formatting fixes do not restart it. A change that moves a pull request into a kind with a longer window restarts it under that longer window.
 
 **Objections.** An objection names the specific problem with the change. A participating project, or a project whose description the change touches, can raise one. It is resolved when the text is corrected to address it, when the objector withdraws it, or when a vote under this section selects between the competing versions. A vote never replaces a project's required confirmation of its own description. The objection and its outcome stay recorded on the pull request.
 
@@ -79,8 +91,8 @@ No rule here applies to anything decided before it was adopted. Taking part in a
 
 ## Bootstrap
 
-This pull request proposes both the process and the conditions for adopting it. Adoption needs a review window of 14 days and explicit approvals of the final commit from REMORA and invinoveritas, the two participating projects other than Agent Passport System, which authored it. The participants for this review are the projects whose public opt-in on #185 exists when the pull request opens. Changing that set, in the table or otherwise, restarts the review. For this review, each project's representative is the maintainer who posted its opt-in on #185, as listed in the table. The fast opt-in rule does not operate before adoption. Any project that answered #185 can raise an objection during this review.
+This pull request proposes both the process and the conditions for adopting it. Adoption needs explicit approvals of the final commit from REMORA and invinoveritas, the two participating projects other than Agent Passport System, which authored it. Because this file is adopted in the early stage, its review window is 72 hours from the final commit if every project that answered #185 agrees to that on this pull request. Otherwise it is 14 days from the final commit. The participants for this review are the projects whose public opt-in on #185 exists when the pull request opens. Changing that set, in the table or otherwise, restarts the review. For this review, each project's representative is the maintainer who posted its opt-in on #185, as listed in the table. The fast opt-in rule does not operate before adoption. Any project that answered #185 can raise an objection during this review.
 
-If those approvals are not given, the process stays unadopted. Nobody can waive or lower the threshold.
+If those approvals are not given, the process stays unadopted. The two required approvals cannot be lowered.
 
 Once it is adopted, `PRINCIPLES.md` ([#178](https://github.com/aeoess/agent-governance-vocabulary/pull/178)) and `docs/boundary-map.md` ([#179](https://github.com/aeoess/agent-governance-vocabulary/pull/179)) start fresh reviews under it. Support given on them before adoption does not count as an approval.

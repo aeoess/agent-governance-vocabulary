@@ -3,17 +3,29 @@
 # Maps KVRM (kvrm-core + kvrm-ai) decision-routing and tool-call gating
 # primitives to the canonical vocabulary defined in vocabulary.yaml v0.2.0.
 #
+# Primary mapped receipt/gate surface:
+#   This crosswalk describes the kvrm-ai DecisionReceipt v0.1 format emitted by
+#   gate_to_receipt (kvrm-ai/src/kvrm_ai/gate.py lines 200-262) and
+#   build_receipt (kvrm-ai/src/kvrm_ai/receipt.py lines 147-219), matching the
+#   committed conformance vectors in
+#   kvrm-ai/receipts/{supported,blocked,gate-allowed,gate-blocked}.json
+#   (verified against kvrm-ai/tests/fixtures/refund-router). Format and
+#   enforcement differences between kvrm-ai and the lower-level engine package
+#   kvrm-core are documented inline below.
+#
 # Pinned upstream commit:
-#   https://github.com/robertcprice/KVRM/tree/a4b5017a4446e7d046462a8aa92881d7a5c19254
+#   https://github.com/robertcprice/KVRM/tree/5765ec5342fbbf9378c18cbb2f00e669afbbe5e6
 #
 # Primary sources at the pinned commit:
-#   - Spec:         docs/specs/DECISION_RECEIPT_SPEC.md (v0.1)
-#   - Core types:   kvrm-core/src/kvrm_core/types.py (AuditRecord, RegistrySpec, ActionSpec)
-#   - Core receipt: kvrm-core/src/kvrm_core/receipt.py (build_receipt, verify_receipt)
-#   - Core gate:    kvrm-core/src/kvrm_core/support.py (evaluate_support_spec, evaluate_registry_gate)
-#   - AI receipt:   kvrm-ai/src/kvrm_ai/receipt.py (IN_DIGEST, build_receipt, verify_receipt, merge_state)
-#   - AI gate:      kvrm-ai/src/kvrm_ai/gate.py (gate_tool_call, GatedDecision)
-#   - Emitted vectors: kvrm-ai/receipts/{supported,blocked,gate-allowed,gate-blocked}.json
+#   - Spec:           docs/specs/DECISION_RECEIPT_SPEC.md (v0.1)
+#   - Core types:     kvrm-core/src/kvrm_core/types.py (AuditRecord, RegistrySpec, ActionSpec)
+#   - Core context:   kvrm-core/src/kvrm_core/context_schema.py (split_state_features lines 20-33, merge_state_snapshot lines 36-64, evaluate_registry_gate lines 169-189)
+#   - Core support:   kvrm-core/src/kvrm_core/support.py (evaluate_support_spec lines 45-49)
+#   - Core runtime:   kvrm-core/src/kvrm_core/runtime.py (validate_candidate lines 212-229, runtime_config lines 283-300, decide_and_execute lines 364-497)
+#   - Core receipt:   kvrm-core/src/kvrm_core/receipt.py (IN_DIGEST lines 40-50, build_receipt lines 91-154, verify_receipt lines 157-211)
+#   - AI receipt:     kvrm-ai/src/kvrm_ai/receipt.py (IN_DIGEST lines 26-36, quantize/canonical_json/hash_json lines 53-72, merge_state lines 75-92, build_gate_trace lines 125-144, build_receipt lines 147-219, verify_receipt lines 242-374)
+#   - AI gate:        kvrm-ai/src/kvrm_ai/gate.py (GatedDecision lines 55-76, _runtime_config_of lines 96-101, gate_tool_call lines 104-197, gate_to_receipt lines 200-262)
+#   - Emitted vectors: kvrm-ai/receipts/{supported,blocked,gate-allowed,gate-blocked}.json (fixture: kvrm-ai/tests/fixtures/refund-router)
 #
 # License of this crosswalk file: Apache-2.0
 
@@ -21,25 +33,28 @@ system:
   name: KVRM (Registry-Constrained Decision Architecture & Tool Gate)
   short_name: KVRM
   home: https://github.com/robertcprice/KVRM
-  github: https://github.com/robertcprice/KVRM/tree/a4b5017a4446e7d046462a8aa92881d7a5c19254
-  spec: https://github.com/robertcprice/KVRM/blob/a4b5017a4446e7d046462a8aa92881d7a5c19254/docs/specs/DECISION_RECEIPT_SPEC.md
-  implementation: "Python packages kvrm-core (kvrm-core/src/kvrm_core/) and kvrm-ai (kvrm-ai/src/kvrm_ai/); CLI entry points kvrm and kvrm-ai (gate / receipt / verify)"
-  version_tested: "robertcprice/KVRM at commit a4b5017a4446e7d046462a8aa92881d7a5c19254 (v0.1.0)"
+  github: https://github.com/robertcprice/KVRM/tree/5765ec5342fbbf9378c18cbb2f00e669afbbe5e6
+  spec: https://github.com/robertcprice/KVRM/blob/5765ec5342fbbf9378c18cbb2f00e669afbbe5e6/docs/specs/DECISION_RECEIPT_SPEC.md
+  implementation: "Python packages kvrm-ai (kvrm-ai/src/kvrm_ai/, CLI entry point kvrm-ai gate / receipt / verify) and kvrm-core (kvrm-core/src/kvrm_core/)"
+  version_tested: "robertcprice/KVRM at commit 5765ec5342fbbf9378c18cbb2f00e669afbbe5e6 (v0.1.0)"
   role: >
     A deterministic, fail-closed action router and pre-execution tool-call gate
-    over versioned finite action registries. Every action in a RegistrySpec
-    declares a formal boolean/numeric support_spec envelope over request
-    features and a reserved external world-state snapshot namespace (st_ in
-    kvrm-ai/src/kvrm_ai/receipt.py; state. in kvrm-core/src/kvrm_core/context_schema.py).
-    Before any tool call or action executes, KVRM evaluates whether the observed
-    world state and request features satisfy the action's support_spec, selector
-    confidence threshold, and parameter schema, and emits a content-addressed
-    replay receipt (kvrx-<sha256>) that an offline verifier can re-evaluate
-    byte-for-byte. KVRM checks whether the observed state admits the action; it
-    does not issue agent identities or delegation chains.
+    over versioned finite action registries. This crosswalk maps the kvrm-ai
+    DecisionReceipt v0.1 and tool-gate surface (kvrm-ai/src/kvrm_ai/receipt.py
+    and kvrm-ai/src/kvrm_ai/gate.py, evidenced by the committed vectors in
+    kvrm-ai/receipts/). Every action in a RegistrySpec declares a formal
+    boolean/numeric support_spec envelope over request features and a reserved
+    external world-state snapshot namespace (st_<key> in
+    kvrm-ai/src/kvrm_ai/receipt.py lines 75-92; state.<key> in
+    kvrm-core/src/kvrm_core/context_schema.py lines 12-64). Before a tool call
+    or action executes, KVRM evaluates whether the observed world state and
+    request features satisfy the action's support_spec, selector confidence
+    threshold, and parameter schema, and emits a content-addressed replay
+    receipt (kvrx-<sha256>). KVRM checks whether the observed state admits the
+    action; it does not issue agent identities or delegation chains.
   upstream_license: >
     MIT per root LICENSE, kvrm-core/LICENSE, kvrm-ai/LICENSE, kvrm-bench/LICENSE,
-    and kvrm-server/LICENSE at commit a4b5017a4446e7d046462a8aa92881d7a5c19254
+    and kvrm-server/LICENSE at commit 5765ec5342fbbf9378c18cbb2f00e669afbbe5e6
     (copyright 2026 Robert Price); specification docs/specs/DECISION_RECEIPT_SPEC.md
     declares MIT (code) and CC-BY-4.0 (specification).
 
@@ -54,7 +69,7 @@ maintainer:
     author: Robert Price
 
 system_attributes:
-  canonicalization_profile: implementation-defined  # Python json.dumps(sort_keys=True, ensure_ascii=True, separators=(",", ":"), allow_nan=False) with q6 fixed-point integer quantization for derived scores (kvrm-ai/src/kvrm_ai/receipt.py lines 44-56)
+  canonicalization_profile: implementation-defined  # Python json.dumps(sort_keys=True, ensure_ascii=True, separators=(",", ":"), allow_nan=False) with q6 fixed-point integer quantization for derived scores (kvrm-ai/src/kvrm_ai/receipt.py lines 53-72)
   hash_family: sha-256                              # receipt_id ("kvrx-" + sha256), registry.digest, runtime_config.config_digest, and execution.output_hash are all SHA-256
 
 # ─────────────────────────────────────────────────
@@ -68,44 +83,78 @@ signal_types:
     match: partial
     evidence: emitted
     source_path: "verdict.status"
-    internal: "DecisionReceipt v0.1 (kvrx-<sha256> in kvrm-ai/src/kvrm_ai/receipt.py and kvrm-core/src/kvrm_core/receipt.py) and AuditRecord (kvrm-core/src/kvrm_core/types.py)"
-    signed_payload_fields: ["receipt_version", "decision", "state_snapshot", "registry", "runtime_config", "candidates", "gate_trace", "verdict", "execution"]
+    internal: "kvrm-ai DecisionReceipt v0.1 (kvrx-<sha256> from gate_to_receipt in kvrm-ai/src/kvrm_ai/gate.py lines 200-262 and build_receipt in kvrm-ai/src/kvrm_ai/receipt.py lines 147-219; lower-level engine variant in kvrm-core/src/kvrm_core/receipt.py lines 91-154)"
     notes: |
+      Mapped receipt format (kvrm-ai vs. kvrm-core):
+        This row maps the kvrm-ai DecisionReceipt v0.1 format emitted by
+        gate_to_receipt (kvrm-ai/src/kvrm_ai/gate.py lines 200-262, committed
+        in kvrm-ai/receipts/gate-allowed.json and kvrm-ai/receipts/gate-blocked.json,
+        where source_path is verdict.status) and build_receipt
+        (kvrm-ai/src/kvrm_ai/receipt.py lines 147-219, committed in
+        kvrm-ai/receipts/supported.json and kvrm-ai/receipts/blocked.json, where
+        the verdict field is verdict.final_status). The lower-level engine
+        module kvrm-core/src/kvrm_core/receipt.py (lines 91-154) emits a distinct
+        v0.1 wire variant with four structural differences:
+          - State key prefix: kvrm-ai merges state_snapshot.state into flat
+            features under st_<key> (merge_state, kvrm-ai/src/kvrm_ai/receipt.py
+            lines 75-92), whereas kvrm-core uses state.<key>
+            (split_state_features and merge_state_snapshot,
+            kvrm-core/src/kvrm_core/context_schema.py lines 20-64).
+          - Verdict field name: kvrm-ai gate receipts emit verdict.status
+            ("allowed" | "blocked" | "abstained"), whereas kvrm-ai router
+            receipts and kvrm-core receipts emit verdict.final_status
+            ("executed" | "fallback_executed" | "abstained" |
+            "validation_failed" | "fail_closed").
+          - Digest formatting and serializer tag: kvrm-ai records bare hex
+            SHA-256 strings in registry.digest and runtime_config.config_digest
+            with canonical.serializer = "kvrm-ai-receipt-0.1", whereas kvrm-core
+            prefixes digests with "sha256:", adds state_snapshot.state_digest,
+            and sets canonical.serializer = "kvrm-receipt-0.1".
+          - Gate trace keys and registry-only verification: kvrm-ai gate_trace
+            records {status, admissible_count, evaluated: [{action_id, passed,
+            reason?}]} (build_gate_trace, kvrm-ai/src/kvrm_ai/receipt.py lines
+            125-144), whereas kvrm-core records {status, total_actions,
+            supported_count, filtered_count, evaluated: [{action_id, supported,
+            reason?}]} using evaluate_registry_gate
+            (kvrm-core/src/kvrm_core/context_schema.py lines 169-189).
       Overlap: a deterministic, machine-verifiable pre-execution record proving
       that a proposed action (or candidate action set) and an observed world-state
       snapshot were evaluated against a versioned policy/action registry, with
       both the overall verdict and the per-action evaluation trace bound into the
       canonical SHA-256 digest (IN_DIGEST in kvrm-ai/src/kvrm_ai/receipt.py lines
-      21-31; committed vectors in kvrm-ai/receipts/gate-allowed.json and
-      kvrm-ai/receipts/gate-blocked.json). Specifically, the digest binds:
+      26-36). Specifically, the digest binds:
         (1) registry: {registry_name, version, digest}, where digest is the
             SHA-256 of the canonical RegistrySpec (every action's support_spec
             boolean/numeric precondition tree, parameters_schema, and
-            context_schema).
+            context_schema; e.g., ded50edb... for
+            kvrm-ai/tests/fixtures/refund-router).
         (2) decision and state_snapshot: the proposed action and parameters plus
             the observed external world-state snapshot (merged under the reserved
             st_ prefix by merge_state in kvrm-ai/src/kvrm_ai/receipt.py lines
-            67-82, or state. in kvrm-core/src/kvrm_core/context_schema.py; any
-            caller attempt to supply a reserved state key in request features
-            raises GateError / fails closed before evaluation).
+            75-92; any caller attempt to supply a reserved st_ key in request
+            features raises GateError at kvrm-ai/src/kvrm_ai/gate.py lines
+            120-122 before evaluation).
         (3) gate_trace.evaluated[]: the boolean pass/fail result for every
-            action in the registry plus the exact failing clause path (for
-            example, unsupported_features:support_spec.all[0]:st_refundable:eq
-            in kvrm-ai/receipts/gate-blocked.json).
+            action in the registry plus the exact failing clause path (from
+            evaluate_support_spec in kvrm-core/src/kvrm_core/support.py lines
+            45-49; for example,
+            unsupported_features:support_spec.all[0]:st_refundable:eq in
+            kvrm-ai/receipts/gate-blocked.json).
         (4) verdict: status ("allowed", "blocked", or "abstained" in gate mode;
-            "executed", "abstained", or "fail_closed" in router mode),
-            support_passed, confidence_met, and validation_reason.
+            final_status in router mode), support_passed, confidence_met, and
+            validation_reason.
       Where it diverges from canonical governance_attestation (why partial):
         (1) Content-addressed replay vs. cryptographic issuer signature in v0.1:
-            In DECISION_RECEIPT_SPEC.md v0.1 (section 3 and section 9),
+            Nothing in a v0.1 receipt is cryptographically signed
+            (signed_payload_fields is intentionally omitted). In
+            DECISION_RECEIPT_SPEC.md v0.1 (section 3 and section 9),
             receipt_id = "kvrx-" + sha256(canonical_json(IN_DIGEST)), while
             produced_by is an unsigned informational field excluded from
-            IN_DIGEST and signatures: [] / anchors: [] are reserved empty
-            arrays. A v0.1 receipt proves internal consistency and deterministic
-            replay (anyone holding the receipt and the RegistrySpec matching
-            registry.digest can run kvrm-ai verify and re-derive the exact
-            gate_trace and verdict), not third-party cryptographic key
-            authenticity unless wrapped or co-signed by an identity layer.
+            IN_DIGEST (EXCLUDED_FROM_DIGEST at kvrm-ai/src/kvrm_ai/receipt.py
+            line 38) and signatures: [] / anchors: [] are reserved empty arrays.
+            A v0.1 receipt proves internal consistency and deterministic replay
+            when verified against the domain runtime (kvrm-ai verify <receipt>
+            --domain <dir>), not third-party cryptographic key authenticity.
         (2) World-state admissibility vs. delegated principal authority:
             KVRM evaluates whether the observed world state and input features
             admit the action under registry.digest; it does not record who
@@ -117,7 +166,7 @@ signal_types:
     match: false_analog
     evidence: emitted
     source_path: "candidates[].effective_confidence_q6"
-    internal: "DecisionCandidate quantized selector scores (confidence_q6, effective_confidence_q6, agreement_q6, margin_q6 in kvrm-ai/src/kvrm_ai/receipt.py lines 85-115)"
+    internal: "DecisionCandidate quantized selector scores (confidence_q6, effective_confidence_q6, agreement_q6, margin_q6 in kvrm-ai/src/kvrm_ai/receipt.py lines 95-122 and kvrm-ai/src/kvrm_ai/gate.py lines 79-93)"
     notes: |
       Recorded as false_analog to prevent a concrete substitution hazard. Every
       KVRM receipt emits per-candidate fixed-point scores in [0, 1000000]
@@ -137,7 +186,7 @@ signal_types:
     notes: |
       KVRM does not emit post-task peer or delegator evaluations. Searched
       kvrm-core/src/kvrm_core/ and kvrm-ai/src/kvrm_ai/ at commit
-      a4b5017a4446e7d046462a8aa92881d7a5c19254; all emitted records are
+      5765ec5342fbbf9378c18cbb2f00e669afbbe5e6; all emitted records are
       per-decision gate/routing artifacts.
 
   completion_ratio:
@@ -180,7 +229,7 @@ signal_types:
       KVRM does not verify agent or principal identity, KYC status, or entity
       registration. Searched docs/specs/DECISION_RECEIPT_SPEC.md,
       kvrm-core/src/kvrm_core/, and kvrm-ai/src/kvrm_ai/ at commit
-      a4b5017a4446e7d046462a8aa92881d7a5c19254; caller identity attributes only
+      5765ec5342fbbf9378c18cbb2f00e669afbbe5e6; caller identity attributes only
       appear if a domain author declares them as ordinary domain features in
       context_schema, with no cryptographic identity verification by KVRM.
 
@@ -203,7 +252,7 @@ signal_types:
     match: no_mapping
     notes: |
       No wallet, balance, or on-chain holding primitive exists in kvrm-core or
-      kvrm-ai at commit a4b5017a4446e7d046462a8aa92881d7a5c19254.
+      kvrm-ai at commit 5765ec5342fbbf9378c18cbb2f00e669afbbe5e6.
 
   wallet_intelligence:
     canonical: wallet_intelligence
@@ -248,7 +297,7 @@ decision_trajectory:
       artifact keyed by receipt_id ("kvrx-" + sha256) and decision.case_id.
       Searched docs/specs/DECISION_RECEIPT_SPEC.md, kvrm-core/src/kvrm_core/receipt.py,
       and kvrm-ai/src/kvrm_ai/receipt.py at commit
-      a4b5017a4446e7d046462a8aa92881d7a5c19254: receipts do not carry a
+      5765ec5342fbbf9378c18cbb2f00e669afbbe5e6: receipts do not carry a
       prev_receipt_hash pointer chaining sequential decisions across an agent's
       lifecycle.
 
@@ -257,25 +306,35 @@ decision_trajectory:
     match: structural
     evidence: emitted
     source_path: "registry.digest"
-    internal: "registry.{registry_name, version, digest} and runtime_config.config_digest in DecisionReceipt (kvrm-ai/src/kvrm_ai/receipt.py lines 173-195)"
+    internal: "registry.{registry_name, version, digest} and runtime_config.config_digest in DecisionReceipt (kvrm-ai/src/kvrm_ai/receipt.py lines 166-184 and kvrm-ai/src/kvrm_ai/gate.py lines 96-101, 207-230)"
     notes: |
       Every KVRM AuditRecord and DecisionReceipt embeds registry.digest — the
       canonical SHA-256 over the active RegistrySpec (all action definitions,
       support_spec precondition trees, parameters_schema, and context_schema,
       computed by compute_registry_digest in kvrm-core/src/kvrm_core/registry.py)
-      — alongside runtime_config.config_digest (the SHA-256 of the active
-      threshold, fallback_action_id, and calibrator configuration). Both digests
-      sit inside IN_DIGEST. During verification (verify_receipt in
-      kvrm-ai/src/kvrm_ai/receipt.py lines 237-315), any mismatch between the
+      — alongside runtime_config.config_digest. Both digests sit inside
+      IN_DIGEST. During verification (verify_receipt in
+      kvrm-ai/src/kvrm_ai/receipt.py lines 242-374), any mismatch between the
       receipt's registry.digest and the supplied registry immediately returns
-      FAIL_INTEGRITY ("registry_digest_mismatch").
+      FAIL_INTEGRITY ("registry digest mismatch").
+      Scope of runtime_config.config_digest:
+        In kvrm-ai (_runtime_config_of in kvrm-ai/src/kvrm_ai/gate.py lines
+        96-101 and kvrm-ai/src/kvrm_ai/cli.py lines 42-48), config_digest hashes
+        only {threshold, fallback_action_id, calibrator: {name}}. It does NOT
+        cover the internal EvidenceFusionCalibrator weight parameters
+        (agreement_bonus_weight, margin_bonus_weight,
+        contradiction_penalty_weight, min_effective_confidence), nor the
+        extended runtime flags serialized by KVRMRuntime.runtime_config() in
+        kvrm-core/src/kvrm_core/runtime.py (lines 283-300: threshold_q6,
+        enforce_registry_contract, validator_is_stock, validator_call_mode,
+        state_provider_configured, post_hoc_scaler).
       Divergence from canonical baseline_revision: canonical baseline_revision
       tracks deliberate updates to an agent's behavioral baseline so legitimate
       policy changes are not misclassified as behavioral drift; KVRM's
       registry.digest and config_digest pin the declarative action-space and
-      support-envelope revision so decisions evaluated under different registry
+      threshold revision so decisions evaluated under different registry
       versions are cryptographically distinguished and replayed against the
-      exact policy version that governed them.
+      policy version that governed them.
 
   divergence_signal:
     canonical: divergence_signal
@@ -284,7 +343,7 @@ decision_trajectory:
       KVRM does not compute a continuous statistical drift metric over longitudinal
       agent behavior. Out-of-envelope inputs fail evaluate_support_spec on the
       individual call (recorded in gate_trace.evaluated[] and verdict.status =
-      "blocked" or "fail_closed").
+      "blocked" or verdict.final_status = "fail_closed").
 
   trust_velocity:
     canonical: trust_velocity
@@ -293,66 +352,121 @@ decision_trajectory:
 
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS
-# Evaluated for KVRM DecisionReceipt v0.1 + gate_tool_call / KVRMRuntime.
+# Top-level values are scoped to the mapped kvrm-ai gate/receipt surface
+# (gate_tool_call and KvrmMcpGateway); surface differences vs.
+# KVRMRuntime.decide_and_execute are documented in the notes below.
 # ─────────────────────────────────────────────────
 descriptor_dimensions:
-  enforcement_class: binding
+  enforcement_class: refusal_authority
+  enforcement_notes: |
+    Scoped by execution surface:
+      - kvrm-ai gate_tool_call (kvrm-ai/src/kvrm_ai/gate.py lines 104-197),
+        KvrmMcpGateway.check_tool_call (kvrm-ai/src/kvrm_ai/mcp_gateway/gateway.py
+        lines 88-137), and KVRMRuntime.validate_candidate
+        (kvrm-core/src/kvrm_core/runtime.py lines 212-229):
+        enforcement_class is refusal_authority (as in crosswalk/quesen.yaml).
+        These surfaces evaluate the proposed call and return a structured
+        allow/block/abstain decision (GatedDecision with allowed: false /
+        status: "blocked" | "abstained"), while the caller or MCP host is
+        responsible for not running the tool.
+      - KVRMRuntime.decide_and_execute (kvrm-core/src/kvrm_core/runtime.py lines
+        364-497): enforcement_class is binding. Here the runtime wraps the
+        ActionExecutor directly and invokes _execute_candidate only when
+        support_spec, confidence calibration, and DeterministicValidator.validate
+        all succeed (or routes to a validated safe fallback).
   validity_temporal: at_processing
-  refusal_authority: verifier
+  refusal_authority: consumer_policy
+  refusal_notes: |
+    Scoped by execution surface:
+      - kvrm-ai gate_tool_call, KvrmMcpGateway.check_tool_call, and
+        KVRMRuntime.validate_candidate: refusal_authority is consumer_policy
+        (as in crosswalk/quesen.yaml). The gate emits the verdict and machine
+        reason code; actual refusal at the tool-execution call site lives with
+        the calling consumer.
+      - KVRMRuntime.decide_and_execute (kvrm-core/src/kvrm_core/runtime.py lines
+        364-497): refusal_authority is verifier, because the runtime itself
+        sits in the execution path and withholds the executor call on any gate
+        or validator failure.
   invariant_survival: pre_action
   replay_class: full_replay
+  replay_notes: |
+    Condition for full_replay vs. registry-only verification:
+      - With --domain (verify_receipt(..., registry=registry, runtime=runtime)
+        in kvrm-ai/src/kvrm_ai/receipt.py lines 293-362, invoked via
+        `kvrm-ai verify <receipt> --domain <dir>`): full_replay holds. The
+        verifier recomputes receipt_id over IN_DIGEST, verifies registry.digest,
+        re-evaluates gate_trace.evaluated[], re-runs the full runtime pipeline
+        (gate_tool_call or runtime.decide_and_execute), checks candidate_scores
+        within 1 unit of q6 tolerance, and rejects any tampered verdict with
+        FAIL_REPLAY.
+      - With --registry alone (verify_receipt(..., registry=registry,
+        runtime=None) in kvrm-ai/src/kvrm_ai/receipt.py lines 279-291): only
+        receipt_id, registry.digest, and gate_trace.evaluated[] are checked.
+        Because the runtime pipeline is not re-executed when runtime is None, a
+        blocked receipt whose verdict.status is edited to "allowed" (with its
+        receipt_id recomputed) still returns PASS under --registry alone. By
+        contrast, kvrm-core's verify_receipt (kvrm-core/src/kvrm_core/receipt.py
+        lines 157-211) takes only (receipt, registry) and deliberately returns
+        VERIFY_PARTIAL because selector scores and final verdict are not
+        re-derived without a runtime.
+      - Additionally, runtime_config.config_digest in kvrm-ai hashes
+        {threshold, fallback_action_id, calibrator: {name}} (gate.py lines
+        96-101) and does not cover internal EvidenceFusionCalibrator weight
+        parameters, so full_replay relies on the domain module supplying the
+        matching calibrator instance.
   governed_action_class:
     - write
     - read
   measurement_point: mutation_boundary
   notes: |
-    enforcement_class: binding. In both KVRMRuntime.decide
-    (kvrm-core/src/kvrm_core/runtime.py) and gate_tool_call / KvrmMcpGateway
-    (kvrm-ai/src/kvrm_ai/gate.py, kvrm-ai/src/kvrm_ai/mcp_gateway/gateway.py),
-    an action executes only when support_passed, confidence_met, and
-    DeterministicValidator.validate all succeed; otherwise execution is blocked
-    or routed to a validated safe fallback.
+    enforcement_class (refusal_authority on kvrm-ai gate / MCP gateway; binding
+    on KVRMRuntime.decide_and_execute) and refusal_authority (consumer_policy on
+    kvrm-ai gate / MCP gateway; verifier on KVRMRuntime.decide_and_execute) are
+    scoped by surface in enforcement_notes and refusal_notes above.
     validity_temporal: at_processing. The support gate evaluates
     decision.input_features merged with state_snapshot.state (fetched_at) at the
     moment the tool call is processed.
-    refusal_authority: verifier. The KVRM gate/runtime sits between the
-    proposing agent and the tool executor and refuses any call that fails
-    context_schema, support_spec, confidence calibration, or parameter
-    validation.
     invariant_survival: pre_action. Support envelopes and parameter schemas are
-    checked before the executor is invoked; when a call is blocked, the
-    executor is never called and execution.status is "not_executed".
-    replay_class: full_replay. Given the receipt JSON and the RegistrySpec
-    matching registry.digest, verify_receipt (kvrm-ai/src/kvrm_ai/receipt.py)
-    recomputes receipt_id over IN_DIGEST, re-evaluates evaluate_support_spec
-    for every action over merge_state(decision.input_features, state_snapshot),
-    checks gate_trace.evaluated[] and candidate quantization, and confirms that
-    verdict reproduces byte-for-byte (returning PASS, FAIL_INTEGRITY,
-    FAIL_REPLAY, or VERIFY_PARTIAL when the registry is omitted).
+    checked before the tool call is executed; on the gate surface the caller
+    remains free to proceed after receiving the verdict, and on
+    decide_and_execute a blocked call never invokes the executor
+    (execution.status is "not_executed" or "blocked").
+    replay_class: full_replay when verified with the domain runtime (`kvrm-ai
+    verify <receipt> --domain <dir>`, receipt.py lines 293-362); with
+    `--registry` alone (runtime=None, receipt.py lines 279-291), only
+    receipt_id, registry.digest, and gate_trace.evaluated[] are re-evaluated
+    (see replay_notes above).
     governed_action_class: write and read. Designed primarily for state-mutating
     tool calls (write) in MCP gateways and operational routers, while also
     applicable to gated retrieval/inspection actions (read) declared in a
     domain registry.
-    measurement_point: mutation_boundary. The gate intercepts each proposed tool
+    measurement_point: mutation_boundary. The gate evaluates each proposed tool
     call immediately before side-effect execution.
 
 summary: |
   KVRM (kvrm-core and kvrm-ai) is a deterministic, fail-closed action router and
-  pre-execution tool-call gate over versioned finite action registries. It
-  answers a single governance question at the tool-execution boundary: given the
-  proposed action, request features, and an attested external world-state
-  snapshot (st_* / state.*), does the live state satisfy the action's declared
-  support_spec envelope and validation schema?
+  pre-execution tool-call gate over versioned finite action registries. This
+  crosswalk maps the kvrm-ai DecisionReceipt v0.1 and tool-gate surface
+  (kvrm-ai/src/kvrm_ai/receipt.py and kvrm-ai/src/kvrm_ai/gate.py, evidenced by
+  kvrm-ai/receipts/{supported,blocked,gate-allowed,gate-blocked}.json against
+  kvrm-ai/tests/fixtures/refund-router) and documents where the lower-level
+  kvrm-core receipt and runtime surfaces differ. KVRM answers a single
+  governance question at the tool-execution boundary: given the proposed action,
+  request features, and an attested external world-state snapshot (st_* in
+  kvrm-ai; state.* in kvrm-core), does the observed state satisfy the action's
+  declared support_spec envelope, calibrated confidence threshold, and parameter
+  schema?
   One signal_types row is partial (governance_attestation: emitted kvrx-<sha256>
   DecisionReceipt binding decision, state_snapshot, registry.digest,
   runtime_config.config_digest, quantized candidates[], gate_trace.evaluated[],
   and verdict, but content-addressed with signatures: [] reserved empty in v0.1
   and scoped to world-state admissibility rather than principal delegation).
   One decision_trajectory row is structural (baseline_revision: emitted
-  registry.digest and runtime_config.config_digest inside IN_DIGEST).
+  registry.digest and runtime_config.config_digest inside IN_DIGEST, where
+  kvrm-ai's config_digest covers threshold, fallback_action_id, and calibrator
+  class name).
   One signal_types row is false_analog (behavioral_trust: per-call selector
   confidence_q6 / effective_confidence_q6 measures feature-routing fit, not
   longitudinal agent trustworthiness).
   All identity, delegation-chain, wallet, and post-action settlement terms are
-  no_mapping, making KVRM directly composable with identity and delegation
-  protocols (such as APS AuthorityDelegationV1) without overlap.
+  no_mapping.

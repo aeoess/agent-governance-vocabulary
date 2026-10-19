@@ -172,6 +172,46 @@ function validateSystemAttributes(doc, file) {
   }
 }
 
+// Issue #107: pairwise records are claims about two systems, not standard
+// vocabulary-to-system mappings. Validate their own structure fail-closed.
+function validatePairwiseComposition(doc, file) {
+  const record = v => v !== null && typeof v === 'object' && !Array.isArray(v)
+  const present = v => typeof v === 'string' && v.trim().length > 0
+  const required = ['crosswalk_type', 'source_system', 'target_system',
+    'normative_status', 'concurrence', 'composition_boundary', 'mappings']
+  for (const key of required) {
+    if (doc[key] === undefined || doc[key] === null) err(file, `pairwise_composition missing ${key}`)
+  }
+  if (!present(doc.source_system) || !present(doc.target_system)) {
+    err(file, 'pairwise_composition source_system and target_system must be nonempty strings')
+  } else if (doc.source_system === doc.target_system) {
+    err(file, 'pairwise_composition requires distinct source and target systems')
+  }
+  if (doc.normative_status !== 'non_normative') err(file, 'pairwise_composition normative_status must be non_normative')
+  if (!record(doc.composition_boundary) || Object.keys(doc.composition_boundary).length === 0) {
+    err(file, 'pairwise_composition requires a nonempty composition_boundary object')
+  }
+  if (!record(doc.concurrence)) {
+    err(file, 'pairwise_composition requires concurrence object')
+  } else {
+    for (const side of ['aps_side', 'acta_side']) {
+      const part = doc.concurrence[side]
+      if (!record(part) || !present(part.status)) err(file, `concurrence.${side}.status required`)
+      else if (part.status === 'pending') err(file, `concurrence.${side}.status cannot be pending`)
+      else if (!['authored', 'concurred', 'approved'].includes(part.status)) err(file, `concurrence.${side}.status unsupported: ${part.status}`)
+    }
+  }
+  if (!Array.isArray(doc.mappings) || doc.mappings.length === 0) {
+    err(file, 'pairwise_composition mappings must be a nonempty array')
+  } else {
+    const allowed = new Set(['exact', 'structural', 'partial', 'divergent', 'false_analog', 'no_mapping', 'non_equivalent_similar_label'])
+    doc.mappings.forEach((row, i) => {
+      if (!record(row)) err(file, `mappings[${i}] must be an object`)
+      else if (!allowed.has(row.match_type)) err(file, `mappings[${i}].match_type invalid: ${String(row.match_type)}`)
+    })
+  }
+}
+
 function validateSystem(doc, file) {
   const sys = doc.system
   if (!sys) { err(file, 'missing `system` block'); return }
@@ -575,6 +615,13 @@ function validateFile(file) {
   // Fail-closed reverify enforcement runs on every crosswalk shape, before the
   // type-specific early returns, so a stale cell fails regardless of format.
   validateReverify(doc, file, '')
+
+  if (doc.crosswalk_type === 'pairwise_composition') {
+    validateSystemAttributes(doc, file)
+    validateSystem(doc, file)
+    validatePairwiseComposition(doc, file)
+    return
+  }
 
   if (doc.crosswalk_type === 'rfc_category_reverse') {
     if (verbose) console.log(`  skip  ${path.relative(ROOT, file)} (reverse crosswalk)`)

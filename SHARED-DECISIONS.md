@@ -85,6 +85,20 @@ Every agreement to a shorter window, including under Bootstrap, names a commit a
 
 **Merge.** A change is ready to merge when its window has closed, its approvals cover its final commit, every required project confirmation is recorded, no objection is open and the repository's required checks pass. The repository administrator merges it within 3 days. The merge carries out the recorded decision and adds no approval of its own. If the merge cannot happen, the administrator states the blocking condition publicly on the pull request.
 
+## Independently reproduced
+
+A change that records an independent run, or moves a claim or an edge to independently reproduced standing, must show that every condition below holds. Any reviewer can check each one from public records.
+
+- **Who ran it.** A project other than the claim's owner ran the check. The person who ran it authored neither the fixtures nor the verifier. This is the conformance lab's rule for an independent record, as proposed in the boundary map ([#179](https://github.com/aeoess/agent-governance-vocabulary/pull/179)).
+- **Any verifier.** Any project's verifier qualifies, including the claim owner's, and no particular verifier is required. It must be pinned to a commit or a released version.
+- **Pinned inputs.** The fixtures or other inputs are pinned to a commit, and each input file has a digest.
+- **Run record.** A public run record is linked from the pull request. It names the verifier and its commit or version, the input commit and each input digest. It also names who ran it, when, and in what environment, gives the result for each case in the verifier's own terms, and states any condition under which the result could not be reproduced. It also states whether the verifier was written without reading the claim owner's implementation.
+- **Result.** The result matches the published expected outcome for every case. A run with any difference is still recorded, with each difference stated, and the claim keeps its current standing.
+
+Independent operation and independent implementation are separate claims. A run that meets every condition above is an independent run. It is an independent implementation only when the run record also states that the verifier was written without reading the claim owner's implementation. A run of the owner's verifier by another project is an independent run and never an independent implementation.
+
+A rerun by the author of the fixtures or of the verifier is a reproduction, not independent evidence. Independence is stated per claim, not per run: one run can be independent evidence for one claim and a reproduction for another, depending on who wrote that claim's fixtures and verifier. If the run record is missing a field, the claim stays at its current standing until the record is complete.
+
 ## No retroactive effect
 
 No rule here applies to anything decided before it was adopted. Taking part in an earlier pilot or appearing on the map is not consent to any rule adopted later.

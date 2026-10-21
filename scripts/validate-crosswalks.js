@@ -8,7 +8,7 @@
 const fs = require('fs')
 const path = require('path')
 const yaml = require('js-yaml')
-const { normalizeDoc, rawMatch, aliasesFromVocab } = require('./match-types')
+const { normalizeDoc, normalizeMatch, rawMatch, aliasesFromVocab } = require('./match-types')
 
 // Optional positional argument: validate a different tree with THIS validator's
 // rules (used by the trusted CI job to run base-branch code against PR data).
@@ -204,10 +204,10 @@ function validatePairwiseComposition(doc, file) {
   if (!Array.isArray(doc.mappings) || doc.mappings.length === 0) {
     err(file, 'pairwise_composition mappings must be a nonempty array')
   } else {
-    const allowed = new Set(['exact', 'structural', 'partial', 'divergent', 'false_analog', 'no_mapping', 'non_equivalent_similar_label'])
+    const allowed = new Set([...canonicalMatchTypes, 'divergent'])
     doc.mappings.forEach((row, i) => {
       if (!record(row)) err(file, `mappings[${i}] must be an object`)
-      else if (!allowed.has(row.match_type)) err(file, `mappings[${i}].match_type invalid: ${String(row.match_type)}`)
+      else if (!allowed.has(normalizeMatch(row.match_type, matchAliases))) err(file, `mappings[${i}].match_type invalid: ${String(row.match_type)}`)
     })
   }
 }

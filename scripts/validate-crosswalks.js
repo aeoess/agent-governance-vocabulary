@@ -588,9 +588,17 @@ function validateReverify(node, file, dotPath) {
 // Alternative registry shapes have their own explicit structural contracts.
 // No semantic concurrence or third-party endorsement is inferred.
 function validateAlternativeCrosswalk(doc, file) {
+  // Recognize registered alternative schemas without relying on required fields:
+  // removing issuer, vocabulary_ref, or mappings must never downgrade an ERROR
+  // to an unrecognized-format warning.
+  const relative = path.relative(ROOT, file).split(path.sep).join('/')
+  const schema = relative === 'crosswalk/a2a.yaml' ? 'a2a'
+    : relative === 'crosswalk/satp/behavioral-trust.yaml' ? 'satp'
+    : relative === 'crosswalk/logpose.yaml' ? 'mapping'
+    : null
   const record = v => v !== null && typeof v === 'object' && !Array.isArray(v)
   const present = v => typeof v === 'string' && v.trim().length > 0
-  if (Object.hasOwn(doc, 'mappings')) {
+  if (schema === 'mapping' || (!schema && Object.hasOwn(doc, 'mappings'))) {
     if (!Array.isArray(doc.mappings)) { err(file, 'alternative mappings must be an array'); return true }
     if (!(present(doc.system) || (record(doc.system) && present(doc.system.name)))) err(file, 'alternative mapping requires system identity')
     if (!doc.mappings.length) err(file, 'alternative mappings must be nonempty')
@@ -604,7 +612,7 @@ function validateAlternativeCrosswalk(doc, file) {
     })
     return true
   }
-  if (Object.hasOwn(doc, 'signals')) {
+  if (schema === 'a2a' || (!schema && Object.hasOwn(doc, 'signals'))) {
     if (!present(doc.issuer)) err(file, 'A2A issuer required')
     if (!record(doc.signals)) { err(file, 'A2A signals must be an object'); return true }
     if (!Object.keys(doc.signals).length) err(file, 'A2A signals must be nonempty')
@@ -616,7 +624,7 @@ function validateAlternativeCrosswalk(doc, file) {
     }
     return true
   }
-  if (Object.hasOwn(doc, 'field_mappings')) {
+  if (schema === 'satp' || (!schema && Object.hasOwn(doc, 'field_mappings'))) {
     if (!present(doc.vocabulary_ref)) err(file, 'SATP vocabulary_ref required')
     if (!record(doc.field_mappings)) { err(file, 'SATP field_mappings must be an object'); return true }
     if (!Object.keys(doc.field_mappings).length) err(file, 'SATP field_mappings must be nonempty')

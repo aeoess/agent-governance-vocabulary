@@ -6,9 +6,14 @@ const cases = [
   ['valid mapping', 'logpose.yaml', d => {}, true],
   ['invalid mapping enum', 'logpose.yaml', d => { d.mappings[0].match = 'invented' }, false],
   ['missing mapping canonical', 'logpose.yaml', d => { delete d.mappings[0].canonical }, false],
+  ['mapping wrong container', 'logpose.yaml', d => { d.mappings = {bad: 'shape'} }, false],
   ['valid A2A', 'a2a.yaml', d => {}, true],
   ['wrong A2A canonical value', 'a2a.yaml', d => { d.signals.peer_review.a2a_canonical_value = 'wallet_state' }, false],
+  ['A2A issuer missing', 'a2a.yaml', d => { delete d.issuer }, false],
+  ['A2A signals wrong container', 'a2a.yaml', d => { d.signals = [] }, false],
   ['valid SATP', 'satp/behavioral-trust.yaml', d => {}, true],
+  ['SATP vocabulary_ref missing', 'satp/behavioral-trust.yaml', d => { delete d.vocabulary_ref }, false],
+  ['SATP field_mappings wrong container', 'satp/behavioral-trust.yaml', d => { d.field_mappings = [] }, false],
   ['empty SATP field path', 'satp/behavioral-trust.yaml', d => { d.field_mappings.canonical_score_field = '' }, false],
 ]
 let passed = 0

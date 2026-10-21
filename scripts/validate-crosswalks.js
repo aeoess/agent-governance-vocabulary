@@ -590,7 +590,8 @@ function validateReverify(node, file, dotPath) {
 function validateAlternativeCrosswalk(doc, file) {
   const record = v => v !== null && typeof v === 'object' && !Array.isArray(v)
   const present = v => typeof v === 'string' && v.trim().length > 0
-  if (Array.isArray(doc.mappings)) {
+  if (Object.hasOwn(doc, 'mappings')) {
+    if (!Array.isArray(doc.mappings)) { err(file, 'alternative mappings must be an array'); return true }
     if (!(present(doc.system) || (record(doc.system) && present(doc.system.name)))) err(file, 'alternative mapping requires system identity')
     if (!doc.mappings.length) err(file, 'alternative mappings must be nonempty')
     doc.mappings.forEach((row, i) => {
@@ -603,7 +604,9 @@ function validateAlternativeCrosswalk(doc, file) {
     })
     return true
   }
-  if (record(doc.signals) && present(doc.issuer)) {
+  if (Object.hasOwn(doc, 'signals')) {
+    if (!present(doc.issuer)) err(file, 'A2A issuer required')
+    if (!record(doc.signals)) { err(file, 'A2A signals must be an object'); return true }
     if (!Object.keys(doc.signals).length) err(file, 'A2A signals must be nonempty')
     for (const [key, row] of Object.entries(doc.signals)) {
       if (!canonicalSignalTypes.has(key)) err(file, `signals.${key}: unknown canonical signal`)
@@ -613,7 +616,9 @@ function validateAlternativeCrosswalk(doc, file) {
     }
     return true
   }
-  if (record(doc.field_mappings) && present(doc.vocabulary_ref)) {
+  if (Object.hasOwn(doc, 'field_mappings')) {
+    if (!present(doc.vocabulary_ref)) err(file, 'SATP vocabulary_ref required')
+    if (!record(doc.field_mappings)) { err(file, 'SATP field_mappings must be an object'); return true }
     if (!Object.keys(doc.field_mappings).length) err(file, 'SATP field_mappings must be nonempty')
     for (const [key, value] of Object.entries(doc.field_mappings)) {
       if (!present(key) || !present(value)) err(file, `field_mappings.${key}: requires nonempty field path`)

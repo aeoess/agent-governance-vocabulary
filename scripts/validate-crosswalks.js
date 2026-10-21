@@ -585,6 +585,44 @@ function validateReverify(node, file, dotPath) {
   }
 }
 
+// Alternative registry shapes have their own explicit structural contracts.
+// No semantic concurrence or third-party endorsement is inferred.
+function validateAlternativeCrosswalk(doc, file) {
+  const record = v => v !== null && typeof v === 'object' && !Array.isArray(v)
+  const present = v => typeof v === 'string' && v.trim().length > 0
+  if (Array.isArray(doc.mappings)) {
+    if (!(present(doc.system) || (record(doc.system) && present(doc.system.name)))) err(file, 'alternative mapping requires system identity')
+    if (!doc.mappings.length) err(file, 'alternative mappings must be nonempty')
+    doc.mappings.forEach((row, i) => {
+      if (!record(row)) { err(file, `mappings[${i}] must be an object`); return }
+      if (!present(row.canonical)) err(file, `mappings[${i}].canonical required`)
+      if (!present(row.internal)) err(file, `mappings[${i}].internal required`)
+      if (!canonicalMatchTypes.has(normalizeMatch(row.match, matchAliases))) {
+        err(file, `mappings[${i}].match invalid: ${String(row.match)}`)
+      }
+    })
+    return true
+  }
+  if (record(doc.signals) && present(doc.issuer)) {
+    if (!Object.keys(doc.signals).length) err(file, 'A2A signals must be nonempty')
+    for (const [key, row] of Object.entries(doc.signals)) {
+      if (!canonicalSignalTypes.has(key)) err(file, `signals.${key}: unknown canonical signal`)
+      if (!record(row) || row.a2a_canonical_value !== key || !present(row.a2a_field)) {
+        err(file, `signals.${key}: requires matching a2a_canonical_value and a2a_field`)
+      }
+    }
+    return true
+  }
+  if (record(doc.field_mappings) && present(doc.vocabulary_ref)) {
+    if (!Object.keys(doc.field_mappings).length) err(file, 'SATP field_mappings must be nonempty')
+    for (const [key, value] of Object.entries(doc.field_mappings)) {
+      if (!present(key) || !present(value)) err(file, `field_mappings.${key}: requires nonempty field path`)
+    }
+    return true
+  }
+  return false
+}
+
 function validateFile(file) {
   const contained = containmentError(file)
   if (contained) {
@@ -640,7 +678,9 @@ function validateFile(file) {
   validateSystemAttributes(doc, file)
 
   if (!isStandardCrosswalk(doc)) {
-    warn(file, 'no `signal_types` section found; skipping validation (alternative crosswalk format)')
+    if (!validateAlternativeCrosswalk(doc, file)) {
+      warn(file, 'unrecognized alternative format; no structural validator available')
+    }
     return
   }
 

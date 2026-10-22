@@ -14,8 +14,9 @@
 #
 # The specification is published open-access with a permanent DOI. The
 # reference SDKs (TypeScript, Python, Go, Rust, WebAssembly) are
-# Apache-2.0 and publish v2.8.x to their native registries (npm
-# tracks the TypeScript-side codebase separately at v2.1.1). Four
+# Apache-2.0 and publish to their native registries (release v2.9.0:
+# PyPI 2.8.2, crates.io and Go 2.9.0; npm tracks the TypeScript-side
+# codebase on its own 2.1.x line). Four
 # operational services (verification, anchor, transparency-log,
 # revocation) are published as multi-arch Docker images on GHCR,
 # self-hostable via Fly.io configs or Kubernetes.
@@ -36,7 +37,7 @@
 #      contained normative document (`spec/CANONICALIZATION_PROFILE.md`,
 #      9 rules + edge-case acceptance table + cross-language undefined
 #      mapping). All four SDKs produce byte-identical canonical output
-#      for the profile, validated by 14 shared edge-case interop
+#      for the profile, validated by 19 shared edge-case interop
 #      vectors. The bundle manifest carries an explicit
 #      `canonicalization_profile: "dcp-jcs-v1"` field for forward-
 #      compatible versioning. Unicode normalization is OUT OF SCOPE
@@ -44,19 +45,21 @@
 #
 # Implementation status: DCP-01 through DCP-09 are shipped as
 # operational functions across all four SDKs (TypeScript, Python, Go,
-# Rust) at v2.8.x in the main branch. Public registry versions at the
-# time of crosswalk authoring: PyPI dcp-ai 2.8.1, crates.io dcp-ai
-# 2.8.1, Go modules sdks/go/v2 2.8.1; the npm @dcp-ai/sdk package is
-# at 2.1.1 (TypeScript-side bumps track separately from the protocol
-# version because v2.8.x added no TypeScript code changes beyond the
-# field wiring already shipped in 2.1.1). Naming is idiomatic per
+# Rust) as of release v2.9.0. Signed Bundle V2 build, sign and verify
+# are native in TypeScript and Go, available in Rust behind the `wasm`
+# feature (also published as @dcp-ai/wasm), and not yet in Python,
+# whose bundle helpers produce and verify V1 bundles. Registry
+# versions at this revision: PyPI dcp-ai 2.8.2, crates.io dcp-ai
+# 2.9.0, Go module sdks/go/v2 v2.9.0; the npm @dcp-ai/sdk package
+# follows its own 2.1.x line (TypeScript-side versions track
+# separately from the protocol release). Naming is idiomatic per
 # language: camelCase in TypeScript, snake_case in Python and Rust,
 # PascalCase in Go. Cross-SDK interop vectors at
 # `tests/interop/v2/interop_vectors.json` are consumed by all four
 # SDKs and validate byte-identical signed envelopes on CI.
 #
 # Paper (CC-BY 4.0):     https://doi.org/10.5281/zenodo.19040913
-# Software (Apache-2.0): https://doi.org/10.5281/zenodo.19656026
+# Software (Apache-2.0): https://doi.org/10.5281/zenodo.19656025 (all versions)
 # Spec home:             https://dcp-ai.org
 # Docs:                  https://docs.dcp-ai.org
 # Repo:                  https://github.com/dcp-ai-protocol/dcp-ai
@@ -68,7 +71,7 @@ system:
   short_name: DCP-AI
   home: https://dcp-ai.org
   github: https://github.com/dcp-ai-protocol/dcp-ai
-  spec_version: "v2.8.x in main; PyPI 2.8.1, crates.io 2.8.1, Go modules 2.8.1, npm 2.1.1 (TypeScript)"
+  spec_version: "v2.9.0; PyPI 2.8.2, crates.io 2.9.0, Go module 2.9.0, npm 2.1.x (TypeScript)"
   role: >
     Layered governance protocol for autonomous AI agents. Defines
     cryptographically verifiable identity (DCP-01), machine-readable
@@ -123,16 +126,20 @@ signal_types:
     dcp_term: SignedBundleV2
     dcp_symbols:
       typescript: [BundleBuilderV2, signBundleV2, verifySignedBundleV2, intentHash]
-      python: [BundleBuilder, sign_bundle, verify_signed_bundle, intent_hash]
       go: [BuildBundleV2, SignBundleV2, VerifySignedBundleV2]
-      rust: [verify_signed_bundle]
+      rust: [wasm_build_bundle, wasm_sign_bundle, wasm_verify_signed_bundle_v2]  # `wasm` feature only (@dcp-ai/wasm)
+      # python: no Signed Bundle V2 builder or verifier yet; BundleBuilder,
+      # sign_bundle and verify_signed_bundle produce and verify V1 bundles.
     issuer_uri: https://dcp-ai.org
     algorithm: Ed25519 + ML-DSA-65 (composite)
     signed_shape: |
-      Signed bundle containing the agent identity record, declared
-      intent, policy decision artifact, and audit chain reference,
-      all canonicalized with JCS (RFC 8785) and sealed with a
-      composite Ed25519 + ML-DSA-65 signature.
+      Signed bundle (`schemas/v2/signed_bundle.schema.json`): the
+      responsible principal record, agent passport, declared intent
+      and policy decision as signed payloads, plus the audit entries.
+      The composite Ed25519 + ML-DSA-65 signature covers the bundle
+      manifest, which commits to each payload hash and the audit
+      Merkle root. Bytes are canonicalized under the `dcp-jcs-v1`
+      profile.
     descriptor_dimensions:
       enforcement_class: binding
       validity_temporal: at_issuance
@@ -153,11 +160,12 @@ signal_types:
       verified without disclosing the principal's identifying data.
 
       The human binding is verified as part of the bundle verification
-      flow (`verifySignedBundleV2` / `verify_signed_bundle`), not as
-      a separate standalone call. Blinded RPR with PII hash is
-      currently available in the Python SDK (`blind_rpr`,
-      `verify_blinded_rpr`, `compute_pii_hash`); parity for the other
-      SDKs is planned.
+      flow (`verifySignedBundleV2` / `VerifySignedBundleV2` for V2
+      bundles, `verify_signed_bundle` for V1), not as a separate
+      standalone call. Blinded RPR with PII hash ships in the Python,
+      Go and Rust SDKs (`blind_rpr` / `BlindRPR`, `verify_blinded_rpr`,
+      `is_blinded_rpr`, `compute_pii_hash`); the TypeScript
+      implementation exists but is not yet exported from @dcp-ai/sdk.
 
       Four security tiers (LOCAL, NETWORK, FEDERATED, GLOBAL) modulate
       verification depth and the expected evidence set at each trust
@@ -166,8 +174,8 @@ signal_types:
     dcp_symbols:
       typescript: [BundleBuilderV2, signBundleV2, verifySignedBundleV2, presentFull, presentCompact, presentReference, presentIncremental, suggestPresentationMode, computeBundleHash]
       python: [BundleBuilder, sign_bundle, verify_signed_bundle, blind_rpr, verify_blinded_rpr, is_blinded_rpr, compute_pii_hash]
-      go: [BuildBundleV2, SignBundleV2, VerifySignedBundleV2]
-      rust: [verify_signed_bundle]
+      go: [BuildBundleV2, SignBundleV2, VerifySignedBundleV2, BlindRPR, VerifyBlindedRPR, IsBlindedRPR, ComputePIIHash]
+      rust: [verify_signed_bundle, blind_rpr, verify_blinded_rpr, is_blinded_rpr, compute_pii_hash]
     issuer_uri: https://dcp-ai.org
     algorithm: Ed25519 + ML-DSA-65 (composite)
 
@@ -326,10 +334,13 @@ decision_trajectory:
       Canonicalization follows the `dcp-jcs-v1` profile (declared in
       `spec/CANONICALIZATION_PROFILE.md`, 9 normative rules + edge-case
       acceptance table + cross-language `undefined` mapping). The
-      profile is a strict subset of RFC 8785 JCS that pins the cases
-      JCS leaves implementation-defined. Bundle manifests carry an
+      profile builds on RFC 8785 JCS: it pins the cases JCS leaves
+      implementation-defined, restricts numbers to integers, and
+      orders keys by Unicode code point rather than JCS's UTF-16 code
+      units (the two orders differ only for keys mixing astral
+      characters with U+E000..U+FFFF). Bundle manifests carry an
       explicit `canonicalization_profile: "dcp-jcs-v1"` field for
-      forward-compatible versioning. 14 shared edge-case interop
+      forward-compatible versioning. 19 shared edge-case interop
       vectors (`tests/interop/v2/interop_vectors.json#canonicalization.edge_cases`)
       validate byte-identical canonical output across the four SDKs;
       hash digests use SHA-256 with optional SHA3-256 via the
@@ -409,10 +420,12 @@ out_of_vocabulary_primitives:
   canonicalization_profile_dcp_jcs_v1:
     description: >
       `dcp-jcs-v1` is a self-contained normative canonicalization
-      profile published as `spec/CANONICALIZATION_PROFILE.md`. It is
-      a strict subset of RFC 8785 (JCS) that pins the cases JCS
-      leaves implementation-defined: 9 normative rules covering key
-      sort order, compact form, string escaping, integer-only numeric
+      profile published as `spec/CANONICALIZATION_PROFILE.md`. It
+      builds on RFC 8785 (JCS) and pins the cases JCS leaves
+      implementation-defined: 9 normative rules covering key sort
+      order (Unicode code point; JCS uses UTF-16 code units, which
+      differs only for keys mixing astral characters with
+      U+E000..U+FFFF), compact form, string escaping, integer-only numeric
       handling (with explicit acceptance of integer-valued floats
       `1.0`, `1.00`, `1e2` and rejection of `0.1`, `1e-1`, `NaN`,
       `±Infinity`), null preservation, a cross-language `undefined`
@@ -427,17 +440,17 @@ out_of_vocabulary_primitives:
       `schemas/v2/bundle_manifest.schema.json` with `const:
       "dcp-jcs-v1"`. The field is optional for backward compatibility
       (verifiers MUST assume `dcp-jcs-v1` when absent) and is set by
-      default by every BundleBuilder across the four SDKs. Verifiers
+      default by the V2 bundle builders (TypeScript, Go, Rust `wasm`)
+      and by Python's `BundleManifest` model. Verifiers
       reject unknown values explicitly (TypeScript and Go via
       explicit checks, Python via Pydantic `Literal` at parse time).
 
-      Cryptographic conformance is anchored in 14 shared edge-case
-      interop vectors at
-      `tests/interop/v2/interop_vectors.json#canonicalization.edge_cases`,
-      consumed by all four SDKs. Each ACCEPT vector includes the
-      expected canonical string and SHA-256 hash; the four SDKs
-      assert byte-identical output against those fixtures on every
-      CI run.
+      Conformance is anchored in 19 shared edge-case interop vectors
+      at `tests/interop/v2/interop_vectors.json#canonicalization.edge_cases`,
+      consumed by all four SDKs. Accept vectors carry the expected
+      canonical string and reject vectors are marked
+      `expects_error`; the four SDKs assert byte-identical output, or
+      rejection, against those fixtures in CI.
     rationale: >
       Not a signal type; a normative profile that pins the canonical
       bytes signed and hashed by every DCP-AI primitive. Listed here
@@ -461,9 +474,12 @@ out_of_vocabulary_primitives:
       The RPR binds a Citizenship Bundle to its human principal with
       PII hashing, so the binding can be verified without disclosing
       the principal's identifying data. Shipped with dedicated
-      helpers in the Python SDK (`blind_rpr`, `verify_blinded_rpr`,
-      `is_blinded_rpr`, `compute_pii_hash`); parity for other SDKs
-      is planned.
+      helpers in the Python and Rust SDKs (`blind_rpr`,
+      `verify_blinded_rpr`, `is_blinded_rpr`, `compute_pii_hash`) and
+      the Go SDK (`BlindRPR`, `VerifyBlindedRPR`, `IsBlindedRPR`,
+      `ComputePIIHash`). The TypeScript implementation (`blindRpr`,
+      `verifyBlindedRpr`, `isBlindedRpr`, `computePiiHash`) is not
+      yet exported from @dcp-ai/sdk.
     rationale: >
       Privacy-preserving property of the identity layer, not a
       standalone signal type.
@@ -534,14 +550,15 @@ summary:
 
   sdk_coverage_note: >
     DCP-01 through DCP-09 operational primitives are shipped across
-    all four SDKs (TypeScript, Python, Go, Rust) at v2.8.x in the
-    main branch. Naming follows the idiomatic convention of each
+    all four SDKs (TypeScript, Python, Go, Rust) as of release
+    v2.9.0. Naming follows the idiomatic convention of each
     language: camelCase in TypeScript, snake_case in Python and Rust,
     PascalCase in Go. Cross-SDK interop vectors at
     `tests/interop/v2/interop_vectors.json` are consumed by all four
     SDKs and validate byte-identical signed envelopes on CI; the
     `canonicalization.edge_cases` category in v2.8.0 added 14 vectors
-    pinning the `dcp-jcs-v1` profile. Test counts at the time of
+    pinning the `dcp-jcs-v1` profile, and v2.9.0 added 5 more (string
+    escaping, `-0`, astral-plane key order) for 19. Test counts at the time of
     crosswalk authoring: 461 TypeScript, 236 Python, 4 Go packages
     passing, 181 Rust tests across 10 binaries. CodeQL scanning shows
     zero open alerts.
@@ -557,7 +574,7 @@ summary:
     same property suite runs in all four SDKs.
 
   protocol_version_pinning: >
-    All mappings hold for DCP-AI v2.8.x across the four reference
+    All mappings hold for DCP-AI v2.8.x and v2.9.0 across the four reference
     SDKs in the main branch. Signal-type semantics are byte-identical
     across SDKs, validated by cross-SDK interop vectors in CI under
     the `dcp-jcs-v1` canonicalization profile. Downstream vocabulary
@@ -566,5 +583,5 @@ summary:
 
   references:
     spec_paper_doi: "10.5281/zenodo.19040913"
-    software_doi: "10.5281/zenodo.19656026"
+    software_doi: "10.5281/zenodo.19656025"  # concept DOI, resolves to the latest archived release
     orcid: "0009-0003-7520-8527"

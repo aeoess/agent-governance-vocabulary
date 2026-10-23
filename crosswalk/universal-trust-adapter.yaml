@@ -1,0 +1,318 @@
+# crosswalk/universal-trust-adapter.yaml
+#
+# Maps UTA Trust API (ATC/1.0) internal naming to the canonical vocabulary
+# defined in vocabulary.yaml v0.2.0.
+#
+# UTA Trust API is an x402-native agent trust verification service on Base.
+# It verifies Ed25519-signed Agent Trust Cards (ATC/1.0) at the edge against
+# pinned trust anchors, with RFC 8785 JCS canonicalization, and sells the
+# verification as a pay-per-call x402 resource (HTTP 402 -> EIP-3009 USDC ->
+# facilitator settle). Fail-closed: no settlement, no 200.
+#
+# Spec: https://github.com/alicelabs-llc/universal-trust-adapter
+# License: MIT OR Apache-2.0
+
+system:
+  name: UTA Trust API
+  home: https://uta-trust-api.eddyflores100.workers.dev/
+  repo: https://github.com/alicelabs-llc/universal-trust-adapter
+  spec: https://github.com/alicelabs-llc/universal-trust-adapter#readme
+  api_docs: https://uta-trust-api.eddyflores100.workers.dev/openapi.json
+  spec_version: "ATC/1.0, worker v2.3.0"
+  role: >
+    x402-native agent trust verification API on Base (eip155:8453 mainnet via
+    the PayAI facilitator; eip155:84532 sepolia via the public x402.org
+    facilitator). Verifies Ed25519-signed Agent Trust Cards (ATC/1.0) at the
+    edge: per-stage outcomes (signature_verification,
+    trust_anchor_key_selection, expiry_check, status_check), a sha256 digest
+    of the signed subtree, and a coarse risk band (low | elevated | high |
+    info). Self-signed and trust-on-first-use keys are rejected. 0.01 USDC
+    per card (verify), 0.08 USDC for 1..10 cards (batch). The reference kit
+    ships 14/14 conformance vectors and x402-paywall adapters for
+    express/fastapi.
+  license: "MIT OR Apache-2.0"
+  license_note: >
+    MIT OR Apache-2.0 covers the adapter, SDKs, integrations and docs at the
+    repo root. The proprietary/ subtree (trust-engine, sentinel, interceptor,
+    adapters) is licensed separately under the AliceLabs Source-Available
+    License v1.0 (AL-1.0 — see proprietary/LICENSE-AL-1.0 and
+    proprietary/COMMERCIAL-LICENSE.md).
+
+maintainer:
+  name: Eddy Flores
+  github: eddyflores100-lang
+  email: eddyflores100@gmail.com
+  confirmed_at: "2026-10-15"
+
+system_attributes:
+  signature_capability: classical   # Ed25519 card signatures, verified at the edge
+  canonicalization_profile: jcs-rfc-8785   # signature covers the RFC 8785 JCS canonical form of the signed subtree
+  hash_family: sha-256   # verifier-visible sha256 digest of the signed subtree
+
+payment_model:
+  rail: "x402 v2: HTTP 402 challenge -> EIP-3009 transferWithAuthorization USDC -> facilitator settle"
+  chains:
+    - "eip155:8453 (Base mainnet, PayAI facilitator, payTo 0x39Dddf5aEdb58A559CF195fB8bdF23F0604Bf5Ee)"
+    - "eip155:84532 (Base Sepolia, x402.org public facilitator, payTo 0xfD856E89Ac88757C339c67E9717528af0cD1d7Ee)"
+  pricing: "0.01 USDC per card via POST /v1/trust/verify; 0.08 USDC per settlement for 1..10 cards via POST /v1/trust/batch"
+  note: >
+    The service never holds a balance and does not attest settlement
+    outcomes. The X-PAYMENT-RESPONSE header on a 200 carries the on-chain
+    settlement receipt issued by the facilitator/rail.
+
+verification_pattern:
+  description: >
+    ATC/1.0 verification pipeline, executed per call. Each stage is reported
+    individually in the 200 response, so a consumer can see which check
+    failed, not only that verification failed.
+  steps:
+    - "parse: card JSON with metadata.issued_at / metadata.expires_at (fail-closed if absent)"
+    - "canonicalize: RFC 8785 JCS over the signed subtree (card without signature)"
+    - "trust_anchor_key_selection: public key pinned to published trust anchors; self-signed and TOFU keys rejected"
+    - "signature_verification: Ed25519 over the JCS canonical form"
+    - "expiry_check: two-sided window, issued_at <= now < expires_at"
+    - "status_check: card status must be active"
+    - "digest: sha256 of the signed subtree"
+    - "risk band: coarse band derived from stage outcomes (low | elevated | high | info)"
+  band_derivation:
+    rule: >
+      risk = verified ? low : (!signature_verification ||
+      !trust_anchor_key_selection) ? high : elevated; informational responses
+      (no card parsed) emit info.
+    evidence_basis: principal_attestation
+    verification_method: principal_attestation
+    verified_at: "2026-10-17"
+    reverify_after: "2027-04-17"
+    basis: >
+      maintainer-attested (worker v2.3.0 deployment): the deployed worker is
+      not built from a public repo and no public doc defines the rule, so the
+      rule is stated here in full and any observed response can be checked
+      against it. Publishing the derivation converts this to publicly
+      verifiable.
+  sources:
+    openapi: "https://uta-trust-api.eddyflores100.workers.dev/openapi.json#/paths/~1v1~1trust~1verify"
+    docs: "https://uta-trust-api.eddyflores100.workers.dev/llms-full.txt"
+    spec: "https://github.com/alicelabs-llc/universal-trust-adapter"
+
+artifact_shapes:
+  atc_card:
+    signer: >
+      the pinned identity key: the conformance rules require
+      payload.identity.public_key to belong to the pinned trust-anchor set
+      and the signature to be produced by that key. In the published
+      evidence the roles coincide — payload.identity.public_key and
+      signature.ca_key_id hold the same value ("MarketNow Sentinel Test CA
+      (throwaway, vectors-only)"). Issuer and subject are distinct roles in
+      the card model, but the current evidence shows one pinned key serving
+      both: it signs the card and is the subject identity carried inside
+      it. No separate issuer-vs-subject key pair, and no separate
+      subject-agent signature, is established by the current artifact.
+    algorithm: Ed25519
+    canonicalization: RFC 8785 JCS over the signed subtree (card minus signature)
+    fields: "metadata (issued_at, expires_at, status, rotation flags), subject key, claims"
+    anchor_rule: >
+      verification requires the signing key to belong to the pinned
+      trust-anchor set (stage: trust_anchor_key_selection); self-signed and
+      trust-on-first-use keys are rejected.
+    note: >
+      The signed card (signed by the pinned identity key) and the unsigned
+      service response are distinct artifacts. The service verifies the
+      card against the pinned trust anchors and emits the verification
+      result, which it does not sign.
+  verify_response:
+    signer: none (unsigned HTTP JSON; the sha256 digest allows third-party recomputation and anchoring)
+    fields:
+      verified: boolean outcome of the pipeline
+      risk: "coarse band: low | elevated | high | info"
+      stages: "per-stage outcomes: signature_verification, trust_anchor_key_selection, expiry_check, status_check"
+      digest: "sha256 of the signed subtree (covers the card, not this response)"
+      reason: "machine-readable failure reason when verified is false"
+      payer: >
+        documented quirk, maintainer-attested (worker v2.3.0 deployment; the
+        deployed script is not public): the deployed worker emits the
+        challenge payTo under this field (payer = accepted.payTo from the
+        preceding 402), so it names the RECIPIENT, not the paying wallet;
+        the actual payer is only established by the settlement receipt
+        carried in X-PAYMENT-RESPONSE (recorded in the fixture annotation).
+    receipt: "X-PAYMENT-RESPONSE header carries the on-chain settlement receipt (from the facilitator, not a service signature)"
+
+signal_types:
+
+  trust_verification:
+    canonical: trust_verification
+    match: partial
+    evidence: emitted
+    source_path: "https://uta-trust-api.eddyflores100.workers.dev/openapi.json#/paths/~1v1~1trust~1verify/post/responses/200 (live paid response recorded as fixture: fixtures/mapping-evidence-states/02-uta-trust-verification.json)"
+    divergence: >
+      Missing properties relative to the canonical definition: Grade 1-3
+      grading, KYC presence, and principal endorsement — none are emitted
+      by the artifact. What the response does emit is the identity-layer
+      verification status the canonical term names: a per-call verdict
+      (verified boolean), a coarse risk band, and per-stage outcomes
+      (signature_verification, trust_anchor_key_selection, expiry_check,
+      status_check), verified against pinned trust anchors with a
+      two-sided validity window.
+    notes: >
+      The live 200 response for the published conformance vector valid-atc
+      is recorded, with its on-chain settlement receipt and the digest
+      recomputable from published canonical bytes, in
+      fixtures/mapping-evidence-states/02-uta-trust-verification.json.
+      Batch form: POST /v1/trust/batch verifies 1..10 cards in one
+      settlement.
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: false_analog
+    evidence: inferable
+    inferred_from: ["digest", "stages", "risk"]
+    inference_basis: >
+      LIMITED recoverable construction: a third party can recompute the CARD
+      checks (sha256 over the signed subtree plus Ed25519, against the
+      published canonical bytes) and RECORD the service's reported result
+      alongside them. The digest covers the card only — not the response
+      verdict, risk, or stages, which can be altered without breaking the
+      card checks — and the response carries no evaluation time and no
+      pinned verification policy, so "this card satisfied the declared
+      verification policy at time T" is NOT established by this artifact.
+    notes: >
+      Substitution hazard is why this is not partial: a recorded verify
+      response (stages + digest) reads like an attestation that the card
+      satisfied a declared policy at time T, and a consumer could plausibly
+      wire it up as the canonical primitive. The canonical term requires an
+      issuer-signed attestation; this response is deliberately unsigned, so
+      wiring it up as the canonical primitive would fabricate a signature
+      that was never made. What survives recomputation is exactly: card
+      digest + card signature (against published canonical bytes) plus the
+      consumer's own record of what the service reported, scoped to the
+      declared verification policy (validity window, card status, rotation
+      flags, trust anchors) — not delegation scope or compliance checks.
+
+  passport_grade:
+    canonical: passport_grade
+    match: false_analog
+    evidence: emitted
+    source_path: "https://uta-trust-api.eddyflores100.workers.dev/llms-full.txt (risk band field of the verify response; live fixture: fixtures/mapping-evidence-states/02-uta-trust-verification.json)"
+    notes: >
+      Substitution hazard: the coarse band (low | elevated | high | info)
+      is emitted under a field named `risk` and reads like a grade, so a
+      consumer could plausibly wire it up as a passport-grade primitive.
+      The canonical term grades from agent passport issuance evidence; the
+      band is a live challenge-time verification outcome (per-stage
+      results), so that wiring substitutes verification evidence for
+      issuance provenance. Nothing in the artifact carries a passport
+      document or its issuance provenance. Evidence basis of the band
+      itself (maintainer-attested): the band is the outcome of the
+      derivation rule in verification_pattern.band_derivation — maintainer
+      attestation, worker v2.3.0 deployment; no public doc defines the
+      rule (differing-input captures from the failing conformance vectors
+      would convert this to emitted evidence; not recorded yet).
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: false_analog
+    evidence: emitted
+    source_path: "https://uta-trust-api.eddyflores100.workers.dev/llms-full.txt (stages.trust_anchor_key_selection, stages.expiry_check, stages.status_check)"
+    notes: >
+      Substitution hazard: repeating verification over time evidences that
+      the same key keeps passing, which reads like continuity evidence a
+      consumer could wire up as the canonical primitive. The canonical term
+      asks a different question — cryptographic proof that the same agent
+      identity persists ACROSS an infrastructure change (key rotation, host
+      migration, execution environment swap) — and a per-request re-bind to
+      a pinned key cannot answer it. The artifact has no continuity ledger
+      or cross-time observation record; the emitted signal is
+      per-verification evidence only.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      The verify response is challenge-time verification evidence about a
+      card, not settlement evidence, and carries no verdict ID. The only
+      settlement artifact in the system (X-PAYMENT-RESPONSE receipt) is
+      issued by the facilitator/rail and is carried, not attested, by this
+      service; the service never asserts that a payment or delivery met its
+      expected terms.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: >
+      No balances, holdings, or identity attachments are ever asserted. The
+      payTo addresses are payment routing, not wallet attestations.
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: >
+      The risk band is derived exclusively from the per-call stage outcomes
+      of the verification pipeline (see verification_pattern above).
+      Velocity and history vectors are NOT inputs to the band, and the
+      artifact never emits a standalone behavioral trust score or a
+      multi-dimensional composite. Runtime behavioral profiling exists in a
+      separate, non-emitted component of the codebase and is out of scope
+      for the verify artifact.
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: >
+      No task-delivery attestation exists; the subject of every emitted
+      signal is the agent's verified identity, not delivered work.
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: >
+      The service has no visibility into task delegations; it verifies
+      credentials, not outcomes over an observation window.
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: >
+      The signed subject in this system is the agent's key identity (the
+      ATC card), not a code artifact (repo, commit, output). No
+      wallet-discoverable artifact posture is asserted.
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: >
+      The risk band is a verification outcome for one card, not a scored
+      counterparty exposure assessment (flagged/clean) and is not a
+      compliance credential.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: >
+      No employment, task, or performance records are emitted.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: >
+      Reserved term; the system verifies identity binding, not reasoning
+      quality or integrity of model outputs.
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: >
+      Reserved term; no wallet-derived analytics exist in the artifact.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: >
+      Reserved term; nothing in the artifact attests cognition or model
+      provenance.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    match: no_mapping
+    notes: >
+      Reserved term; the service emits a one-way verification result and
+      carries a rail-issued settlement receipt in a header. No signed
+      two-party receipt with a registered purpose exists in the artifact.

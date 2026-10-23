@@ -8,7 +8,7 @@
 const fs = require('fs')
 const path = require('path')
 const yaml = require('js-yaml')
-const { normalizeDoc, rawMatch, aliasesFromVocab } = require('./match-types')
+const { normalizeDoc, normalizeMatch, rawMatch, aliasesFromVocab } = require('./match-types')
 
 // Optional positional argument: validate a different tree with THIS validator's
 // rules (used by the trusted CI job to run base-branch code against PR data).
@@ -169,6 +169,46 @@ function validateSystemAttributes(doc, file) {
     }
     if (allowed.has(value)) continue
     err(file, `system_attributes.${attrName}: "${value}" not in vocabulary (allowed: ${[...allowed].join(', ')})`)
+  }
+}
+
+// Issue #107: pairwise records are claims about two systems, not standard
+// vocabulary-to-system mappings. Validate their own structure fail-closed.
+function validatePairwiseComposition(doc, file) {
+  const record = v => v !== null && typeof v === 'object' && !Array.isArray(v)
+  const present = v => typeof v === 'string' && v.trim().length > 0
+  const required = ['crosswalk_type', 'source_system', 'target_system',
+    'normative_status', 'concurrence', 'composition_boundary', 'mappings']
+  for (const key of required) {
+    if (doc[key] === undefined || doc[key] === null) err(file, `pairwise_composition missing ${key}`)
+  }
+  if (!present(doc.source_system) || !present(doc.target_system)) {
+    err(file, 'pairwise_composition source_system and target_system must be nonempty strings')
+  } else if (doc.source_system === doc.target_system) {
+    err(file, 'pairwise_composition requires distinct source and target systems')
+  }
+  if (doc.normative_status !== 'non_normative') err(file, 'pairwise_composition normative_status must be non_normative')
+  if (!record(doc.composition_boundary) || Object.keys(doc.composition_boundary).length === 0) {
+    err(file, 'pairwise_composition requires a nonempty composition_boundary object')
+  }
+  if (!record(doc.concurrence)) {
+    err(file, 'pairwise_composition requires concurrence object')
+  } else {
+    for (const side of ['aps_side', 'acta_side']) {
+      const part = doc.concurrence[side]
+      if (!record(part) || !present(part.status)) err(file, `concurrence.${side}.status required`)
+      else if (part.status === 'pending') err(file, `concurrence.${side}.status cannot be pending`)
+      else if (!['authored', 'concurred', 'approved'].includes(part.status)) err(file, `concurrence.${side}.status unsupported: ${part.status}`)
+    }
+  }
+  if (!Array.isArray(doc.mappings) || doc.mappings.length === 0) {
+    err(file, 'pairwise_composition mappings must be a nonempty array')
+  } else {
+    const allowed = new Set([...canonicalMatchTypes, 'divergent'])
+    doc.mappings.forEach((row, i) => {
+      if (!record(row)) err(file, `mappings[${i}] must be an object`)
+      else if (!allowed.has(normalizeMatch(row.match_type, matchAliases))) err(file, `mappings[${i}].match_type invalid: ${String(row.match_type)}`)
+    })
   }
 }
 
@@ -545,6 +585,57 @@ function validateReverify(node, file, dotPath) {
   }
 }
 
+// Alternative registry shapes have their own explicit structural contracts.
+// No semantic concurrence or third-party endorsement is inferred.
+function validateAlternativeCrosswalk(doc, file) {
+  // Recognize registered alternative schemas without relying on required fields:
+  // removing issuer, vocabulary_ref, or mappings must never downgrade an ERROR
+  // to an unrecognized-format warning.
+  const relative = path.relative(ROOT, file).split(path.sep).join('/')
+  const schema = relative === 'crosswalk/a2a.yaml' ? 'a2a'
+    : relative === 'crosswalk/satp/behavioral-trust.yaml' ? 'satp'
+    : relative === 'crosswalk/logpose.yaml' ? 'mapping'
+    : null
+  const record = v => v !== null && typeof v === 'object' && !Array.isArray(v)
+  const present = v => typeof v === 'string' && v.trim().length > 0
+  if (schema === 'mapping' || (!schema && Object.hasOwn(doc, 'mappings'))) {
+    if (!Array.isArray(doc.mappings)) { err(file, 'alternative mappings must be an array'); return true }
+    if (!(present(doc.system) || (record(doc.system) && present(doc.system.name)))) err(file, 'alternative mapping requires system identity')
+    if (!doc.mappings.length) err(file, 'alternative mappings must be nonempty')
+    doc.mappings.forEach((row, i) => {
+      if (!record(row)) { err(file, `mappings[${i}] must be an object`); return }
+      if (!present(row.canonical)) err(file, `mappings[${i}].canonical required`)
+      if (!present(row.internal)) err(file, `mappings[${i}].internal required`)
+      if (!canonicalMatchTypes.has(normalizeMatch(row.match, matchAliases))) {
+        err(file, `mappings[${i}].match invalid: ${String(row.match)}`)
+      }
+    })
+    return true
+  }
+  if (schema === 'a2a' || (!schema && Object.hasOwn(doc, 'signals'))) {
+    if (!present(doc.issuer)) err(file, 'A2A issuer required')
+    if (!record(doc.signals)) { err(file, 'A2A signals must be an object'); return true }
+    if (!Object.keys(doc.signals).length) err(file, 'A2A signals must be nonempty')
+    for (const [key, row] of Object.entries(doc.signals)) {
+      if (!canonicalSignalTypes.has(key)) err(file, `signals.${key}: unknown canonical signal`)
+      if (!record(row) || row.a2a_canonical_value !== key || !present(row.a2a_field)) {
+        err(file, `signals.${key}: requires matching a2a_canonical_value and a2a_field`)
+      }
+    }
+    return true
+  }
+  if (schema === 'satp' || (!schema && Object.hasOwn(doc, 'field_mappings'))) {
+    if (!present(doc.vocabulary_ref)) err(file, 'SATP vocabulary_ref required')
+    if (!record(doc.field_mappings)) { err(file, 'SATP field_mappings must be an object'); return true }
+    if (!Object.keys(doc.field_mappings).length) err(file, 'SATP field_mappings must be nonempty')
+    for (const [key, value] of Object.entries(doc.field_mappings)) {
+      if (!present(key) || !present(value)) err(file, `field_mappings.${key}: requires nonempty field path`)
+    }
+    return true
+  }
+  return false
+}
+
 function validateFile(file) {
   const contained = containmentError(file)
   if (contained) {
@@ -576,6 +667,13 @@ function validateFile(file) {
   // type-specific early returns, so a stale cell fails regardless of format.
   validateReverify(doc, file, '')
 
+  if (doc.crosswalk_type === 'pairwise_composition') {
+    validateSystemAttributes(doc, file)
+    validateSystem(doc, file)
+    validatePairwiseComposition(doc, file)
+    return
+  }
+
   if (doc.crosswalk_type === 'rfc_category_reverse') {
     if (verbose) console.log(`  skip  ${path.relative(ROOT, file)} (reverse crosswalk)`)
     return
@@ -593,7 +691,9 @@ function validateFile(file) {
   validateSystemAttributes(doc, file)
 
   if (!isStandardCrosswalk(doc)) {
-    warn(file, 'no `signal_types` section found; skipping validation (alternative crosswalk format)')
+    if (!validateAlternativeCrosswalk(doc, file)) {
+      warn(file, 'unrecognized alternative format; no structural validator available')
+    }
     return
   }
 

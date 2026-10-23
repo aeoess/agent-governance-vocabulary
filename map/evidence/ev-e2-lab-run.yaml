@@ -1,0 +1,10 @@
+id: ev-e2-lab-run
+type: component_run
+source: https://github.com/Agent-Authority-Conformance/aps-conformance-suite/pull/139
+record_state: merged 2026-10-02 (aca2ff0c), interop/priorseal-aps-payment-limit-d749d269/
+runner: aeoess
+runner_authored: [aps fixtures]
+independent_for: [priorseal signatures verify, exact call versus observation]   # per lab record, runner authored neither
+not_independent_for: [aps evidence verifies, decision_ref correlation, aps cap compliance, report byte reproduction]
+results_as_emitted: {within_limit: COMPLIANT, over_limit: "NON_COMPLIANT TRANSACTION_VALUE_MISMATCH"}
+reviews: []

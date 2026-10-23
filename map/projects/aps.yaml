@@ -1,0 +1,12 @@
+id: aps
+name: Agent Passport System
+repository: https://github.com/aeoess/agent-passport-system
+maintainer: aeoess
+description_source: editors, pending maintainer confirmation
+owner_confirmation: null
+implements:
+  - capability: authority.delegation
+    source_ref: https://github.com/aeoess/agent-passport-system/tree/948f99b85343bef2c6fa677c8543965caacfc087/fixtures/priorseal-decision-binding
+  - capability: decision.pre_action
+    source_ref: https://github.com/aeoess/agent-passport-system/tree/948f99b85343bef2c6fa677c8543965caacfc087/fixtures/priorseal-decision-binding
+limitations: [fixture keys are published test keys, no live deployment represented]

@@ -1,0 +1,11 @@
+id: E5
+kind: runtime
+producer: {project: aps, capabilities: [decision.pre_action]}
+consumer: {project: pic, capabilities: [enforcement.tool_boundary]}
+artifact: APS authority for one bounded synthetic MCP action, checked at the protected tool
+field_mappings: []
+proposed_by: {who: madeinplutofabio, ref: "https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5890595191"}
+pins: []
+evidence: []
+limitations: [how external evidence enters a PIC Action Proposal is not defined yet]
+does_not_establish: [anything, not exercised]

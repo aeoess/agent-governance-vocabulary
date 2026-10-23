@@ -1,0 +1,10 @@
+id: pic
+name: PIC Standard
+repository: null
+maintainer: madeinplutofabio
+description_source: editors, from https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5890595191
+owner_confirmation: null
+implements:
+  - capability: enforcement.tool_boundary
+    source_ref: null
+limitations: [how external evidence enters a PIC Action Proposal is not defined yet]

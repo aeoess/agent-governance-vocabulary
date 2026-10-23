@@ -1,0 +1,15 @@
+id: E2
+kind: runtime
+producer: {project: aps, capabilities: [decision.pre_action]}
+consumer: {project: priorseal, capabilities: [authorization.exact_call, comparison.post_action]}
+artifact: APS decision evidence (decision_ref) carried into a PriorSeal exact-call authorization, then compared with a synthetic observation
+field_mappings:
+  - {from: "aps.decision_ref", to: "priorseal.context_commitment", match: partial, confirmed_by: []}
+  - {from: "aps.spend.per_action", to: "priorseal.exact_call.value", match: partial, confirmed_by: []}
+proposed_by: {who: imokokok, ref: "https://github.com/aeoess/agent-passport-system/issues/163"}
+pins:
+  - {repo: aeoess/agent-passport-system, commit: 948f99b85343bef2c6fa677c8543965caacfc087, tag: fixtures/priorseal-decision-binding-v1, manifest_sha256: 2bf365bc9124ecfc943d5be86c34e8e0cacd51a5929b8d0c906e633a017231f9}
+  - {repo: imokokok/PriorSeal, commit: d749d2691c3e6be139de4020e7b27cdafca2c428}
+evidence: [ev-e2-lab-run, ev-e2-priorseal-modea]
+limitations: [APS signatures are under published test keys, observations are synthetic and no transaction is sent]
+does_not_establish: [independently observed execution, live APS currency at execution, decision single use, production use]

@@ -136,7 +136,7 @@ signal_types:
     descriptor_dimensions:
       enforcement_class: binding
       validity_temporal: at_issuance
-      refusal_authority: structurally_impossible_to_violate
+      refusal_authority: verifier  # verifier-authoritative policy (DCP-AI v2.0 §7.2); issuers sign the decision record, block/escalate included
       invariant_survival: post_action
       replay_class: full_replay
       governed_action_class: publish

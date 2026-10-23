@@ -275,14 +275,31 @@ use the marker.
 At most 3 files may carry `crosswalk_type: domain_incubation` at any
 time. Validator counts and fails if exceeded.
 
-**Gate 3: 90-day sunset (validator-enforced).**
-Each `domain_incubation` file must carry a `verified_at: YYYY-MM-DD`
-field at the top level. The file fails validation 90 days after
-`verified_at`. Promotion to a standard `crosswalk_type` or deletion is
-required before sunset.
+**Gate 3: 90-day sunset (validator-enforced) and re-verification (reviewer-enforced).**
+Each `domain_incubation` file must carry a `verified_at` field at the
+top level, either one `YYYY-MM-DD` date or a map with one date per
+system. The file fails validation 90 days after `verified_at`, measured
+from the oldest date when it is a map. It keeps failing until it is
+re-verified, promoted to a standard `crosswalk_type`, or deleted.
+
+Re-verification is a pull request that, for every system the file maps,
+pins the current upstream reference, which may be the same pin when
+nothing changed upstream, with that stated. It reviews each cell's
+classification against that reference, records the result for every
+system and every change including downgrades, resolves every expired
+cell-level `reverify_by`, and only then sets that system's new date. A
+date is never in the future, and the map names every system the file
+maps. Moving a date without that review does not satisfy this gate. The
+pull request names who did the re-verification and says why the file
+should stay in incubation rather than be promoted or deleted. Someone
+other than that person approves it. That is a maintainer, or the file's
+original contributor or another named reviewer when the only maintainer
+did the re-verification. Re-verification is not promotion and says
+nothing about convergence, which `promotion_criteria` decides
+separately. Earlier dates and classifications stay in history.
 
 **Required fields:**
 - `crosswalk_type: domain_incubation`
-- `verified_at: YYYY-MM-DD`
+- `verified_at` (one `YYYY-MM-DD` date or a per-system date map)
 - `implementations:` (list with maintainer per verb)
 - `promotion_criteria:` (explicit conditions for moving out of incubation)

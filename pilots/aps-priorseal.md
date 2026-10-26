@@ -1,6 +1,6 @@
 # APS to PriorSeal: pilot status (proposal)
 
-**Status of this file: proposal.** It is a first draft of the single status file discussed in [#185](https://github.com/aeoess/agent-governance-vocabulary/issues/185). Who authors it, who approves changes to it, and how long a review window runs are not yet settled in #185. For this proposal, @imokokok has offered to check the PriorSeal-owned facts before merge. That is the arrangement for this draft, not an agreed rule for shared files.
+**Status of this file: proposal.** It is a first draft of the single status file discussed in [#185](https://github.com/aeoess/agent-governance-vocabulary/issues/185). Pilot files are not among the shared files listed in [SHARED-DECISIONS.md](../SHARED-DECISIONS.md), adopted on 2026-10-21, so this file follows the normal review in [CONTRIBUTING.md](../CONTRIBUTING.md). @imokokok checks the PriorSeal-owned facts before merge.
 
 Listing this case does not opt PriorSeal or Insight into active federation participation, shared governance, commercial delivery or any economic allocation. The same holds for APS.
 
@@ -39,6 +39,8 @@ PriorSeal emits `COMPLIANT` for the observation that matches the signed exact ca
 The cited records contain no independent run for claims 3, 5 and 6. The lab record does not create an end to end verdict.
 
 ## A1: Frequency review run (report pending)
+
+As of 2026-10-26, the draft boundary map in #179 records A1 as `scoped`, and no full report from this run is linked here.
 
 The bounded A1 review adapter at `cf7389097fe3a404b3557da2e72fdd8cbe962b81` (tag `aps-priorseal-a1-exec-2026-10-02`), with `RUN.md` at `a40562268aa1d6e1f6d369e296c16261d623c4e0` (tag `aps-priorseal-a1-instructions-2026-10-02`), in [altrudev/Frequency-Federation-Review](https://github.com/altrudev/Frequency-Federation-Review). Its README says the repository is "not Frequency, not Frequency-Dev, and not a public release of Frequency's internal assurance architecture", and it carries a review only notice. Who authored the adapter and who performed the formal run are pending the full report, which the PriorSeal side has not yet received for review. Until that report is checked, this section records the scope of the run, not who ran it.
 

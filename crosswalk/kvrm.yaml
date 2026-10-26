@@ -353,7 +353,7 @@ decision_trajectory:
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS
 # Top-level values are scoped to the mapped kvrm-ai gate/receipt surface
-# (gate_tool_call and KvrmMcpGateway); surface differences vs.
+# (gate_tool_call and gate_mcp_call); surface differences vs.
 # KVRMRuntime.decide_and_execute are documented in the notes below.
 # ─────────────────────────────────────────────────
 descriptor_dimensions:
@@ -361,8 +361,8 @@ descriptor_dimensions:
   enforcement_notes: |
     Scoped by execution surface:
       - kvrm-ai gate_tool_call (kvrm-ai/src/kvrm_ai/gate.py lines 104-197),
-        KvrmMcpGateway.check_tool_call (kvrm-ai/src/kvrm_ai/mcp_gateway/gateway.py
-        lines 88-137), and KVRMRuntime.validate_candidate
+        gate_mcp_call (kvrm-ai/src/kvrm_ai/mcp_gateway/gateway.py
+        lines 70-131), and KVRMRuntime.validate_candidate
         (kvrm-core/src/kvrm_core/runtime.py lines 212-229):
         enforcement_class is refusal_authority (as in crosswalk/quesen.yaml).
         These surfaces evaluate the proposed call and return a structured
@@ -378,7 +378,8 @@ descriptor_dimensions:
   refusal_authority: consumer_policy
   refusal_notes: |
     Scoped by execution surface:
-      - kvrm-ai gate_tool_call, KvrmMcpGateway.check_tool_call, and
+      - kvrm-ai gate_tool_call, gate_mcp_call
+        (kvrm-ai/src/kvrm_ai/mcp_gateway/gateway.py lines 70-131), and
         KVRMRuntime.validate_candidate: refusal_authority is consumer_policy
         (as in crosswalk/quesen.yaml). The gate emits the verdict and machine
         reason code; actual refusal at the tool-execution call site lives with
@@ -452,7 +453,7 @@ summary: |
   kvrm-ai/tests/fixtures/refund-router) and documents where the lower-level
   kvrm-core receipt and runtime surfaces differ. KVRM answers a single
   governance question at the tool-execution boundary: given the proposed action,
-  request features, and an attested external world-state snapshot (st_* in
+  request features, and a recorded external world-state snapshot (st_* in
   kvrm-ai; state.* in kvrm-core), does the observed state satisfy the action's
   declared support_spec envelope, calibrated confidence threshold, and parameter
   schema?

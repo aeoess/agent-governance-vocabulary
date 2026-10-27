@@ -39,6 +39,7 @@ A project takes part in shared decisions only by explicit opt-in. Being listed o
 | Agent Passport System | @aeoess | [2026-10-15](https://github.com/aeoess/agent-governance-vocabulary/issues/185#issuecomment-6196323607) |
 | Horizon Shield (NENRIN, MUSUBI) | @ogasurfproject-jpg | [2026-10-27](https://github.com/aeoess/agent-governance-vocabulary/issues/185#issuecomment-6430258358) |
 | AgentAvow | @kenneives | [2026-10-27](https://github.com/aeoess/agent-governance-vocabulary/issues/185#issuecomment-6432567316) |
+| Probity AI | @astrogilda | [2026-10-27](https://github.com/aeoess/agent-governance-vocabulary/issues/185#issuecomment-6433740185) |
 
 **Opting in.** A maintainer of the project states the opt-in in a public comment on this repository and names the project's representative for shared decisions. The comment links to a place where the project's own repository names that person as a maintainer, such as a maintainers file, CODEOWNERS, its README or its GitHub organization's members. Anyone may open the pull request that adds the row. The row needs no review window and no approval. If the linked record does not show the maintainer's authority, the row stays pending until the project supplies it.
 

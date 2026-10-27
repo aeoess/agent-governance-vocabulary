@@ -87,17 +87,18 @@ Every agreement to a shorter window, including under Bootstrap, names a commit a
 
 ## Independently reproduced
 
-A change that records an independent run, or moves a claim or an edge to independently reproduced standing, must show that every condition below holds. Any reviewer can check each one from public records.
+A change that records an independent run, or moves a claim or an edge to independently reproduced standing, must show the conditions below. Any reviewer can check each one from public records. The first four conditions make a run independent and its record complete. The result then decides whether standing changes.
 
-- **Who ran it.** A project other than the claim's owner ran the check. The person who ran it authored neither the fixtures nor the verifier. This is the conformance lab's rule for an independent record, as proposed in the boundary map ([#179](https://github.com/aeoess/agent-governance-vocabulary/pull/179)).
+- **Who ran it.** A project other than the claim's owner ran the check. The person who ran it authored neither the fixtures or other claim inputs, nor the implementation that supplies the substantive check. A harness the runner wrote that only invokes other implementations and compares their outputs keeps the run independent. A harness that constructs or interprets the claimed result is part of the check. This is the conformance lab's rule for an independent record, as proposed in the boundary map ([#179](https://github.com/aeoess/agent-governance-vocabulary/pull/179)).
 - **Any verifier.** Any project's verifier qualifies, including the claim owner's, and no particular verifier is required. It must be pinned to a commit or a released version.
 - **Pinned inputs.** The fixtures or other inputs are pinned to a commit, and each input file has a digest.
 - **Run record.** A public run record is linked from the pull request. It names the verifier and its commit or version, the input commit and each input digest. It also names who ran it, when, and in what environment, gives the result for each case in the verifier's own terms, and states any condition under which the result could not be reproduced. It also states whether the verifier was written without reading the claim owner's implementation.
-- **Result.** The result matches the published expected outcome for every case. A run with any difference is still recorded, with each difference stated, and the claim keeps its current standing.
 
-Independent operation and independent implementation are separate claims. A run that meets every condition above is an independent run. It is an independent implementation only when the run record also states that the verifier was written without reading the claim owner's implementation. A run of the owner's verifier by another project is an independent run and never an independent implementation.
+**Result.** A run that meets the four conditions is an independent run, whatever it finds. The claim moves to independently reproduced standing only when the result matches the published expected outcome for every case. A run with any difference is recorded as an independent run, with each difference stated, and the claim keeps its current standing.
 
-A rerun by the author of the fixtures or of the verifier is a reproduction, not independent evidence. Independence is stated per claim, not per run: one run can be independent evidence for one claim and a reproduction for another, depending on who wrote that claim's fixtures and verifier. If the run record is missing a field, the claim stays at its current standing until the record is complete.
+Independent operation and independent implementation are separate claims. An independent run is an independent implementation only when the run record also states that the verifier was written without reading the claim owner's implementation. A run of the owner's verifier by another project is an independent run and never an independent implementation.
+
+A rerun by someone who authored the fixtures or other claim inputs, or the implementation that supplies the substantive check, is a reproduction, not independent evidence. The same harness rule applies: a harness that only invokes other implementations and compares their outputs does not make its author a co-author of the check, and one that constructs or interprets the claimed result does. Independence is stated per claim, not per run: one run can be independent evidence for one claim and a reproduction for another, depending on who wrote that claim's inputs and check. If the run record is missing a field, the claim stays at its current standing until the record is complete.
 
 ## No retroactive effect
 

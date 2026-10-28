@@ -1,6 +1,6 @@
 # Crosswalk Matrix
 
-Auto-generated on 2026-10-26. 27 systems × 16 canonical signal types.
+Auto-generated on 2026-10-28. 28 systems × 16 canonical signal types.
 
 Cell legend:
 
@@ -16,73 +16,74 @@ Cell legend:
 
 ## Matrix
 
-| System                  | wallet_state | behavioral_trust | wallet_intelligence | reasoning_integrity | compliance_risk | governance_attestation | passport_grade | trust_verification | security_posture | job_performance | settlement_witness | peer_review | completion_ratio | entity_continuity | cognitive_attestation | bilateral_receipt |
-| ----------------------- | ------------ | ---------------- | ------------------- | ------------------- | --------------- | ---------------------- | -------------- | ------------------ | ---------------- | --------------- | ------------------ | ----------- | ---------------- | ----------------- | --------------------- | ----------------- |
-| Agent-Did               | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     | —                 |
-| Agentgraph              | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ✅                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | —                     | —                 |
-| Agentid                 | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | ✅                | 🟡                | —                     | —                 |
-| Agentlair               | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     | —                 |
-| Agentnexus              | ·            | —                | —                   | —                   | —               | ·                      | —              | —                  | —                | —               | —                  | —           | —                | —                 | —                     | —                 |
-| Agentrust-Trace         | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | —                 |
-| APS                     | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | ✅                      | ✅ʰ             | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     | —                 |
-| ASQAV                   | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                | —                 | —                     | —                 |
-| Chancery                | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | 🟡               | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | —                 |
-| Cloudflare-Aam          | ⚪            | 🔵               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | ⚪                 |
-| Cursor-Hooks            | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | 🟡               | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     | —                 |
-| Cycles                  | ⚪            | —                | —                   | —                   | ⚪               | 🟡                     | —              | —                  | —                | —               | ⚪                  | —           | —                | —                 | —                     | —                 |
-| DCP-Ai                  | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ✅                      | 🔵             | ✅                  | ⚪                | ⚪               | ⚪                  | 🟡          | —                | 🟡                | —                     | —                 |
-| Fidelity-Spec           | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     | —                 |
-| Insumerapi              | ✅            | ⚪                | ⚪                   | ⚪                   | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | —           | —                | —                 | —                     | —                 |
-| Kvrm                    | ⚪            | 🔵               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | ⚪                 |
-| Moltrust                | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |
-| Mycelium-Trails         | ⚪            | ⚪                | —                   | —                   | ⚪               | 🟡                     | —              | —                  | —                | —               | ⚪                  | —           | —                | —                 | —                     | —                 |
-| Nenrin                  | ⚪            | 🔵               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | 🔵                 | ⚪           | ⚪                | 🟡                | ⚪                     | 🔵                |
-| Nobulex                 | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                | —                 | —                     | —                 |
-| Pathcourse-Health       | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |
-| PIC                     | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     | —                 |
-| Quesen                  | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | —                 |
-| Signet                  | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | ·           | —                | —                 | —                     | —                 |
-| SINT                    | 🟡           | 🟡               | ⚪                   | ⚪                   | ⚪               | ✅                      | 🟡             | 🟡                 | 🟡               | 🟡              | 🟡                 | ⚪           | —                | 🟠                | —                     | —                 |
-| Universal-Trust-Adapter | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🔵ʰ                    | 🔵             | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | 🔵                | ⚪                     | ⚪                 |
-| Veritasacta             | ⚪            | ⚪                | ⚪                   | 🟡                  | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | 🟠                 | —           | —                | —                 | —                     | —                 |
+| System                    | wallet_state | behavioral_trust | wallet_intelligence | reasoning_integrity | compliance_risk | governance_attestation | passport_grade | trust_verification | security_posture | job_performance | settlement_witness | peer_review | completion_ratio | entity_continuity | cognitive_attestation | bilateral_receipt |
+| ------------------------- | ------------ | ---------------- | ------------------- | ------------------- | --------------- | ---------------------- | -------------- | ------------------ | ---------------- | --------------- | ------------------ | ----------- | ---------------- | ----------------- | --------------------- | ----------------- |
+| Agent-Delegation-Receipts | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | 🔵                |
+| Agent-Did                 | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     | —                 |
+| Agentgraph                | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ✅                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | —                     | —                 |
+| Agentid                   | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | ✅                | 🟡                | —                     | —                 |
+| Agentlair                 | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     | —                 |
+| Agentnexus                | ·            | —                | —                   | —                   | —               | ·                      | —              | —                  | —                | —               | —                  | —           | —                | —                 | —                     | —                 |
+| Agentrust-Trace           | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | —                 |
+| APS                       | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | ✅                      | ✅ʰ             | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     | —                 |
+| ASQAV                     | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                | —                 | —                     | —                 |
+| Chancery                  | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | 🟡               | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | —                 |
+| Cloudflare-Aam            | ⚪            | 🔵               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | ⚪                 |
+| Cursor-Hooks              | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | 🟡               | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     | —                 |
+| Cycles                    | ⚪            | —                | —                   | —                   | ⚪               | 🟡                     | —              | —                  | —                | —               | ⚪                  | —           | —                | —                 | —                     | —                 |
+| DCP-Ai                    | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ✅                      | 🔵             | ✅                  | ⚪                | ⚪               | ⚪                  | 🟡          | —                | 🟡                | —                     | —                 |
+| Fidelity-Spec             | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     | —                 |
+| Insumerapi                | ✅            | ⚪                | ⚪                   | ⚪                   | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | —           | —                | —                 | —                     | —                 |
+| Kvrm                      | ⚪            | 🔵               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | ⚪                 |
+| Moltrust                  | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |
+| Mycelium-Trails           | ⚪            | ⚪                | —                   | —                   | ⚪               | 🟡                     | —              | —                  | —                | —               | ⚪                  | —           | —                | —                 | —                     | —                 |
+| Nenrin                    | ⚪            | 🔵               | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | 🔵                 | ⚪           | ⚪                | 🟡                | ⚪                     | 🔵                |
+| Nobulex                   | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | —           | —                | —                 | —                     | —                 |
+| Pathcourse-Health         | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | —                 | —                     | —                 |
+| PIC                       | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     | —                 |
+| Quesen                    | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | ⚪                  | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | ⚪                     | —                 |
+| Signet                    | ·            | ·                | ·                   | ·                   | ·               | ·                      | ·              | ·                  | ·                | ·               | ·                  | ·           | —                | —                 | —                     | —                 |
+| SINT                      | 🟡           | 🟡               | ⚪                   | ⚪                   | ⚪               | ✅                      | 🟡             | 🟡                 | 🟡               | 🟡              | 🟡                 | ⚪           | —                | 🟠                | —                     | —                 |
+| Universal-Trust-Adapter   | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | 🔵ʰ                    | 🔵             | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | 🔵                | ⚪                     | ⚪                 |
+| Veritasacta               | ⚪            | ⚪                | ⚪                   | 🟡                  | ⚪               | —                      | ⚪              | ⚪                  | ⚪                | ⚪               | 🟠                 | —           | —                | —                 | —                     | —                 |
 
 ## Coverage
 
-- Systems represented: 27
+- Systems represented: 28
 - Canonical signal types: 16
 
 ### Per-signal coverage
 
 | Signal type | Systems mapped | Coverage |
 |---|---|---|
-| `wallet_state` | 27 / 27 | 100% |
-| `compliance_risk` | 26 / 27 | 96% |
-| `settlement_witness` | 26 / 27 | 96% |
-| `behavioral_trust` | 25 / 27 | 93% |
-| `governance_attestation` | 25 / 27 | 93% |
-| `job_performance` | 24 / 27 | 89% |
-| `passport_grade` | 24 / 27 | 89% |
-| `reasoning_integrity` | 24 / 27 | 89% |
-| `security_posture` | 24 / 27 | 89% |
-| `trust_verification` | 24 / 27 | 89% |
-| `wallet_intelligence` | 24 / 27 | 89% |
-| `peer_review` | 20 / 27 | 74% |
-| `entity_continuity` | 17 / 27 | 63% |
-| `completion_ratio` | 9 / 27 | 33% |
-| `cognitive_attestation` | 7 / 27 | 26% |
-| `bilateral_receipt` | 4 / 27 | 15% |
+| `wallet_state` | 28 / 28 | 100% |
+| `compliance_risk` | 27 / 28 | 96% |
+| `settlement_witness` | 27 / 28 | 96% |
+| `behavioral_trust` | 26 / 28 | 93% |
+| `governance_attestation` | 26 / 28 | 93% |
+| `job_performance` | 25 / 28 | 89% |
+| `passport_grade` | 25 / 28 | 89% |
+| `reasoning_integrity` | 25 / 28 | 89% |
+| `security_posture` | 25 / 28 | 89% |
+| `trust_verification` | 25 / 28 | 89% |
+| `wallet_intelligence` | 25 / 28 | 89% |
+| `peer_review` | 21 / 28 | 75% |
+| `entity_continuity` | 18 / 28 | 64% |
+| `completion_ratio` | 10 / 28 | 36% |
+| `cognitive_attestation` | 8 / 28 | 29% |
+| `bilateral_receipt` | 5 / 28 | 18% |
 
 ### Top-3 most-mapped
 
-- `wallet_state` — 27/27 (100%)
-- `compliance_risk` — 26/27 (96%)
-- `settlement_witness` — 26/27 (96%)
+- `wallet_state` — 28/28 (100%)
+- `compliance_risk` — 27/28 (96%)
+- `settlement_witness` — 27/28 (96%)
 
 ### Top-3 least-mapped
 
-- `bilateral_receipt` — 4/27 (15%)
-- `cognitive_attestation` — 7/27 (26%)
-- `completion_ratio` — 9/27 (33%)
+- `bilateral_receipt` — 5/28 (18%)
+- `cognitive_attestation` — 8/28 (29%)
+- `completion_ratio` — 10/28 (36%)
 
 ---
 

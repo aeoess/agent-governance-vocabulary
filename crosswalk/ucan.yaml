@@ -1,0 +1,228 @@
+# crosswalk/ucan.yaml
+#
+# UCAN (User Controlled Authorization Network) v1.0.0 -> Agent Governance Vocabulary
+#
+# Mapped artifacts: UCAN Delegation (envelope tag ucan/dlg@1.0.0) and UCAN
+# Invocation (ucan/inv@1.0.0), with Revocation, as specified in:
+#   ucan-wg/spec        @ 8072f3f23f451eaa1271269fe763aebcf294f4db  README.md "Version 1.0.0"
+#   ucan-wg/delegation  @ 1cb32dbc9d4d15a23bf9844a02515d760b81e816  README.md "Version 1.0.0"
+#   ucan-wg/invocation  @ 0f4c11325af6aca298b565cc19e90009d10e0197  README.md "Version 1.0.0"
+#   ucan-wg/revocation  @ 1235679bef2d74b7be46a6295e40184936247649  README.md "v1.0.0-rc.1"
+# All four fetched 2026-10-28 (shallow clones of main). Quotes below are from
+# those files. Also reviewed ucan-wg/receipt README.md at
+# f28f682bcb484cb515785b2a268d8a5b4cfc2b58. Its heading says
+# Invocation v0.1.1, so it is supplemental evidence rather than an assumed
+# version-compatible UCAN 1.0 receipt format. ucan-wg/promise was not reviewed.
+#
+# UCAN is a general capability system, not an agent-specific protocol. Its
+# "Agent" role is "The general class of entities and principals that
+# interact with a UCAN" (spec README, Roles), not an AI agent. It is mapped
+# here because agent systems already compose with it: for example
+# receipt-commons/receipt-interop verifies UCAN 0.x tokens beside agent
+# delegation receipts, and draft-nelson-agent-delegation-receipts-15 says it
+# uses "attenuation" in UCAN's sense. Note that receipt-interop targets
+# UCAN 0.x (the embedded-JWT line), not the 1.0 envelope mapped here.
+#
+# Third-party crosswalk drafted by aeoess (maintainer of this registry), not
+# by the UCAN Working Group. Offered for the editors and maintainers to
+# correct or confirm.
+
+system:
+  name: UCAN
+  home: https://github.com/ucan-wg/spec
+  spec: https://github.com/ucan-wg/spec/blob/8072f3f23f451eaa1271269fe763aebcf294f4db/README.md
+  spec_version: "1.0.0 (spec, delegation, invocation), revocation v1.0.0-rc.1"
+  role: >
+    "a trustless, secure, local-first, user-originated, distributed
+    authorization scheme" (spec Abstract). Certificate capabilities with
+    late-bound proof chains and DID principals. Delegation passes and
+    attenuates authority. Invocation exercises it with the full proof
+    chain. Revocation invalidates a delegation by CID.
+  identity_layer: "Principals are DIDs, and did:key is the REQUIRED DID method (spec, Cryptosuite)."
+  upstream_license: "Specifications under the Community Specification License 1.0 (LICENSE in each repo)."
+  governance: "Community Specification Governance Policy 1.0 (Governance.md): Maintainer determines consensus, Editors keep the text."
+
+license: Apache-2.0
+
+notes: >
+  UCAN requires canonical DAG-CBOR encoding for signing.
+  canonicalization_profile uses implementation-defined because the current
+  vocabulary enum has no DAG-CBOR value. The rule itself is specified,
+  rather than chosen separately by each implementation.
+
+maintainer:
+  mapped_system_maintainer:
+    github: expede   # Brooklyn Zelenka, listed Editor of spec and delegation at the pins above
+    project: ucan-wg
+    confirmed_at: null
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: Ed25519, P-256, secp256k1 REQUIRED (spec, Cryptosuite).
+# canonicalization_profile: "All UCANs MUST be canonically encoded with
+#   DAG-CBOR for signing" (spec, Encoding). DAG-CBOR is not in the enum, so
+#   implementation-defined, with the rule stated here.
+# hash_family: SHA-256 for CIDs (spec, Content Identifiers).
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row: the four README
+# files at the pins above. governance_attestation and settlement_witness also
+# include the supplemental receipt README at its separately named pin.
+# A no_mapping row is a bounded search result,
+# not a claim about UCAN outside those files.
+
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: none
+    match: no_mapping
+    notes: >
+      A Delegation states what may be done, and validation is the
+      executor's act at execution time ("Validation MUST occur at this
+      time", spec, Execution-Time). No signed record that an action passed
+      a declared requirement was found in the search basis. The Invocation
+      README names a Receipt returned by an Invocation. The supplemental
+      receipt README at f28f682 describes a signed execution result and
+      requested effects in section 8. It expressly does not guarantee
+      correctness. No required assertion that a declared governance
+      requirement was satisfied was found there. A particular application
+      could define such an assertion in its result, but that would need
+      its own cited artifact. The receipt version pairing remains open.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: none
+    match: no_mapping
+    notes: >
+      "Every UCAN MUST be signed with the private key associated with the
+      DID in the iss field" (spec, Issuer & Audience). One signature per
+      token. The Audience accepts by holding and later presenting the token
+      as proof, and does not sign it. No two-signature artifact in the
+      search basis.
+
+  trust_verification:
+    canonical: trust_verification
+    internal: none
+    match: no_mapping
+    notes: "No verification status of a principal. The spec states that with certificate capabilities 'who you are is irrelevant' (Intuition, Certificate Capabilities)."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No score in the search basis."
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No completion attestation by a delegator in the search basis."
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No payment or value-exchange verification against expected terms was found in the search basis, including section 8 of the supplemental receipt README at f28f682. A generic signed execution result is not itself a settlement witness."
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing in the search basis."
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity claim beyond DID identity in the search basis."
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate metric in the search basis."
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No posture artifact in the search basis."
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "Out of scope of a capability format. Nothing in the search basis."
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "Nothing in the search basis."
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No holdings record. Blockchain use cases are in scope (Scope.md) but no wallet attestation is defined."
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "Nothing in the search basis."
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "Nothing in the search basis."
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "Nothing in the search basis."
+
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "Invocation prf (proof chain of Delegation CIDs)"
+    match: false_analog
+    notes: >
+      prf is "an array of CIDs pointing Delegations starting from the root
+      Delegation (issued by the Subject), in strict sequence where the aud
+      of the previous Delegation matches the iss of the next Delegation"
+      (invocation, Proofs). It is content-addressed and ordered, which is
+      the substitution hazard. Its entries are grants along a path of
+      principals, not decisions affecting one agent, so it answers a
+      different question from the canonical term. The spec calls the
+      delegation chain "by definition a provenance log" (spec, Security
+      Considerations). The Invocation's OPTIONAL cause field, "a provenance
+      claim describing which Receipt requested it" (invocation, Cause),
+      links tasks, and is listed as an open question rather than mapped.
+
+descriptor_dimensions:
+  delegation:
+    enforcement_class: binding
+    note_enforcement: >
+      Validation "MUST occur upon receipt of an Invocation prior to
+      execution", and a Delegation failing time bounds, principal alignment
+      or signature validation "MUST be considered invalid" (delegation,
+      Token Validation).
+    validity_temporal: at_processing
+    note_validity: >
+      "Proofs in a chain MAY have different validity periods, but MUST all
+      be valid at execution-time" (delegation, Time Bounds). The
+      Delegation-Time iat "is generally superfluous to capture in the
+      token" (spec, Delegation-Time).
+    refusal_authority: verifier
+    note_refusal: >
+      The Executor validates and refuses. "The executor MUST verify the
+      ownership of any external resources at execution time" (spec,
+      Security Considerations).
+    invariant_survival: pre_action
+    note_replay: >
+      No replay_class selected. Signatures, proof alignment and static
+      constraints can be recomputed. Reproducing admission additionally
+      needs the evaluation time, arguments, revocation view, replay state
+      and applicable resource-ownership inputs. A full proof chain alone
+      does not record all of them.
+    governed_action_class: delegate
+
+ucan_specific_terms:
+  subject: "spec: 'A Subject represents the Agent that a capability is for. A Subject MUST be referenced by DID.' Unless stated, the Resource is the Subject. [principal is the nearest lifecycle concept, not equivalent: the Subject is the resource owner, which can be a non-human agent]"
+  command: "Hierarchical verb path, e.g. /msg/send. 'shorter Commands prove longer paths' (spec, Segment Structure). '/' is Top and proves any Command. [action_or_capability_binding]"
+  policy: "delegation: predicate statements that 'MUST constrain the args field of an eventual Invocation'. Top-level array is an implicit and."
+  attenuation: "spec: 'Each direct delegation MUST either directly restate or attenuate (diminish) its capabilities.' Restating the parent's capability is allowed. By comparison, draft-nelson-agent-delegation-receipts-15 section 8.5 requires strictly fewer allowedActions entries when both parent and child carry scopeSchema. Its section 2.3 invokes UCAN attenuation. The structured-scope rules must be read separately."
+  powerline: "delegation: 'a pattern for automatically delegating all future delegations to another agent regardless of Subject', set by sub null. 'Powerline delegations MUST NOT be used as the root delegation to a resource.'"
+  principal_alignment: "delegation: 'the aud field of every proof MUST match the iss field of the UCAN being delegated to.'"
+  revocation: "revocation (rc.1): 'Revocations MUST be immutable and irreversible.' The Scope section permits an issuer in the relevant proof chain to revoke a delegation under it. It explicitly preserves access through a valid chain that does not rely on the revoked proof. DRP -15 section 9.3 likewise rejects descendants whose parent chain contains a revoked receipt. Its single parentReceiptId does not imply revocation of unrelated grants. Both readings require identifying the affected grant or path. [revocation]"
+  meta: "spec: 'is not delegated authority'. 'MUST NOT be semantically meaningful to delegation chains.'"
+  validity_interval: "spec: 'the range from the latest not before to the earliest expiry in the UCAN delegation chain.' [expiry_or_exhaustion]"
+
+open_questions:
+  - "Which receipt specification and revision pairs with Invocation 1.0? The receipt README at f28f682 is headed Invocation v0.1.1 and requires receipt and invocation versions to match. Its generic signed result alone does not establish either mapped signal."
+  - "Revocation is at v1.0.0-rc.1 while the other sub-specs are 1.0.0. Is rc.1 the version to pin?"
+  - "Which saved inputs reproduce admission, including time, revocation, replay state and resource ownership? No unconditional replay_class is declared without that basis."

@@ -42,6 +42,7 @@ A project takes part in shared decisions only by explicit opt-in. Being listed o
 | Probity AI | @astrogilda | [2026-10-27](https://github.com/aeoess/agent-governance-vocabulary/issues/185#issuecomment-6433740185) |
 | argentum-core | @giskard09 | [2026-10-27](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6442009335) |
 | VATE (Verifiable Agent Trust Envelope) | @Poke-nushi | [2026-10-28](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6458106154) |
+| SINT Protocol | @pshkv | [2026-10-28](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-6480255134) |
 
 **Opting in.** A maintainer of the project states the opt-in in a public comment on this repository and names the project's representative for shared decisions. The comment links to a place where the project's own repository names that person as a maintainer, such as a maintainers file, CODEOWNERS, its README or its GitHub organization's members. Anyone may open the pull request that adds the row. The row needs no review window and no approval. If the linked record does not show the maintainer's authority, the row stays pending until the project supplies it.
 

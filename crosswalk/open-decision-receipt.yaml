@@ -1,0 +1,364 @@
+# crosswalk/open-decision-receipt.yaml
+#
+# Open Decision Receipt (ODR) v0.2 RC -> Agent Governance Vocabulary
+#
+# Mapped artifact: the Decision Receipt and the ReopenEvent as specified in
+# lumirosh/open-decision-receipt @ fc1309b937354a7beb5eb591236ff014eb0cb970
+# (main, 2026-10-27, package "open-decision-receipt" 0.2.0rc4, Apache-2.0).
+#   Normative machine-readable contract: schemas/decision-receipt.schema.json
+#     ("Open Decision Receipt v0.2 RC3", last changed at f97d90d)
+#   Lifecycle event contract: schemas/reopen-event.schema.json
+#   Human-readable minimum schema: decision-receipt.schema.yaml
+#   Lifecycle: docs/lifecycle.md. Limits: docs/limitations.md.
+#   Reference implementation: dam_verify/ (CLI "dam-verify"), installed from
+#   the repository. Not published on PyPI at the time of reading.
+#
+# Quoted definitions are from those files at the pinned commit. Line numbers
+# refer to that commit.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the ODR maintainer. It is offered for the maintainer to
+# correct or confirm. Corrections to the native reading are checked against
+# the cited source and the canonical vocabulary before recalibration.
+
+system:
+  name: Open Decision Receipt
+  short_name: ODR
+  home: https://github.com/lumirosh/open-decision-receipt
+  spec: https://github.com/lumirosh/open-decision-receipt/blob/fc1309b937354a7beb5eb591236ff014eb0cb970/schemas/decision-receipt.schema.json
+  spec_version: "Open Decision Receipt v0.2 RC3 schema, package 0.2.0rc4"
+  repo: https://github.com/lumirosh/open-decision-receipt
+  implementation: "dam_verify Python reference lifecycle @ fc1309b (verify, approve, seal, watch, chain)"
+  role: >
+    README: "a vendor-neutral receipt format and Python reference lifecycle
+    that binds an exact action to its recorded authority, evidence, and
+    execution." A receipt records the request and its canonical action
+    hash, the check-time evidence and authority state, the recommendation,
+    the approval, the use-time execution record, the boundary and the
+    accountable owner. Sealing is refused when the action hash, context
+    hash, authority hash, authority path or bound conditions differ between
+    check and use. After sealing, watch can append a ReopenEvent and a
+    linked child receipt without changing the sealed parent.
+  identity_layer: >
+    None. docs/limitations.md: "The reference implementation treats actors
+    as strings. It does not prove that release_workflow, operator, or any
+    named role corresponds to a cryptographic identity or authenticated
+    session. Identity binding belongs in the integrating system."
+  upstream_license: Apache-2.0
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: lumirosh
+    project: lumirosh/open-decision-receipt (LumiRosh Research)
+    confirmed_at: null   # not yet reviewed by the mapped system's maintainer
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability intentionally omitted. ODR emits no cryptographic
+# signature. dam_verify/chain.py lines 7-8: "This is not a signature scheme.
+# It is an intentionally small tamper-evidence layer for the reference
+# implementation." Precedent for the omission: crosswalk/quesen.yaml.
+# canonicalization: dam_verify/receipt.py line 29,
+# json.dumps(obj, sort_keys=True, separators=(",", ":"), allow_nan=False),
+# with Python's default ensure_ascii=True. Not RFC 8785: non-ASCII strings
+# are escaped and number spelling follows Python. Same rule as the one
+# declared in crosswalk/kvrm.yaml.
+# hash_family: "sha256:" prefixed SHA-256 for action_hash, context hashes,
+# authority hashes, path_hash and integrity_hash (schema patterns
+# ^sha256:[a-f0-9]{64}$, receipt.py line 30).
+system_attributes:
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row below:
+#   README.md, decision-receipt.schema.yaml, schemas/*.json, docs/lifecycle.md,
+#   docs/limitations.md, docs/mappings/*.md and dam_verify/*.py at fc1309b
+#   (read in full or searched by field name).
+# A no_mapping row states that the named sources were searched and no
+# corresponding field or record was found. It is not a claim about the
+# project's capability outside those sources.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# One partial fit (governance_attestation, a sealed receipt), the rest
+# no_mapping on the search basis above.
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "Decision Receipt with status sealed"
+    match: partial
+    evidence: emitted
+    source_path: "status (enum value \"sealed\"), schemas/decision-receipt.schema.json line 43; set by dam_verify/engine.py seal(), line 600"
+    notes: >
+      In the reference lifecycle a receipt reaches status "sealed" only
+      after seal() (dam_verify/engine.py lines 461-610) finds that the
+      approval is bound and unexpired, the executed canonical action hash
+      equals the approved one, the evidence context hash, authority hash
+      and resolved authority path are unchanged since check, and any bound
+      conditions still hold. Otherwise the status becomes
+      needs_human_review and no integrity_hash is written. A sealed
+      receipt therefore records that a specific action met the declared
+      requirements of its workflow bundle at use time, which overlaps the
+      canonical question.
+
+      Partial, for three stated reasons. (1) The canonical term is a
+      signed attestation. ODR emits no signature; integrity_hash is an
+      unkeyed SHA-256 over the receipt body (receipt.py lines 77-80), so a
+      consumer can detect edits but cannot attribute the statement to an
+      issuer. (2) Actors and approvers are strings supplied by the
+      integration (limitations.md), so the receipt does not establish who
+      made the determination. (3) "status" is not in the schema's
+      required list. Sealing semantics come from the reference lifecycle,
+      and a third-party producer can emit a schema-valid receipt without
+      them. A consumer that needs issuer-attributable attestation should
+      not treat a sealed receipt as equivalent to a signed
+      governance_attestation.
+
+      Receipts in status authorized or denied are not mapped here. They
+      record a verify or approve verdict before use, not satisfaction of
+      the requirements at use.
+    issuers_in_production: []
+    signed_payload_fields: []
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: none
+    match: no_mapping
+    notes: >
+      No signature of any party was found in the search basis. The receipt
+      names two parties, recommended_by and approver, and records
+      separation_of_duties_ok, but neither signs. The canonical term
+      requires both parties' signatures over one canonical preimage.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    internal: none
+    match: no_mapping
+    notes: >
+      The receipt records recommendation.rationale, model_version and
+      confidence as supplied values. No attestation about the action's
+      reasoning was found in the search basis.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    internal: none
+    match: no_mapping
+    notes: >
+      receipt.prompt_id and receipt.model_output_id are identifiers, and
+      recommendation fields are supplied text. No decision-time commitment
+      to reasoning content under a declared reduction map was found.
+
+  compliance_risk:
+    canonical: compliance_risk
+    internal: none
+    match: no_mapping
+    notes: >
+      risk_class (low, medium, high, critical) classifies the consequence
+      of the action and selects which authority rules apply. It is not a
+      scored exposure assessment of a counterparty. Different question,
+      noted because both use the word risk.
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "No identity verification status in the search basis. Identity binding is left to the integrating system (limitations.md)."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of observed agent behavior in the search basis."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      execution.outcome_state "confirmed" is set by seal() from the
+      executor-supplied record. limitations.md: "ODR does not
+      independently observe a tool, external system, or real-world
+      outcome." No settlement record in the search basis.
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation signed by a delegating agent in the search basis."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment of completed tasks in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric in the search basis."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity claim about an agent across sessions in the search basis."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for an agent in the search basis."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: >
+      docs/mappings/security.md maps workflow failures to CWE, OWASP and
+      STRIDE classes as documentation. No signed posture assessment of an
+      artifact is emitted.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "parent_receipt_id plus ReopenEvent, and the local receipt-store chain (dam_verify/chain.py)"
+    match: partial
+    evidence: referenced
+    resolution_path: "chain.jsonl in the receipt store, checked by dam-verify chain (dam_verify/chain.py lines 37-67); ReopenEvent files matched by parent_receipt_id (engine.py line 249)"
+    resolution_note: >
+      The receipt carries parent_receipt_id and reopen_event_id as plain
+      identifiers. The content-hash links live outside the receipt, in the
+      store's chain.jsonl, where each entry binds a sealed receipt's
+      integrity_hash to the previous entry's chained hash. Resolving them
+      needs that store, which the receipt does not contain.
+    notes: >
+      Overlap: a sealed parent, an append-only ReopenEvent and a linked
+      child receipt form an ordered, replayable history of re-decisions,
+      and the store chain makes edits to sealed history detectable
+      (docs/lifecycle.md, "Post-seal drift").
+
+      Partial, for three stated reasons. (1) The canonical sequence is
+      decisions affecting a single agent. ODR's parent-to-child link
+      follows one decision and its workflow, and the store chain orders
+      every sealed receipt in a store regardless of actor. (2) The
+      receipt's own link is by decision_id, not by content hash.
+      (3) Chain entries are not signed (chain.py lines 7-8).
+      docs/mappings/conformance.md separates the two: "Chain integrity is
+      not the per-receipt L2 test."
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: >
+      The receipt commits to the authority state, authority path and
+      condition definitions it was checked against
+      (check.authority_hash_at_check, authority.approver_authority_hash,
+      authority.resolved_path.path_hash, check.conditions.definition_hash).
+      Those are commitments to a rule and authority basis, not a version
+      of a behavioral baseline. Listed under odr_specific_terms.
+
+  divergence_signal:
+    canonical: divergence_signal
+    internal: "ReopenEvent drift_types"
+    match: false_analog
+    notes: >
+      Both are called drift, which is the substitution hazard. The
+      canonical term is a quantitative behavioral deviation from a
+      declared baseline. A ReopenEvent records that the referenced basis
+      changed: drift_types is a set drawn from evidence, authority and
+      authority_path (schemas/reopen-event.schema.json), with the
+      previous and current hashes. It measures change in the inputs a
+      decision relied on, not deviation in agent behavior, and carries no
+      magnitude.
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# For the sealed Decision Receipt. Drafter's reading, each value with its
+# basis, open to the maintainer's correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  decision_receipt:
+    enforcement_class: advisory
+    note_enforcement: >
+      README: "Refusing a seal after execution is evidence, not
+      prevention: the integrating runtime must check before acting."
+      limitations.md: "the receipt itself is not a firewall, IAM layer,
+      workflow engine, or policy enforcement point." verify_action can
+      return denied before use, and a runtime that consumes that verdict
+      makes it binding for that runtime.
+    validity_temporal: at_processing
+    note_validity: >
+      Validity is evaluated twice, at check and again at use in seal(),
+      and the receipt records both (context_hash_at_check and
+      context_hash_at_execution). After sealing, watch re-evaluates the
+      referenced basis and opens a child lifecycle on change, so the
+      sealed record does not claim the basis still holds later.
+    refusal_authority: consumer_policy
+    note_refusal: >
+      README: "Your integration owns authentication, permission
+      enforcement, action execution, and independent outcome
+      observation." The reference lifecycle refuses to seal a record; it
+      does not refuse the action.
+    invariant_survival: post_action
+    note_invariant: >
+      Sealing happens after the execution record is supplied, and watch
+      continues after sealing. A sealed parent is never mutated; change
+      is recorded by appending.
+    note_replay: >
+      No replay_class selected. receipt.replayable is true for a sealed
+      receipt, and the receipt carries the authority snapshot, resolved
+      path and canonical actions. Evidence is carried as hashes and
+      result_artifact_ref pointers, so reconstruction depends on the
+      referenced artifacts being retained
+      (examples/end-to-end-artifact-bundle shows one such bundle). Left
+      for the maintainer to state.
+    note_governed_action: >
+      No governed_action_class selected. decision_type is open
+      (approve_claim_payout, merge_pr, send_outreach in the minimum
+      schema), so the governed action class varies by workflow.
+
+# ──────────────────────────────────────────────────────────────
+# ODR-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET
+# Listed so the mapping states what the vocabulary does not name yet.
+# The nearest concept in vocabulary-lifecycle.yaml (INCUBATING,
+# descriptive only) is given in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+odr_specific_terms:
+  canonical_action_hash: "request, authority and execution each carry action_hash over a canonical_action {workflow, action_type, parameters}. Sealing requires equality. limitations.md: exact object equality, 'not semantic subset reasoning'. [invocation, action_or_capability_binding]"
+  check_use_context_hashes: "check.context_hash_at_check and execution.context_hash_at_execution. A difference refuses sealing as time-of-check to time-of-use (CWE-367)."
+  authority_snapshot_and_hash: "check.authority_snapshot and authority_hash_at_check, authority.approver_authority_snapshot and approver_authority_hash: the exact bounded rule and role state relied on. [policy_version, authority_epoch is the nearest, not equivalent]"
+  resolved_authority_path: "authority.resolved_path with edges, dependency_ids and path_hash. ReopenEvent records changed_dependencies. [authority_path_and_dependency]"
+  bound_conditions: "check.conditions: per-condition state (holding, breached, stale, unknown), max_age_seconds, definition_hash, optional k_of_n compensation. Re-evaluated at seal."
+  single_use_authorization: "authority.authorization_use single_use with consumed_at and consumed_by_execution_hash. limitations.md: consumption is not atomic across arbitrary hosts. [expiry_or_exhaustion]"
+  reopen_event: "Append-only event naming a sealed parent and a child decision, with previous and current context and authority hashes and drift_types. Creates a child lifecycle in needs_human_review."
+  dissenting_signals: "check.dissenting_signals: anything that argued against the action, recorded beside the evidence seen."
+  accountable_owner: "accountability.accountable_owner with review_required_by and appeal_or_escalation_path. [accountability_record]"
+  failure_mode: "boundary.failure_mode fail_closed, fail_open or unknown; the minimum schema marks unknown as a finding."
+  conformance_levels: "L1 Documented, L2 Bound, L3 Governed (docs/mappings/conformance.md). Describes observable receipt and lifecycle behavior only."
+  lifecycle_states: "docs/lifecycle.md canonical states Observed to Sealed. The reference implementation exposes a narrower status set. [approval, authorization_decision, execution, effect, evidence]"
+
+# ──────────────────────────────────────────────────────────────
+# OPEN QUESTIONS FOR THE MAPPED SYSTEM'S MAINTAINER
+# ──────────────────────────────────────────────────────────────
+open_questions:
+  - "Is status 'sealed' meant to carry the seal() checks for any conforming producer, or only for dam_verify? Decides whether governance_attestation stays partial on reason (3)."
+  - "Is a signed profile planned (provenance.md calls interoperability with signed action receipts 'a research direction')? A signature over the sealed body would change reason (1) and would let this file declare signature_capability."
+  - "Which replay_class does ODR claim for a sealed receipt when the referenced evidence artifacts are retained, and which when they are not?"
+  - "Is at_processing the right reading of validity, or does ODR treat a sealed receipt as continuously subject to watch?"
+  - "Should decision_lineage be read from the parent and child receipts, from the store chain, or from both?"

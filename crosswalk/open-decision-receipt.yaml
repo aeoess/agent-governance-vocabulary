@@ -35,15 +35,16 @@ system:
     execution." A receipt records the request and its canonical action
     hash, the check-time evidence and authority state, the recommendation,
     the approval, the use-time execution record, the boundary and the
-    accountable owner. Sealing is refused when the action hash, context
-    hash, authority hash, authority path or bound conditions differ between
-    check and use. After sealing, watch can append a ReopenEvent and a
+    accountable owner. Sealing is refused when the recorded execution
+    action hash differs from the approved hash, the context or authority
+    hash changes, an existing resolved authority path changes, or the bound
+    condition policy fails. After sealing, watch can append a ReopenEvent and a
     linked child receipt without changing the sealed parent.
   identity_layer: >
     None. docs/limitations.md: "The reference implementation treats actors
-    as strings. It does not prove that release_workflow, operator, or any
-    named role corresponds to a cryptographic identity or authenticated
-    session. Identity binding belongs in the integrating system."
+    as strings. It does not prove that `release_workflow`, `operator`, or
+    any named role corresponds to a cryptographic identity or authenticated
+    session." "Identity binding belongs in the integrating system."
   upstream_license: Apache-2.0
 
 license: Apache-2.0
@@ -68,8 +69,11 @@ maintainer:
 # are escaped and number spelling follows Python. Same rule as the one
 # declared in crosswalk/kvrm.yaml.
 # hash_family: "sha256:" prefixed SHA-256 for action_hash, context hashes,
-# authority hashes, path_hash and integrity_hash (schema patterns
-# ^sha256:[a-f0-9]{64}$, receipt.py line 30).
+# authority hashes, path_hash and integrity_hash
+# (dam_verify/receipt.py lines 27-30). The schema constrains action
+# hashes, approver_authority_hash, path_hash and condition
+# definition_hash with ^sha256:[a-f0-9]{64}$. Other hash fields lack
+# that pattern constraint.
 system_attributes:
   canonicalization_profile: implementation-defined
   hash_family: sha-256
@@ -96,13 +100,16 @@ signal_types:
     evidence: emitted
     source_path: "status (enum value \"sealed\"), schemas/decision-receipt.schema.json line 43; set by dam_verify/engine.py seal(), line 600"
     notes: >
-      In the reference lifecycle a receipt reaches status "sealed" only
-      after seal() (dam_verify/engine.py lines 461-610) finds that the
-      approval is bound and unexpired, the executed canonical action hash
-      equals the approved one, the evidence context hash, authority hash
-      and resolved authority path are unchanged since check, and any bound
-      conditions still hold. Otherwise the status becomes
-      needs_human_review and no integrity_hash is written. A sealed
+      In the reference lifecycle, seal() (dam_verify/engine.py lines
+      461-610) requires an authorized receipt with unused authority. It
+      checks binding, expiry and current approver authority for explicit
+      approvals, requires the recorded execution action hash to equal the
+      approved hash, compares the evidence context and authority hashes
+      with their check-time values, compares the resolved authority path
+      when present, and requires the bound condition policy to hold,
+      including permitted k_of_n compensation. Returned refusals set
+      needs_human_review without writing an integrity_hash. Consumed
+      authority or a status other than authorized raises ValueError. A sealed
       receipt therefore records that a specific action met the declared
       requirements of its workflow bundle at use time, which overlaps the
       canonical question.
@@ -178,10 +185,10 @@ signal_types:
     canonical: settlement_witness
     match: no_mapping
     notes: >
-      execution.outcome_state "confirmed" is set by seal() from the
-      executor-supplied record. limitations.md: "ODR does not
+      seal() sets execution.outcome_state to "confirmed" from the
+      executor-supplied record. limitations.md states that ODR does not
       independently observe a tool, external system, or real-world
-      outcome." No settlement record in the search basis.
+      outcome. No settlement record in the search basis.
 
   peer_review:
     canonical: peer_review
@@ -248,12 +255,11 @@ decision_trajectory:
       and the store chain makes edits to sealed history detectable
       (docs/lifecycle.md, "Post-seal drift").
 
-      Partial, for three stated reasons. (1) The canonical sequence is
+      Partial, for two stated reasons. (1) The canonical sequence is
       decisions affecting a single agent. ODR's parent-to-child link
       follows one decision and its workflow, and the store chain orders
       every sealed receipt in a store regardless of actor. (2) The
       receipt's own link is by decision_id, not by content hash.
-      (3) Chain entries are not signed (chain.py lines 7-8).
       docs/mappings/conformance.md separates the two: "Chain integrity is
       not the per-receipt L2 test."
 
@@ -323,9 +329,10 @@ descriptor_dimensions:
     note_replay: >
       No replay_class selected. receipt.replayable is true for a sealed
       receipt, and the receipt carries the authority snapshot, resolved
-      path and canonical actions. Evidence is carried as hashes and
-      result_artifact_ref pointers, so reconstruction depends on the
-      referenced artifacts being retained
+      path and canonical actions. The reference lifecycle carries
+      evidence references, versions and content hashes. Structured-query
+      schema entries can additionally carry result_artifact_ref pointers.
+      Reconstruction depends on retaining the referenced artifacts
       (examples/end-to-end-artifact-bundle shows one such bundle). Left
       for the maintainer to state.
     note_governed_action: >
@@ -340,7 +347,7 @@ descriptor_dimensions:
 # descriptive only) is given in brackets as a pointer, not a mapping.
 # ──────────────────────────────────────────────────────────────
 odr_specific_terms:
-  canonical_action_hash: "request, authority and execution each carry action_hash over a canonical_action {workflow, action_type, parameters}. Sealing requires equality. limitations.md: exact object equality, 'not semantic subset reasoning'. [invocation, action_or_capability_binding]"
+  canonical_action_hash: "request, authority and execution each carry action_hash over a canonical_action {workflow, action_type, parameters}. seal() hashes the recorded execution canonical_action and requires that hash to equal authority.action_hash. limitations.md: exact object equality, 'not semantic subset reasoning'. [invocation, action_or_capability_binding]"
   check_use_context_hashes: "check.context_hash_at_check and execution.context_hash_at_execution. A difference refuses sealing as time-of-check to time-of-use (CWE-367)."
   authority_snapshot_and_hash: "check.authority_snapshot and authority_hash_at_check, authority.approver_authority_snapshot and approver_authority_hash: the exact bounded rule and role state relied on. [policy_version, authority_epoch is the nearest, not equivalent]"
   resolved_authority_path: "authority.resolved_path with edges, dependency_ids and path_hash. ReopenEvent records changed_dependencies. [authority_path_and_dependency]"

@@ -5,8 +5,8 @@
 #
 # InsumerAPI is the foundation layer of the multi-attestation envelope.
 # It reads wallet state across 37 chains (the full set for token_balance;
-# other condition types are chain-scoped, see endpoints) and issues ECDSA-signed evidence,
-# with an additive ML-DSA-65 post-quantum companion, that other
+# other condition types are chain-scoped, see endpoints) and issues evidence
+# signed twice, ES256 and a post-quantum ML-DSA-65 signature, that other
 # dimensions compose on top of via the multi-attestation
 # envelope documented in MULTI-ATTESTATION-SPEC.md (insumer-examples).
 #
@@ -17,11 +17,11 @@
 system:
   name: InsumerAPI
   home: https://insumermodel.com
-  spec: https://github.com/douglasborthwick-crypto/insumer-examples/blob/main/MULTI-ATTESTATION-SPEC.md
+  spec: https://github.com/insumerapi/insumer-examples/blob/main/MULTI-ATTESTATION-SPEC.md
   jwks: https://insumermodel.com/.well-known/jwks.json
   jwks_alt: https://api.insumermodel.com/v1/jwks  # same document, different URL
-  role: "Foundation layer of the multi-attestation envelope. Reads on-chain wallet state across 37 chains (31 EVM + Solana, XRPL, Bitcoin, Tron, Stellar, Sui) and issues ECDSA-signed evidence with an additive ML-DSA-65 post-quantum companion. Wallet binding varies by endpoint; see signal_types.wallet_state.signed_shapes below."
-  license: "Public API, key-gated. Free developer keys at https://insumermodel.com/developers/. Agent self-provisioning via POST /v1/keys/buy (USDC, USDT or BTC on-chain payment, no auth required). /v1/attest, /v1/trust and /v1/trust/batch also accept an `Authorization: Wallet` SIWE envelope from a wallet holding the Insumer Access pass, or x402 pay-per-call in USDC on Base, Polygon, Arbitrum, Arc or Solana with no key at all."
+  role: "Foundation layer of the multi-attestation envelope. Reads on-chain wallet state across 37 chains (31 EVM + Solana, XRPL, Bitcoin, Tron, Stellar, Sui) and issues evidence signed twice: ES256 and a post-quantum ML-DSA-65 signature. Wallet binding varies by endpoint; see signal_types.wallet_state.signed_shapes below."
+  license: "Public API, key-gated. Free developer keys at https://insumermodel.com/developers/. Agent self-provisioning via POST /v1/keys/buy (an on-chain USDC payment plus a signature from the paying wallet; no prior account or auth required). /v1/attest, /v1/trust and /v1/trust/batch also accept an `Authorization: Wallet` SIWE envelope from a wallet holding the Insumer Access pass, or x402 pay-per-call in USDC on Base, Polygon, Arbitrum, Arc or Solana with no key at all."
 
 license: Apache-2.0
 maintainer:
@@ -44,17 +44,17 @@ signal_types:
       InsumerAPI stamps `type: "wallet_state"` directly in the multi-
       attestation envelope. 1:1 mapping, no translation needed. This is
       the foundation-layer signal: balances, NFT holdings, EAS attestations,
-      Farcaster IDs, view-call results, ratio rules and agent standing, read
-      on-chain and signed with ECDSA P-256 plus an additive ML-DSA-65
-      post-quantum companion (since 2026-09-01). Three issuing endpoints
-      with different signed payload shapes and different wallet-binding
-      semantics: three signed shapes, the raw and JWT forms of /v1/attest
-      and the trust profile shared by /v1/trust and /v1/trust/batch; see
+      Farcaster IDs, view-call results, ratio rules, agent standing and
+      account code state, read on-chain and signed twice: ES256 (ECDSA
+      P-256) and, since 2026-09-01, a post-quantum ML-DSA-65 signature.
+      Three issuing endpoints and three signed shapes, each with its own
+      wallet-binding semantics: the raw and JWT forms of /v1/attest, and
+      the trust profile shared by /v1/trust and /v1/trust/batch; see
       `signed_shapes` below. All three endpoints authenticate with the
       X-API-Key header, or an `Authorization: Wallet` SIWE envelope from a
       wallet that holds the Insumer Access pass, or x402 pay-per-call with
-      no key at all. This block was re-verified
-      against the live API, openapi.yaml and the JWKS on 2026-09-18.
+      no key at all. This block was re-checked
+      against openapi.yaml and the live JWKS on 2026-10-29.
     issuer_uri: https://api.insumermodel.com
     algorithm: ES256
     kid: insumer-attest-v2   # attestations under v2 API keys (every key created since 2026-06-10). Trust profiles sign under insumer-trust-v2; v1 keys sign both artifact types under insumer-attest-v1; the discount endpoints use insumer-attest-v1 regardless of key version. Full set in `kids`.
@@ -62,9 +62,9 @@ signal_types:
       insumer-attest-v1: "attestations AND trust profiles issued under v1 API keys (frozen bare-JSON scheme); also every ACP and UCP discount signature, regardless of key version"
       insumer-attest-v2: "attestations issued under v2 API keys (every key created since 2026-06-10): domain-separated canonical preimage"
       insumer-trust-v2: "trust profiles issued under v2 API keys"
-      insumer-attest-pq1: "ML-DSA-65 companion on attestations: `pqSig` and `pqKid` on the raw format, `pqJwt` on the JWT format"
-      insumer-trust-pq1: "ML-DSA-65 companion on trust profiles"
-    jwks_note: "In the attest family the kid says `attest` while the domain tag says `attestation` (insumer-attest-v2 signs under \"insumer.attestation.v2\"); the trust family says `trust` in both. Both spellings are as issued. Five JWKS entries over two keys: the three EC kids share one P-256 key; the two AKP (Algorithm Key Pair, RFC 9964) kids share one ML-DSA-65 key. The v2 and companion kids are bound to artifact type (an attest kid on a trust artifact, or the reverse, fails verification); insumer-attest-v1 predates that split and covers both artifact types under v1 keys."
+      insumer-attest-pq1: "ML-DSA-65 post-quantum signature on attestations: `pqSig` and `pqKid` on every attestation response, plus `pqJwt` beside `jwt` on the JWT format"
+      insumer-trust-pq1: "ML-DSA-65 post-quantum signature on trust profiles"
+    jwks_note: "In the attest family the kid says `attest` while the domain tag says `attestation` (insumer-attest-v2 signs under \"insumer.attestation.v2\"); the trust family says `trust` in both. Both spellings are as issued. Five JWKS entries over two keys: the three EC kids share one P-256 key; the two AKP (Algorithm Key Pair, RFC 9964) kids share one ML-DSA-65 key. The v2 and post-quantum kids are bound to artifact type (an attest kid on a trust artifact, or the reverse, fails verification); insumer-attest-v1 predates that split and covers both artifact types under v1 keys."
     default_ttl_seconds: 1800  # attestations and trust profiles both expire 30 minutes after issuance; an attestation whose request contains an erc7710_delegation condition expires after 300 seconds, because revocation is one on-chain call away
 
     conformance_vectors:
@@ -107,11 +107,11 @@ signal_types:
 
     endpoints:
       - path: POST /v1/attest
-        purpose: "Evaluate 1 to 10 on-chain conditions across nine condition types (token_balance, nft_ownership, eas_attestation, farcaster_id, evm_view_call, ratio_to_amount, ratio_to_supply, erc8004_agent, erc7710_delegation). Returns a signed boolean per condition and overall, never raw balances in standard mode. 1 credit standard, 2 with `proof: \"merkle\"`. Default output is a raw P1363 base64 signature; optional `format: \"jwt\"` returns an ES256 compact JWS with a `pqJwt` sibling."
-        chain_coverage: "Counts move as chains are added, so the live figures are openapi.yaml at https://insumermodel.com/openapi.yaml rather than this file. As of 2026-10-03: 37 chains, being 31 EVM plus Solana, XRPL, Bitcoin, Tron, Stellar and Sui (Moonbeam and Moonriver were retired on 2026-09-20 after both networks stopped producing blocks). token_balance reaches all 37; nft_ownership the 31 EVM chains plus Solana and XRPL; eas_attestation five EVM chains (Ethereum, Optimism, Base, Arbitrum, Polygon); farcaster_id Optimism; erc8004_agent and erc7710_delegation Base; evm_view_call and the two ratio rules are EVM only. The caller supplies the wallet through the top-level wallet / solanaWallet / xrplWallet / bitcoinWallet / tronWallet / stellarWallet / suiWallet params; conditions carry no wallet field of their own."
+        purpose: "Evaluate 1 to 10 on-chain conditions across ten condition types (token_balance, nft_ownership, eas_attestation, farcaster_id, evm_view_call, ratio_to_amount, ratio_to_supply, erc8004_agent, erc7710_delegation, account_code). Returns a signed boolean per condition and overall, never raw balances in standard mode. 1 credit standard, 2 with `proof: \"merkle\"`. Default output is a raw P1363 base64 signature; optional `format: \"jwt\"` returns an ES256 compact JWS with a `pqJwt` sibling."
+        chain_coverage: "Counts move as chains are added, so the live figures are openapi.yaml at https://insumermodel.com/openapi.yaml rather than this file. As of 2026-10-29: 37 chains, being 31 EVM plus Solana, XRPL, Bitcoin, Tron, Stellar and Sui (Moonbeam and Moonriver were retired on 2026-09-20 after both networks stopped producing blocks). token_balance reaches all 37; nft_ownership the 31 EVM chains plus Solana and XRPL (on Solana a verified collection address, which any NFT in that collection satisfies, one NFT's own mint address, or the asset ID of a compressed or Core NFT); eas_attestation five EVM chains (Ethereum, Optimism, Base, Arbitrum, Polygon); farcaster_id Optimism; erc8004_agent and erc7710_delegation Base; evm_view_call, account_code and the two ratio rules are EVM only. The caller supplies the wallet through the top-level wallet / solanaWallet / xrplWallet / bitcoinWallet / tronWallet / stellarWallet / suiWallet params; conditions carry no wallet field of their own."
       - path: POST /v1/trust
         purpose: "Curated wallet trust fact profile. The EVM anchor is mandatory. Returns per-check booleans by dimension plus a summary; no score, no opinion. A curated check whose chain wallet was not supplied stays in the signed profile with `evaluated: false` and is counted apart from pass and fail. 3 credits standard, 6 with `proof: \"merkle\"`."
-        chain_coverage: "A fixed catalogue of named contracts, so it covers fewer chains than /v1/attest and moves only when the catalogue does. As of 2026-10-03 (condition set 2026-10): 145 base checks on 27 chains (23 EVM plus Solana, XRPL, Stellar and Sui) in 9 dimensions, up to 166 checks on 29 chains in 13 dimensions. The nine base dimensions: stablecoins 52, governance 8, nfts 3, staking 5, institutional_stablecoins 8, tokenized_treasuries 16, stablecoin_deposits 39, wrapped_bitcoin 12, names 2. Four optional dimensions add 21 checks when the matching wallet param is supplied: solana 14, xrpl 3, bitcoin 1, tron 3. Checks on chains whose wallet param was not supplied stay in the profile as evaluated: false rather than dropping out. The signed conditionSetVersion names the check list."
+        chain_coverage: "A fixed catalogue of named contracts, so it covers fewer chains than /v1/attest and moves only when the catalogue does. As of 2026-10-29 (condition set 2026-10-08): 155 base checks on 27 chains (23 EVM plus Solana, XRPL, Stellar and Sui) in 10 dimensions, up to 176 checks on 29 chains in 14 dimensions. The ten base dimensions: stablecoins 52, governance 8, nfts 3, staking 5, institutional_stablecoins 8, tokenized_treasuries 16, stablecoin_deposits 39, wrapped_bitcoin 12, names 2, account 10 (contract code or an EIP-7702 delegation present at the wallet address on Ethereum, Base, Arbitrum, Optimism and Polygon). Four optional dimensions add 21 checks when the matching wallet param is supplied: solana 14, xrpl 3, bitcoin 1, tron 3. Checks on chains whose wallet param was not supplied stay in the profile as evaluated: false rather than dropping out. The signed conditionSetVersion names the check list."
       - path: POST /v1/trust/batch
         purpose: "Batch wallet trust profiles, up to 10 wallets per request, block numbers fetched once and shared across wallets. Each wallet gets an independently signed profile. 3 credits per wallet standard, 6 with Merkle."
         chain_coverage: "Same as /v1/trust, per wallet."
@@ -120,7 +120,7 @@ signal_types:
 
       attest_raw:
         endpoint: POST /v1/attest
-        format: "Base64-encoded P1363 (r || s, 64 bytes) at data.sig, kid at data.kid. Under insumer-attest-v1 the preimage is the bare JSON.stringify of {id, pass, results, attestedAt} (frozen). Under insumer-attest-v2 it is the domain tag \"insumer.attestation.v2\\n\" followed by recursively key-sorted canonical JSON of {v: 2, id, pass, results, attestedAt}. The companion at data.pqSig, with its kid at data.pqKid, signs \"insumer.attestation.pq1\\n\" plus the same classical preimage the kid selects."
+        format: "Base64-encoded P1363 (r || s, 64 bytes) at data.sig, kid at data.kid. Under insumer-attest-v1 the preimage is the bare JSON.stringify of {id, pass, results, attestedAt} (frozen). Under insumer-attest-v2 it is the domain tag \"insumer.attestation.v2\\n\" followed by recursively key-sorted canonical JSON of {v: 2, id, pass, results, attestedAt}. The post-quantum signature at data.pqSig, with its kid at data.pqKid, signs \"insumer.attestation.pq1\\n\" plus the same classical preimage the kid selects."
         signed_object:
           - id                # unique attestation identifier (ATST-XXXXXXXXXXXXXXXX)
           - pass              # aggregate boolean result
@@ -134,7 +134,7 @@ signal_types:
         per_condition_fields:
           - condition         # zero-based index
           - label             # caller-supplied label
-          - type              # one of the nine condition types
+          - type              # one of the ten condition types
           - chainId           # number for EVM; "solana" | "xrpl" | "bitcoin" | "tron" | "stellar" | "sui" otherwise
           - met               # per-condition boolean
           - evaluatedCondition  # exact condition parameters (object); the key set varies by condition type, and erc8004_agent / erc7710_delegation include the attested wallet
@@ -146,14 +146,14 @@ signal_types:
           - blockHeight       # Bitcoin and Tron results, together with blockHash
           - checkpointSequence  # Sui results
         wallet_in_signed_bytes: false
-        wallet_binding_note: "The raw-sig path of /v1/attest has no top-level wallet field: the signed object is `{id, pass, results, attestedAt}` (plus `v` under v2). For seven of the nine condition types the `evaluatedCondition` carries the condition parameters only (for token_balance: type, chainId, contractAddress, operator, threshold), so neither it nor `conditionHash` binds the wallet. The two agent-standing types, erc8004_agent and erc7710_delegation, do write the attested wallet into `evaluatedCondition`, so for those the wallet is inside `conditionHash` and the signed bytes. For uniform wallet binding across every type use `format: \"jwt\"` (see attest_jwt below)."
+        wallet_binding_note: "The raw-sig path of /v1/attest has no top-level wallet field: the signed object is `{id, pass, results, attestedAt}` (plus `v` under v2). For eight of the ten condition types the `evaluatedCondition` carries the condition parameters only (for an EVM token_balance under a v2 key: type, chainId, contractAddress, operator, threshold; for account_code: type, chainId, expect, operator, plus the delegate address when the caller named one), so neither it nor `conditionHash` binds the wallet. The two agent-standing types, erc8004_agent and erc7710_delegation, do write the attested wallet into `evaluatedCondition`, so for those the wallet is inside `conditionHash` and the signed bytes. To bind the wallet for every condition type use `format: \"jwt\"` (see attest_jwt below), which names one evaluated wallet in `sub`."
 
       attest_jwt:
         endpoint: POST /v1/attest
         format: "ES256 compact JWS (JWT), requested via `format: \"jwt\"` in the request body; header carries the same kid as the raw form. A sibling `pqJwt` is a compact JWS with alg ML-DSA-65 (RFC 9964), kid insumer-attest-pq1, and the same claims."
         signed_claims:
           - iss               # https://api.insumermodel.com
-          - sub               # wallet address: EVM, Solana, XRPL, Bitcoin, Tron, Stellar or Sui
+          - sub               # the wallet a condition evaluated: EVM, Solana, XRPL, Bitcoin, Tron, Stellar or Sui
           - jti               # attestation ID
           - iat
           - exp               # +1800 seconds, or +300 when the request contains an erc7710_delegation condition; always equals the attestation's expiresAt
@@ -163,24 +163,24 @@ signal_types:
           - blockTimestamp    # likewise
           - results           # per-condition array
         wallet_in_signed_bytes: true
-        wallet_binding_note: "The JWT format puts the wallet address into the `sub` claim, inside signature scope. The subject falls through `wallet || solanaWallet || xrplWallet || bitcoinWallet || tronWallet || stellarWallet || suiWallet`, so every chain family InsumerAPI supports lands in `sub` when the caller requests `format: \"jwt\"`."
+        wallet_binding_note: "The JWT format puts the evaluated wallet into the `sub` claim, inside signature scope, in both `jwt` and `pqJwt`. `sub` is a wallet that a condition in the request evaluated; a wallet param that no condition reads is ignored and never named. When conditions span chain families, `sub` names the first evaluated family in the order EVM, Solana, XRPL, Bitcoin, Tron, Stellar, Sui, and the other families' wallets are evaluated but not named. `format: \"jwt\"` needs at least one condition that evaluates a wallet. Any of the seven chain families can be the subject."
 
       trust:
         endpoint: POST /v1/trust  (and /v1/trust/batch per wallet)
-        format: "Base64-encoded P1363 signature at data.sig, kid at data.kid (insumer-trust-v2 under v2 keys; insumer-attest-v1 under v1 keys). The v2 preimage is the domain tag \"insumer.trust.v2\\n\" followed by canonical JSON of the whole trust object as returned; unlike attestations, expiresAt is inside the signed object. The companion at data.pqSig, with data.pqKid insumer-trust-pq1, signs \"insumer.trust.pq1\\n\" plus the same preimage."
+        format: "Base64-encoded P1363 signature at data.sig, kid at data.kid (insumer-trust-v2 under v2 keys; insumer-attest-v1 under v1 keys). The v2 preimage is the domain tag \"insumer.trust.v2\\n\" followed by canonical JSON of the whole trust object as returned; unlike attestations, expiresAt is inside the signed object. The post-quantum signature at data.pqSig, with data.pqKid insumer-trust-pq1, signs \"insumer.trust.pq1\\n\" plus the same preimage."
         signed_object:
           - id                # TRST-XXXXX identifier
           - wallet            # EVM wallet address, in signature scope
           - conditionSetVersion
-          - dimensions        # { stablecoins, governance, nfts, staking, institutional_stablecoins, tokenized_treasuries, stablecoin_deposits, wrapped_bitcoin, names, plus solana / xrpl / bitcoin / tron when supplied }; each holds checks[], passCount, failCount, notEvaluatedCount, total
+          - dimensions        # { stablecoins, governance, nfts, staking, institutional_stablecoins, tokenized_treasuries, stablecoin_deposits, wrapped_bitcoin, names, account, plus solana / xrpl / bitcoin / tron when supplied }; each holds checks[], passCount, failCount, notEvaluatedCount, total
           - summary           # { totalChecks, totalPassed, totalFailed, totalNotEvaluated, dimensionsWithActivity, dimensionsChecked }
           - profiledAt        # ISO 8601
           - expiresAt         # ISO 8601, inside the preimage
         wallet_in_signed_bytes: true
-        wallet_binding_note: "/v1/trust signs the EVM wallet directly into the signed object as a top-level field. Results for any other supplied wallet live inside `dimensions`, which is signed with it."
+        wallet_binding_note: "/v1/trust signs the EVM wallet directly into the signed object as a top-level field. Results for any other supplied wallet live inside `dimensions`, which is signed with it, but the non-EVM wallet addresses themselves are not named in the signed profile; to bind one, use /v1/attest with `format: \"jwt\"`."
 
     optional_modes:
-      - "proof: \"merkle\" returns an EIP-1186 storage proof anchored to the block header. It covers token_balance and ratio_to_amount conditions on EVM chains, native-balance conditions included, and erc7710_delegation revocation reads against a manager whose storage layout has been verified; on /v1/trust and /v1/trust/batch it does the same for the EVM token checks in the profile. Availability is reported per condition as `proof.available` true or false with a reason (`replay_class: full_replay` when available). Where a chain's RPC does not serve the proof method, the result carries `proof.available: false` with a reason instead, so coverage is probed rather than assumed: as of 2026-09-18, 27 of the 33 EVM chains serve proofs, and ZKsync Era, Sei, Moonriver, Viction, XDC Network and Ronin do not. Never available for nft_ownership, eas_attestation, farcaster_id, evm_view_call, ratio_to_supply and erc8004_agent conditions, nor on Solana, XRPL, Bitcoin, Tron, Stellar or Sui. Doubles the credit cost, refunded to the standard cost whenever no proof was delivered, and reveals the raw on-chain balance to the caller."
+      - "proof: \"merkle\" returns an EIP-1186 storage proof anchored to the block header. It covers token_balance and ratio_to_amount conditions on EVM chains, native-balance conditions included, erc7710_delegation revocation reads against a manager whose storage layout has been verified, and account_code conditions, which carry an account proof whose codeHash is the proven value; on /v1/trust and /v1/trust/batch it does the same for the EVM token checks in the profile, except 30 rows whose balances the contract computes rather than stores (BUIDL and Aave aTokens); those rows and the account dimension's rows carry no proof. Availability is reported per condition as `proof.available` true or false with a reason (`replay_class: full_replay` when available). Where a chain's RPC does not serve the proof method, the result carries `proof.available: false` with a reason instead, so coverage is probed rather than assumed: as of 2026-10-29, 27 of the 31 EVM chains serve proofs, and ZKsync Era, Sei, Viction and XDC Network do not. Never available for nft_ownership, eas_attestation, farcaster_id, evm_view_call, ratio_to_supply and erc8004_agent conditions, nor on Solana, XRPL, Bitcoin, Tron, Stellar or Sui. Doubles the credit cost, refunded to the standard cost whenever no proof was delivered, and reveals raw on-chain state to the caller (the balance; for an account proof, the account record: balance, nonce, storageHash and codeHash)."
 
   behavioral_trust:
     canonical: behavioral_trust
@@ -227,6 +227,36 @@ signal_types:
     match: no_mapping
     notes: "SAR (defaultverifier.com) issues settlement_witness. Wallet-bound for new receipts as of kid sar-prod-ed25519-03 (shipped 2026-04-10); wallet-discoverable for legacy kid -02 / -01 receipts. InsumerAPI does not issue this dimension. See flag in the PR description about the issuer attribution in vocabulary.yaml v0.1."
 
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: "InsumerAPI does not issue governance_attestation. It issues only wallet_state."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "InsumerAPI does not issue peer_review. It issues only wallet_state."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "InsumerAPI does not issue completion_ratio. It issues only wallet_state."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "InsumerAPI does not issue entity_continuity. It issues only wallet_state."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "InsumerAPI does not issue cognitive_attestation. It issues only wallet_state."
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    match: no_mapping
+    notes: "InsumerAPI does not issue bilateral_receipt. It issues only wallet_state."
+
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSION MAPPINGS
 # How InsumerAPI's wallet_state attestations map onto each descriptor
@@ -240,7 +270,7 @@ descriptor_dimensions:
     enforcement_notes: "InsumerAPI produces signed evidence; the consuming agent or policy layer decides whether to permit, deny, or step up. Refusal authority lives with the consumer, not the issuer."
 
     validity_temporal: at_issuance
-    validity_notes: "Each attestation carries block-level freshness context (`blockNumber` + `blockTimestamp` per condition for /v1/attest; `profiledAt` for /v1/trust) and an explicit expiry. Validity is a snapshot at issuance; on-chain state can change after the attestation is minted. Default TTL 30 minutes for cacheability, 5 minutes when the request contains an erc7710_delegation condition."
+    validity_notes: "Each attestation carries block-level freshness context (a per-condition chain anchor for /v1/attest: `blockNumber` + `blockTimestamp` on EVM, `slot`, `ledgerIndex`, `blockHeight` or `checkpointSequence` elsewhere; per-check anchors plus `profiledAt` for /v1/trust) and an explicit expiry. Validity is a snapshot at issuance; on-chain state can change after the attestation is minted. Default TTL 30 minutes for cacheability, 5 minutes when the request contains an erc7710_delegation condition."
 
     refusal_authority: consumer_policy
     refusal_notes: "InsumerAPI never refuses an action; it reports the observed state. Consumer-side composition policy (e.g., SkyeProfile orchestrator or direct integration) decides how to weight the signal."
@@ -249,7 +279,7 @@ descriptor_dimensions:
     invariant_notes: "Attestations are used before an action (payment, delegation, gated access). Post-action state is the province of settlement_witness (SAR), not wallet_state."
 
     replay_class: decision_replay
-    replay_notes: "Given the signed envelope + JWKS + block number, any verifier can replay the decision offline and confirm `pass` / `met` values matched at that block. Merkle-proof mode (`proof: \"merkle\"`) extends this to `full_replay` for token_balance and ratio_to_amount conditions on the EVM chains whose node serves proofs (27 of 33 as of 2026-09-18) and for verified-layout delegation revocation reads; everything else stays at `decision_replay`."
+    replay_notes: "Given the signed envelope + JWKS + block number, any verifier can replay the decision offline and confirm `pass` / `met` values matched at that block. Merkle-proof mode (`proof: \"merkle\"`) extends this to `full_replay` for token_balance, ratio_to_amount and account_code conditions on the EVM chains whose node serves proofs (27 of 31 as of 2026-10-29) and for verified-layout delegation revocation reads; everything else stays at `decision_replay`."
 
     governed_action_class: ["read", "write", "transfer", "delegate", "compose"]
     governed_action_notes: "wallet_state is consumed at the access-control boundary of nearly every governed action class. Most commonly used to gate `transfer` (agent commerce, payment) and `delegate` (authority binding), but also appears in `read`-class gating (token-gated content, compliance access) and `compose`-class flows (multi-step agent pipelines that check wallet state between steps)."
@@ -266,10 +296,12 @@ gaps:
       condition on /v1/attest, while the other condition types are
       chain-scoped as listed under endpoints;
       /v1/trust anchors on the EVM wallet, takes Solana, XRPL, Bitcoin and
-      Tron as optional dimensions, and reads Stellar and Sui inside its
-      institutional stablecoin checks; any format can additionally request
-      `format: "jwt"` so the wallet lands in the signed JWT `sub` claim
-      with uniform signature-layer binding across all seven chain families.
+      Tron as optional dimensions, and also reads Stellar, Sui, Solana and
+      XRPL rows inside its institutional stablecoin and tokenized treasury
+      checks; any format can additionally request
+      `format: "jwt"` so an evaluated wallet lands in the signed JWT `sub`
+      claim, whichever of the seven chain families it belongs to (one
+      family per JWT; see signed_shapes.attest_jwt).
       This chain-aware routing is not currently expressible in
       vocabulary.yaml at the signal_types layer. If the vocabulary
       eventually adds a `chain_scope` descriptor, this crosswalk would
@@ -279,19 +311,19 @@ gaps:
     notes: |
       /v1/attest signs a SHA-256 hash of each evaluated condition's
       parameters (`conditionHash`) alongside the boolean result. Consumers
-      that submitted the conditions can recompute the hash offline and
-      confirm the issuer evaluated exactly what was requested. This is a
+      that submitted the conditions can recompute the hash offline from the
+      signed `evaluatedCondition` and compare those parameters with what
+      they requested. This is a
       tamper-detection primitive that sits under the `replay_class:
       decision_replay` descriptor but has no dedicated canonical term yet.
-      Not a request to add one — flagging so the mapping is legible.
+      Not a request to add one; flagging so the mapping is legible.
 
 # ─────────────────────────────────────────────────
 # CROSSWALK METADATA
 # ─────────────────────────────────────────────────
 crosswalk_metadata:
   authored_by: "@douglasborthwick-crypto"
-  vocabulary_version: "0.1.0"   # the version this file's signal_types rows were written against; see next_revisions
-  last_reviewed: "2026-10-03"   # header, system, the wallet_state block, descriptor dimensions and gaps; the no_mapping rows still describe the 2026-04-10 issuer landscape
+  vocabulary_version: "0.2.0"   # every signal type in vocabulary.yaml 0.2.0 has a row; the six added since 0.1.0 were added 2026-10-29
+  last_reviewed: "2026-10-29"   # header, system, the wallet_state block, descriptor dimensions and gaps; the conformance_vectors block is unchanged since 2026-09-18; the older no_mapping rows still describe the 2026-04-10 issuer landscape
   next_revisions:
-    - "Reconcile against vocabulary.yaml 0.2.0: six signal types added since 0.1.0 (governance_attestation, peer_review, completion_ratio, entity_continuity, cognitive_attestation, bilateral_receipt) have no row here yet; all would be no_mapping, since InsumerAPI issues only wallet_state."
-    - "Follow-up PR to reconcile `wallet_binding` canonical term (when added) with the A2A#1628 `subject_binding` three-state model (`wallet_bound` / `wallet_acknowledged` / `reference`) — referenced in MULTI-ATTESTATION-SPEC.md §2.5 wallet-binding taxonomy."
+    - "Follow-up PR to reconcile `wallet_binding` canonical term (when added) with the A2A#1628 `subject_binding` three-state model (`wallet_bound` / `wallet_acknowledged` / `reference`), alongside the two-category wallet-binding taxonomy in MULTI-ATTESTATION-SPEC.md §2.5."

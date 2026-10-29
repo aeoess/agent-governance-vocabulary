@@ -63,7 +63,7 @@ The review window depends on what a change does.
 | Change | Review window | Approvals and confirmations needed |
 |---|---|---|
 | Corrections and records: a broken link, a spelling or formatting fix, a newly pinned fixture version, a reproducible run record, or a factual correction. Every example in this row qualifies only if it changes no claim, edge progress or standing, or shared rule | none | one approval, from a participating project other than the author's |
-| Verified progress and standing changes: a change to an edge's progress or standing, such as recording an independent run | 48 hours | one approval, from a participating project other than the author's, and confirmation from every project whose claims the change affects |
+| Verified progress and standing changes: a change to an edge's progress or standing, such as recording an independent run that changes an edge's progress or a claim's standing | 48 hours | one approval, from a participating project other than the author's, and confirmation from every project whose claims the change affects |
 | New edges and substantive shared claims | 7 days | one approval, from a participating project other than the author's, and explicit confirmation from both projects on an edge |
 | Change to `PRINCIPLES.md` or to this file | 14 days | two approvals, from two different participating projects other than the author's |
 

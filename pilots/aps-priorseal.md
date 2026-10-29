@@ -38,11 +38,11 @@ PriorSeal emits `COMPLIANT` for the observation that matches the signed exact ca
 
 The cited records contain no independent run for claims 3, 5 and 6. The lab record does not create an end to end verdict.
 
-## A1: Frequency review run (report pending)
+## A1: bounded synthetic/offline scope (publication hold)
 
 As of 2026-10-26, the draft boundary map in #179 records A1 as `scoped`, and no full report from this run is linked here.
 
-The bounded A1 review adapter at `cf7389097fe3a404b3557da2e72fdd8cbe962b81` (tag `aps-priorseal-a1-exec-2026-10-02`), with `RUN.md` at `a40562268aa1d6e1f6d369e296c16261d623c4e0` (tag `aps-priorseal-a1-instructions-2026-10-02`), in [altrudev/Frequency-Federation-Review](https://github.com/altrudev/Frequency-Federation-Review). Its README says the repository is "not Frequency, not Frequency-Dev, and not a public release of Frequency's internal assurance architecture", and it carries a review only notice. Who authored the adapter and who performed the formal run are pending the full report, which the PriorSeal side has not yet received for review. Until that report is checked, this section records the scope of the run, not who ran it.
+The bounded A1 review adapter at `cf7389097fe3a404b3557da2e72fdd8cbe962b81` (tag `aps-priorseal-a1-exec-2026-10-02`), with `RUN.md` at `a40562268aa1d6e1f6d369e296c16261d623c4e0` (tag `aps-priorseal-a1-instructions-2026-10-02`), in [altrudev/Frequency-Federation-Review](https://github.com/altrudev/Frequency-Federation-Review). Its README says the repository is "not Frequency, not Frequency-Dev, and not a public release of Frequency's internal assurance architecture", and it carries a review only notice. The public record does not establish a formal A1 result or the adapter author and runner. A1 remains a bounded synthetic and offline matter under a publication hold, with no public release authorized. This section records the scope and pins only.
 
 Scope confirmed by the PriorSeal side ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5952032554)) and, with conditions, by the APS side ([comment](https://github.com/aeoess/agent-governance-vocabulary/issues/177#issuecomment-5956876272)). APS confirmation requires the stated ceilings to accompany their claims and the pins to remain retained. It does not accept formal results or establish independence. No formal result has been published. Publication needs separate agreement from APS, PriorSeal and Frequency.
 

@@ -70,7 +70,7 @@ The review window depends on what a change does.
 | Change | Review window | Approvals and confirmations needed |
 |---|---|---|
 | Corrections and records: a broken link, a spelling or formatting fix, a newly pinned fixture version, a reproducible run record, or a factual correction. Every example in this row qualifies only if it changes no claim, edge progress or standing, or shared rule | none | one approval, from a participating project other than the author's |
-| Verified progress and standing changes: a change to an edge's progress or standing, such as recording an independent run | 48 hours | one approval, from a participating project other than the author's, and confirmation from every project whose claims the change affects |
+| Verified progress and standing changes: a change to an edge's progress or standing, such as recording an independent run that changes an edge's progress or a claim's standing | 48 hours | one approval, from a participating project other than the author's, and confirmation from every project whose claims the change affects |
 | New edges and substantive shared claims | 7 days | one approval, from a participating project other than the author's, and explicit confirmation from both projects on an edge |
 | Change to `PRINCIPLES.md` or to this file | 14 days | two approvals, from two different participating projects other than the author's |
 
@@ -91,6 +91,21 @@ Every agreement to a shorter window, including under Bootstrap, names a commit a
 **Votes.** If an objection is still open when the window closes, any participating project can call a vote on the pull request. The call lists the competing versions, always including keeping the current text, and any participating project can add a version before voting opens. Voting lasts 7 days from the call. Each participating project votes once. The version with the most votes is selected. A tie, or no votes, keeps the current text. A selected change still needs its review window and its required approvals before it merges.
 
 **Merge.** A change is ready to merge when its window has closed, its approvals cover its final commit, every required project confirmation is recorded, no objection is open and the repository's required checks pass. The repository administrator merges it within 3 days. The merge carries out the recorded decision and adds no approval of its own. If the merge cannot happen, the administrator states the blocking condition publicly on the pull request.
+
+## Independently reproduced
+
+A change that records an independent run, or moves a claim or an edge to independently reproduced standing, must show the conditions below. Any reviewer can check each one from public records. The first four conditions make a run independent and its record complete. The result then decides whether standing changes.
+
+- **Who ran it.** A project other than the claim's owner ran the check. The person who ran it did not author the fixtures, other claim inputs, or the implementation that supplies the substantive check. A harness the runner wrote that only invokes independently authored implementations or primitives and compares their outputs keeps the run independent. A harness that constructs, interprets or decides the claimed result is part of the check. This is the conformance lab's rule for an independent record, in its merged [CONTRIBUTING.md](https://github.com/Agent-Authority-Conformance/aps-conformance-suite/blob/c586f60da4bec5793cd4ef10eb68b70e8999bc2e/CONTRIBUTING.md#what-lands-by-pr).
+- **Any verifier.** Any project's verifier qualifies, including the claim owner's, and no particular verifier is required. It must be pinned to a commit or a released version.
+- **Pinned inputs.** The fixtures or other inputs are pinned to a commit, and each input file has a digest.
+- **Run record.** A public run record is linked from the pull request. It names the verifier and its commit or version, the input commit and each input digest. It names the claim and the case set it covers, with the version of that case set. It also names who ran it, when, and in what environment, gives the result for each case in the verifier's own terms, and states any condition under which the result could not be reproduced. It also states whether the verifier was written without reading the claim owner's implementation.
+
+**Result.** A run that meets the four conditions is an independent run, whatever it finds. The claim moves to independently reproduced standing only when the result matches the published expected outcome for every case in the claim's published case set, with the case set and its expected outcomes pinned at a version. A run that covers only part of that set is an independent run for the cases it covers and does not move the claim. On an edge that carries more than one claim, standing is decided for each claim on its own case set. A run with any difference is recorded as an independent run, with each difference stated, and the claim keeps its current standing.
+
+Independent operation and independent implementation are separate claims. An independent run is an independent implementation only when the run record also states that the verifier was written without reading the claim owner's implementation. A run of the owner's verifier by another project is an independent run and never an independent implementation.
+
+A rerun by someone who authored the fixtures or other claim inputs, or the implementation that supplies the substantive check, is a reproduction, not independent evidence. The same harness rule applies: a harness that only invokes independently authored implementations or primitives and compares their outputs does not make its author a co-author of the check, and one that constructs, interprets or decides the claimed result does. Independence is stated per claim, not per run: one run can be independent evidence for one claim and a reproduction for another, depending on who wrote that claim's inputs and check. If the run record is missing a field, the claim stays at its current standing until the record is complete.
 
 ## No retroactive effect
 

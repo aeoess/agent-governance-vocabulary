@@ -1,6 +1,6 @@
 # Crosswalk Matrix
 
-Auto-generated on 2026-10-26. 27 systems × 16 canonical signal types.
+Auto-generated on 2026-10-30. 27 systems × 16 canonical signal types.
 
 Cell legend:
 
@@ -53,36 +53,38 @@ Cell legend:
 
 ### Per-signal coverage
 
-| Signal type | Systems mapped | Coverage |
-|---|---|---|
-| `wallet_state` | 27 / 27 | 100% |
-| `compliance_risk` | 26 / 27 | 96% |
-| `settlement_witness` | 26 / 27 | 96% |
-| `behavioral_trust` | 25 / 27 | 93% |
-| `governance_attestation` | 25 / 27 | 93% |
-| `job_performance` | 24 / 27 | 89% |
-| `passport_grade` | 24 / 27 | 89% |
-| `reasoning_integrity` | 24 / 27 | 89% |
-| `security_posture` | 24 / 27 | 89% |
-| `trust_verification` | 24 / 27 | 89% |
-| `wallet_intelligence` | 24 / 27 | 89% |
-| `peer_review` | 20 / 27 | 74% |
-| `entity_continuity` | 17 / 27 | 63% |
-| `completion_ratio` | 9 / 27 | 33% |
-| `cognitive_attestation` | 7 / 27 | 26% |
-| `bilateral_receipt` | 4 / 27 | 15% |
+Mapped counts systems with an `exact`, `structural` or `partial` match, or a legacy ungraded entry. Addressed also counts `false_analog` and `no_mapping`, which document that a system does not provide the signal.
+
+| Signal type | Systems mapped | Systems addressed | Mapped coverage |
+|---|---|---|---|
+| `governance_attestation` | 17 / 27 | 25 / 27 | 63% |
+| `trust_verification` | 14 / 27 | 24 / 27 | 52% |
+| `behavioral_trust` | 10 / 27 | 25 / 27 | 37% |
+| `entity_continuity` | 7 / 27 | 17 / 27 | 26% |
+| `security_posture` | 7 / 27 | 24 / 27 | 26% |
+| `wallet_state` | 6 / 27 | 27 / 27 | 22% |
+| `passport_grade` | 5 / 27 | 24 / 27 | 19% |
+| `settlement_witness` | 5 / 27 | 26 / 27 | 19% |
+| `job_performance` | 4 / 27 | 24 / 27 | 15% |
+| `reasoning_integrity` | 4 / 27 | 24 / 27 | 15% |
+| `compliance_risk` | 3 / 27 | 26 / 27 | 11% |
+| `wallet_intelligence` | 3 / 27 | 24 / 27 | 11% |
+| `peer_review` | 2 / 27 | 20 / 27 | 7% |
+| `completion_ratio` | 1 / 27 | 9 / 27 | 4% |
+| `bilateral_receipt` | 0 / 27 | 4 / 27 | 0% |
+| `cognitive_attestation` | 0 / 27 | 7 / 27 | 0% |
 
 ### Top-3 most-mapped
 
-- `wallet_state` — 27/27 (100%)
-- `compliance_risk` — 26/27 (96%)
-- `settlement_witness` — 26/27 (96%)
+- `governance_attestation` — 17/27 (63%)
+- `trust_verification` — 14/27 (52%)
+- `behavioral_trust` — 10/27 (37%)
 
 ### Top-3 least-mapped
 
-- `bilateral_receipt` — 4/27 (15%)
-- `cognitive_attestation` — 7/27 (26%)
-- `completion_ratio` — 9/27 (33%)
+- `cognitive_attestation` — 0/27 (0%)
+- `bilateral_receipt` — 0/27 (0%)
+- `completion_ratio` — 1/27 (4%)
 
 ---
 

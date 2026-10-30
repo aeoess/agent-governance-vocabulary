@@ -30,6 +30,28 @@ const BADGE = {
   false_analog:                '🔵', // 🔵
   no_mapping:                  '⚪',       // ⚪
 }
+// Match types that count as a mapping in the coverage stats. false_analog and
+// no_mapping are documented answers that the system does NOT provide the
+// signal, so they count as addressed but never as mapped. An ungraded entry is
+// a legacy row that claims a mapping without a strength, so it counts as mapped.
+const POSITIVE_MATCHES = new Set(['exact', 'structural', 'partial', '__ungraded__'])
+
+// Per signal: `mapped` counts systems with a positive match, `addressed`
+// counts systems with any entry, including false_analog and no_mapping.
+function coverageCounts(systems, canonicalSignals) {
+  const out = {}
+  for (const sig of canonicalSignals) out[sig] = { mapped: 0, addressed: 0 }
+  for (const sys of systems) {
+    for (const sig of canonicalSignals) {
+      const cell = sys.cells[sig]
+      if (!cell) continue
+      out[sig].addressed += 1
+      if (POSITIVE_MATCHES.has(cell.match)) out[sig].mapped += 1
+    }
+  }
+  return out
+}
+
 const NOT_ADDRESSED = '—' // — em dash, signal absent from crosswalk
 const UNGRADED = '·'      // mapped but no `match` field declared
 // Evidence qualifiers. `emitted` is unmarked because it is the reading a bare
@@ -171,15 +193,17 @@ function main() {
   const tableLines = [renderRow(rows[0]), sep, ...rows.slice(1).map(renderRow)]
 
   // 4. Coverage stats.
-  const coverage = {}
-  for (const sig of canonicalSignals) coverage[sig] = 0
-  for (const sys of systems) {
-    for (const sig of canonicalSignals) {
-      if (sys.cells[sig]) coverage[sig] += 1 // presence, not strength; unchanged by the evidence axis
-    }
-  }
+  // Mapped counts positive matches only (exact, structural, partial, ungraded).
+  // Addressed adds false_analog and no_mapping. Both are unchanged by the
+  // evidence axis.
+  const coverage = coverageCounts(systems, canonicalSignals)
   const sortedByCoverage = canonicalSignals
-    .map(sig => ({ sig, n: coverage[sig], pct: systems.length === 0 ? 0 : Math.round((coverage[sig] / systems.length) * 100) }))
+    .map(sig => ({
+      sig,
+      n: coverage[sig].mapped,
+      addressed: coverage[sig].addressed,
+      pct: systems.length === 0 ? 0 : Math.round((coverage[sig].mapped / systems.length) * 100),
+    }))
     .sort((a, b) => b.n - a.n || a.sig.localeCompare(b.sig))
 
   // 5. Compose the markdown.
@@ -212,10 +236,12 @@ function main() {
   lines.push('')
   lines.push('### Per-signal coverage')
   lines.push('')
-  lines.push('| Signal type | Systems mapped | Coverage |')
-  lines.push('|---|---|---|')
-  for (const { sig, n, pct } of sortedByCoverage) {
-    lines.push(`| \`${sig}\` | ${n} / ${systems.length} | ${pct}% |`)
+  lines.push('Mapped counts systems with an `exact`, `structural` or `partial` match, or a legacy ungraded entry. Addressed also counts `false_analog` and `no_mapping`, which document that a system does not provide the signal.')
+  lines.push('')
+  lines.push('| Signal type | Systems mapped | Systems addressed | Mapped coverage |')
+  lines.push('|---|---|---|---|')
+  for (const { sig, n, addressed, pct } of sortedByCoverage) {
+    lines.push(`| \`${sig}\` | ${n} / ${systems.length} | ${addressed} / ${systems.length} | ${pct}% |`)
   }
   lines.push('')
 
@@ -313,4 +339,6 @@ function main() {
   if (testFixtures.length > 0) console.log(`  excluded (fixtures):  ${testFixtures.length}`)
 }
 
-main()
+if (require.main === module) main()
+
+module.exports = { coverageCounts, POSITIVE_MATCHES }

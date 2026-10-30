@@ -9,6 +9,12 @@
 # signed twice, ES256 and a post-quantum ML-DSA-65 signature, that other
 # dimensions compose on top of via the multi-attestation
 # envelope documented in MULTI-ATTESTATION-SPEC.md (insumer-examples).
+# The reference verifier (insumer-verify) checks both signatures. When it
+# could not check the post-quantum one, it reports that signature as
+# unverifiable and does not refuse the artifact (vector 22), unless the
+# caller checks for access, the default mode, and pins a cutoff that has
+# passed (vector 15). When the post-quantum signature fails verification,
+# the verifier refuses the artifact in either mode (vector 14).
 #
 # This crosswalk only covers what InsumerAPI itself issues. Orchestration
 # across the other dimensions is a consumer-side concern handled by
@@ -31,9 +37,9 @@ maintainer:
 # ─────────────────────────────────────────────────
 # SIGNAL TYPE MAPPINGS
 # How InsumerAPI represents each canonical signal_type from vocabulary.yaml.
-# Most entries are `no_mapping` because the foundation layer is scoped to
-# wallet_state; the other dimensions are composed on top by independent
-# issuers and orchestrated by consumer-side code (SkyeProfile).
+# InsumerAPI issues one signal type, wallet_state. Every other signal type
+# in vocabulary.yaml has an explicit no_mapping row below that describes
+# InsumerAPI only, never another project's implementation.
 # ─────────────────────────────────────────────────
 signal_types:
 
@@ -47,6 +53,13 @@ signal_types:
       Farcaster IDs, view-call results, ratio rules, agent standing and
       account code state, read on-chain and signed twice: ES256 (ECDSA
       P-256) and, since 2026-09-01, a post-quantum ML-DSA-65 signature.
+      The reference verifier (insumer-verify) checks both signatures.
+      When it could not check the post-quantum one, it reports that
+      signature as unverifiable and does not refuse the artifact (vector
+      22), unless the caller checks for access, the default mode, and pins
+      a cutoff that has passed (vector 15). When the post-quantum signature
+      fails verification, the verifier refuses the artifact in either mode
+      (vector 14).
       Three issuing endpoints and three signed shapes, each with its own
       wallet-binding semantics: the raw and JWT forms of /v1/attest, and
       the trust profile shared by /v1/trust and /v1/trust/batch; see
@@ -111,7 +124,7 @@ signal_types:
         chain_coverage: "Counts move as chains are added, so the live figures are openapi.yaml at https://insumermodel.com/openapi.yaml rather than this file. As of 2026-10-29: 37 chains, being 31 EVM plus Solana, XRPL, Bitcoin, Tron, Stellar and Sui (Moonbeam and Moonriver were retired on 2026-09-20 after both networks stopped producing blocks). token_balance reaches all 37; nft_ownership the 31 EVM chains plus Solana and XRPL (on Solana a verified collection address, which any NFT in that collection satisfies, one NFT's own mint address, or the asset ID of a compressed or Core NFT); eas_attestation five EVM chains (Ethereum, Optimism, Base, Arbitrum, Polygon); farcaster_id Optimism; erc8004_agent and erc7710_delegation Base; evm_view_call, account_code and the two ratio rules are EVM only. The caller supplies the wallet through the top-level wallet / solanaWallet / xrplWallet / bitcoinWallet / tronWallet / stellarWallet / suiWallet params; conditions carry no wallet field of their own."
       - path: POST /v1/trust
         purpose: "Curated wallet trust fact profile. The EVM anchor is mandatory. Returns per-check booleans by dimension plus a summary; no score, no opinion. A curated check whose chain wallet was not supplied stays in the signed profile with `evaluated: false` and is counted apart from pass and fail. 3 credits standard, 6 with `proof: \"merkle\"`."
-        chain_coverage: "A fixed catalogue of named contracts, so it covers fewer chains than /v1/attest and moves only when the catalogue does. As of 2026-10-29 (condition set 2026-10-08): 155 base checks on 27 chains (23 EVM plus Solana, XRPL, Stellar and Sui) in 10 dimensions, up to 176 checks on 29 chains in 14 dimensions. The ten base dimensions: stablecoins 52, governance 8, nfts 3, staking 5, institutional_stablecoins 8, tokenized_treasuries 16, stablecoin_deposits 39, wrapped_bitcoin 12, names 2, account 10 (contract code or an EIP-7702 delegation present at the wallet address on Ethereum, Base, Arbitrum, Optimism and Polygon). Four optional dimensions add 21 checks when the matching wallet param is supplied: solana 14, xrpl 3, bitcoin 1, tron 3. Checks on chains whose wallet param was not supplied stay in the profile as evaluated: false rather than dropping out. The signed conditionSetVersion names the check list."
+        chain_coverage: "A fixed catalogue of named contracts, so it covers fewer chains than /v1/attest and moves only when the catalogue does. As of 2026-10-29 (condition set 2026-10-08): 155 base checks on 27 chains (23 EVM plus Solana, XRPL, Stellar and Sui) in 10 dimensions, up to 176 checks on 29 chains in 14 dimensions. The ten base dimensions: stablecoins 52, governance 8, nfts 3, staking 5, institutional_stablecoins 8, tokenized_treasuries 16, stablecoin_deposits 39, wrapped_bitcoin 12, names 2, account 10 (contract code or EIP-7702 code delegation at the wallet address on Ethereum, Base, Arbitrum, Optimism and Polygon). Four optional dimensions add 21 checks when the matching wallet param is supplied: solana 14, xrpl 3, bitcoin 1, tron 3. Checks on chains whose wallet param was not supplied stay in the profile as evaluated: false rather than dropping out. The signed conditionSetVersion names the check list."
       - path: POST /v1/trust/batch
         purpose: "Batch wallet trust profiles, up to 10 wallets per request, block numbers fetched once and shared across wallets. Each wallet gets an independently signed profile. 3 credits per wallet standard, 6 with Merkle."
         chain_coverage: "Same as /v1/trust, per wallet."
@@ -185,52 +198,52 @@ signal_types:
   behavioral_trust:
     canonical: behavioral_trust
     match: no_mapping
-    notes: "InsumerAPI does not issue behavioral_trust. This dimension composes on top of the foundation layer via independent issuers (RNWY in production as of 2026-04-10 under kid rnwy-trust-v2)."
+    notes: "InsumerAPI does not issue behavioral_trust. It issues only wallet_state."
 
   wallet_intelligence:
     canonical: wallet_intelligence
     match: no_mapping
-    notes: "InsumerAPI does not issue wallet_intelligence. Operator-level wallet classification is produced by RNWY under kid rnwy-wallet-v1 (shipped 2026-04-10)."
+    notes: "InsumerAPI does not issue wallet_intelligence. It issues only wallet_state."
 
   reasoning_integrity:
     canonical: reasoning_integrity
     match: no_mapping
-    notes: "Wallet-agnostic by design — not an InsumerAPI concern. ThoughtProof issues this dimension."
+    notes: "InsumerAPI does not issue reasoning_integrity. It issues only wallet_state."
 
   compliance_risk:
     canonical: compliance_risk
     match: no_mapping
-    notes: "InsumerAPI does not issue compliance_risk. Revettr produces the scored counterparty exposure signal in the envelope."
+    notes: "InsumerAPI does not issue compliance_risk. It issues only wallet_state."
 
   passport_grade:
     canonical: passport_grade
     match: no_mapping
-    notes: "APS (gateway.aeoess.com) issues passport_grade; InsumerAPI does not."
+    notes: "InsumerAPI does not issue passport_grade. It issues only wallet_state."
 
   trust_verification:
     canonical: trust_verification
     match: no_mapping
-    notes: "AgentID issues trust_verification; InsumerAPI does not."
+    notes: "InsumerAPI does not issue trust_verification. It issues only wallet_state."
 
   security_posture:
     canonical: security_posture
     match: no_mapping
-    notes: "AgentGraph issues security_posture (wallet-discoverable content dimension — signed subject is github:owner/repo, wallet is a lookup key). InsumerAPI does not. See flag in the PR description about the issuer attribution in vocabulary.yaml v0.1."
+    notes: "InsumerAPI does not issue security_posture. It issues only wallet_state."
 
   job_performance:
     canonical: job_performance
     match: no_mapping
-    notes: "Maiat issues job_performance; InsumerAPI does not. See flag in the PR description about the issuer attribution in vocabulary.yaml v0.1."
+    notes: "InsumerAPI does not issue job_performance. It issues only wallet_state."
 
   settlement_witness:
     canonical: settlement_witness
     match: no_mapping
-    notes: "SAR (defaultverifier.com) issues settlement_witness. Wallet-bound for new receipts as of kid sar-prod-ed25519-03 (shipped 2026-04-10); wallet-discoverable for legacy kid -02 / -01 receipts. InsumerAPI does not issue this dimension. See flag in the PR description about the issuer attribution in vocabulary.yaml v0.1."
+    notes: "InsumerAPI does not issue settlement_witness. It issues only wallet_state."
 
   governance_attestation:
     canonical: governance_attestation
     match: no_mapping
-    notes: "InsumerAPI does not issue governance_attestation. It issues only wallet_state."
+    notes: "InsumerAPI does not issue governance_attestation. It issues only wallet_state. The closest InsumerAPI output is a signed `met` on an erc7710_delegation or erc8004_agent condition. It reports whether a delegation the principal signed to the wallet is currently valid and was unrevoked at the anchored block, or whether the wallet owns or is bound to an ERC-8004 agent ID, not that an agent or action satisfied a declared governance requirement, so it is not governance_attestation."
 
   peer_review:
     canonical: peer_review
@@ -255,7 +268,7 @@ signal_types:
   bilateral_receipt:
     canonical: bilateral_receipt
     match: no_mapping
-    notes: "InsumerAPI does not issue bilateral_receipt. It issues only wallet_state."
+    notes: "InsumerAPI does not issue bilateral_receipt. It issues only wallet_state. Each of the three signed shapes in this file (the raw and JWT forms of /v1/attest and the trust profile) is signed by the issuer alone, ES256 plus the issuer's ML-DSA-65 signature. No counterparty signs the preimage, so the two-signature property is absent. An erc7710_delegation result evaluates a delegation the principal signed, but that EIP-712 signature covers the delegation, not InsumerAPI's preimage, and the result carries the delegation's hash rather than the signature. account_code `eip7702` results describe code delegation, not a delegation receipt."
 
 # ─────────────────────────────────────────────────
 # DESCRIPTOR DIMENSION MAPPINGS
@@ -323,7 +336,7 @@ gaps:
 # ─────────────────────────────────────────────────
 crosswalk_metadata:
   authored_by: "@douglasborthwick-crypto"
-  vocabulary_version: "0.2.0"   # every signal type in vocabulary.yaml 0.2.0 has a row; the six added since 0.1.0 were added 2026-10-29
-  last_reviewed: "2026-10-29"   # header, system, the wallet_state block, descriptor dimensions and gaps; the conformance_vectors block is unchanged since 2026-09-18; the older no_mapping rows still describe the 2026-04-10 issuer landscape
+  vocabulary_version: "0.2.0"   # every signal type in vocabulary.yaml at d7cfbbe (16) has a row; the six this file had no row for were added 2026-10-29
+  last_reviewed: "2026-10-30"   # header, system, the wallet_state block, descriptor dimensions and gaps re-checked 2026-10-29; on 2026-10-30 the review changes (post-quantum verifier clause, EIP-7702 wording, the governance_attestation and bilateral_receipt near misses) and the no_mapping rows, which now describe InsumerAPI only; the conformance_vectors block is unchanged since 2026-09-18
   next_revisions:
     - "Follow-up PR to reconcile `wallet_binding` canonical term (when added) with the A2A#1628 `subject_binding` three-state model (`wallet_bound` / `wallet_acknowledged` / `reference`), alongside the two-category wallet-binding taxonomy in MULTI-ATTESTATION-SPEC.md §2.5."

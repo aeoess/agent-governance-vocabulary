@@ -1,0 +1,377 @@
+# crosswalk/tenuo.yaml
+#
+# Tenuo (warrants, authorization receipts v1, multi-sig approvals)
+# -> Agent Governance Vocabulary
+#
+# Mapped artifacts, all at tenuo-ai/tenuo
+# @ 5e5ca5520b2550fee0d35b887111d8a0f8b17b2a (main, 2026-10-31T10:06:08-07:00):
+#   - Warrant: docs/spec/protocol-spec-v1.md (Version 1.0, Status Normative,
+#     Documentation Revision 4, 2026-03-06) and docs/spec/wire-format-v1.md.
+#   - Authorization receipt v1: tenuo-core/src/receipt.rs (ReceiptPayload,
+#     Receipt) and docs/spec/test-vectors.md sections A.30 and A.31.
+#     protocol-spec-v1.md does not describe receipts; the receipt rows below
+#     rest on the code and the published vectors.
+#   - SignedApproval: docs/approvals.md and protocol-spec-v1.md section 6.
+#
+# Related standards-track text, same author, same repo:
+#   ietf/draft-niyikiza-oauth-attenuating-agent-tokens-02.md (AAT, JWS/JWT
+#   encoding of the same six invariants, OAuth WG individual draft, posted
+#   2026-10-27). The AAT draft defines no receipt. Rows that cite it say so.
+#
+# Implementation: tenuo-core (Rust), tenuo-python, tenuo-ts, tenuo-wasm,
+# Apache-2.0. Receipts are a non-default Cargo feature ("Features, all off by
+# default: ... receipts ..." README) and "opt-in when you need to show why a
+# call was allowed or denied" (README).
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by Tenuo. It is offered for Tenuo's maintainers to correct
+# or confirm. Corrections to the native protocol reading are checked against
+# the cited source and the canonical vocabulary before recalibration.
+
+system:
+  name: Tenuo
+  short_name: Tenuo
+  home: https://tenuo.ai
+  spec: https://github.com/tenuo-ai/tenuo/blob/5e5ca5520b2550fee0d35b887111d8a0f8b17b2a/docs/spec/protocol-spec-v1.md
+  spec_version: "Tenuo Protocol Specification 1.0, Documentation Revision 4 (2026-03-06); receipt format version 1 (RECEIPT_VERSION = 1)"
+  repo: https://github.com/tenuo-ai/tenuo
+  implementation: "tenuo-core (Rust) with Python, TypeScript and WASM bindings; release line 0.3.x per docs/compatibility-matrix.md"
+  role: >
+    "Tenuo is a capability-based authorization protocol for AI agent
+    systems. It enables secure delegation of authority through
+    cryptographically signed tokens called warrants" (Abstract). A warrant
+    names a holder key and the tools and argument constraints it may use.
+    Holders derive narrower child warrants offline under six invariants
+    (I1 to I6), and a verifier checks the chain and a proof-of-possession
+    signature over the exact tool and arguments before the call runs. When
+    receipt signing is configured, the enforcement point signs "a
+    self-contained, signed record of one authorization decision"
+    (receipt.rs module doc), for allows and denials.
+  identity_layer: >
+    Keys, not names. "Holder: The entity authorized to use a warrant (bound
+    via public key)". A receipt's authorizer_id is "Descriptive only ...
+    signer_key is the cryptographic identity", and "Resolving a signer_key
+    to a legitimate enforcement point is an out-of-band concern this
+    artifact does not attempt to answer." root_principal (receipt key 6) is
+    optional, "Root principal identifier when known."
+  upstream_license: "Apache-2.0 (LICENSE at the pinned commit)."
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: aimable100
+    project: tenuo-ai/tenuo
+    confirmed_at: null   # not yet reviewed by the mapped system's maintainers
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: "Ed25519, SHA-256" are the trust assumptions
+# (protocol-spec-v1.md 1.3). Warrants, receipts and approvals are Ed25519.
+# Section 13 (Algorithm Agility) describes an extension path; no
+# post-quantum or composite scheme is emitted at the pinned commit as far as
+# the search basis shows. classical is declared.
+# canonicalization: deterministic CBOR per RFC 8949 section 4.2 ("Verifiers
+# MUST reject non-deterministic encodings. Signatures are computed over
+# deterministic CBOR only", protocol-spec 8.2), with domain-separated
+# preimages b"tenuo-warrant-v1", b"tenuo-pop-v1" and b"tenuo-receipt-v1".
+# The registry has no value for deterministic CBOR, so
+# implementation-defined is declared with this note as its rule.
+# hash_family: SHA-256 for parent_hash (I5), request_hash, policy, revocation
+# list and trusted-root commitments, and prev_receipt_hash.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row below:
+#   docs/spec/protocol-spec-v1.md (sections 1 to 2.5 and 6 to 11 read),
+#   docs/approvals.md (grep), docs/security.md lines 150 to 156, README.md,
+#   docs/spec/test-vectors.md A.30 and A.31, tenuo-core/src/receipt.rs
+#   (payload, artifact, constructors, digest), tenuo-core/src/diff.rs
+#   (DelegationReceipt struct only), and the AAT -02 draft headings,
+#   Introduction and Terminology, all at 5e5ca55.
+# A no_mapping row states that the named sources were searched and no
+# corresponding field or record was found. It is not a claim about the
+# project's capability outside those sources, including Tenuo Cloud.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# One partial fit with an emitted value (governance_attestation, the
+# authorization receipt), one false_analog (bilateral_receipt), the rest
+# no_mapping on the search basis above.
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "authorization receipt v1 (Receipt / ReceiptPayload), signed by the enforcement point"
+    match: partial
+    evidence: emitted
+    source_path: "receipt payload key 4 (outcome, text 'allow' or 'deny'); key 10 (decision_code) on a deny"
+    notes: >
+      "A receipt is a self-contained, signed record of one authorization
+      decision: which authority was presented, which tool was requested,
+      what was decided, and when" (receipt.rs). The payload is a
+      deterministic CBOR map with integer keys: version (0),
+      authorizer_id (1), warrant_chain (2), action (3), outcome (4),
+      timestamp (5), root_principal (6), request_hash (7), pop_signature
+      (8), request_id (9), decision_code (10), policy_definition_hash (11),
+      srl_version (12), srl_hash (13), prev_receipt_hash (14),
+      trusted_roots_hash (15). The artifact signature is "Ed25519 ...
+      over RECEIPT_CONTEXT || receipt_version || payload". An allow
+      receipt records that the presented warrant chain and the host policy
+      admitted this tool call, which is the canonical "action satisfied a
+      declared governance requirement" case.
+
+      Partial, for three stated reasons. (1) The same artifact also
+      records denials, so outcome is a verdict field rather than an
+      implicit pass; a consumer that reads every receipt as an attestation
+      of compliance would be wrong on deny receipts. (2) Signer standing is
+      out of band: "The signer is the enforcement point, not a warrant
+      issuer: resolving signer_key to a legitimate enforcement point is out
+      of band" (test-vectors A.30), and verify_signature "establishes
+      authenticity only ... Callers must not treat a successful return as
+      authorization evidence." (3) Emission is optional (Cargo feature
+      receipts, off by default), so a Tenuo deployment may enforce without
+      emitting this record.
+
+      Evidence state emitted: the verdict is a carried field. Commitments
+      to policy (key 11), revocation state (keys 12, 13) and trusted roots
+      (key 15) are carried as hashes; checking them against a policy or
+      list is the verifier's computation (A.31).
+    issuers_in_production: []
+    signed_payload_fields:
+      - version
+      - authorizer_id
+      - warrant_chain
+      - action
+      - outcome
+      - timestamp
+      - root_principal
+      - request_hash
+      - pop_signature
+      - request_id
+      - decision_code
+      - policy_definition_hash
+      - srl_version
+      - srl_hash
+      - prev_receipt_hash
+      - trusted_roots_hash
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "authorization receipt carrying the holder's PoP signature (key 8) inside the enforcement point's signed payload"
+    match: false_analog
+    notes: >
+      Two parties' signatures do appear in one allow receipt: the holder's
+      proof-of-possession, which signs b"tenuo-pop-v1" || CBOR(warrant_id,
+      tool, sorted_args, timestamp_window) (protocol-spec 7.1), and the
+      enforcement point's signature over the payload that embeds it. The
+      canonical term requires both parties to sign the same canonicalized
+      preimage. Here they sign different preimages, and the holder signs
+      before the decision exists. receipt.rs calls the PoP "the only
+      second-party attestation of when the request was made", which is a
+      timing anchor, not counter-signature of the outcome. Recorded as
+      false_analog because a receipt holding two parties' signatures is
+      close enough to be wired in as a two-party receipt.
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "No verification status or grade about the agent in the search basis. clearance (u8, 'A monotonic trust level (0-255) used to enforce provenance requirements') is an authority ceiling carried in the warrant and compared to a per-tool requirement, not a verification result. See open questions."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of agent behavior in the search basis."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "README: 'Not an LLM filter: Checks happen at execution. They read tool name and arguments.' No reasoning commitment in the search basis."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No attestation about an action's reasoning in the search basis."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No settlement or payment outcome record in the search basis."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation from a delegating agent in the search basis. SignedApproval is an approver's signature before execution, bound to request_hash, not a review of completed work."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment of completed tasks in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric in the search basis."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity claim across sessions in the search basis. session_id is an extension value (extensions['tenuo.session_id'])."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for an agent in the search basis."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment of an artifact in the search basis."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the search basis."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "receipt chain via prev_receipt_hash (payload key 14), per signer"
+    match: partial
+    notes: >
+      Key 14 is "SHA-256 over the previous receipt this signer emitted",
+      computed over the full receipt including its signature ("a link
+      commits to the exact artifact that was emitted"). The stated purpose:
+      "Chaining makes deletion detectable ... so the claim rises from 'this
+      decision happened' to 'these are all the decisions'." That is an
+      ordered, content-addressed sequence of decisions, which is the
+      canonical shape.
+
+      Partial on two dimensions. First, completeness: verify_chain
+      (tenuo-core/src/receipt.rs lines 691 to 693) says "A valid chain
+      shows that no receipt inside the run was changed, removed, or
+      inserted. It does not show that newer receipts were not cut from the
+      end", and asks to export or anchor the latest digest elsewhere for
+      that. So the chain alone does not establish that a supplied run is
+      the whole sequence. Second, subject: the canonical sequence is
+      decisions "affecting a single agent". Tenuo chains by signer (one
+      enforcement point), so one chain interleaves decisions about many
+      holders, and one agent's decisions spread across every enforcement
+      point it calls. Also optional: "Absent on the first receipt from a
+      signer, or when the deployment does not chain."
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the search basis."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation in the search basis."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Drafter's reading, each value with its basis, open to correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  warrant:
+    enforcement_class: binding
+    note_enforcement: >
+      Binding at verifiers that check it. "Authorization applies a verified
+      chain to a specific request" (section 6), raising ToolNotAllowed,
+      ConstraintNotSatisfied, WarrantExpired and approval errors before the
+      call. docs/security.md says enforcement belongs "in the component
+      that performs the effect" when the agent can skip an in-process
+      guard, so binding holds where the verifier sits on the effect path.
+    validity_temporal: at_processing
+    note_validity: >
+      Checked per invocation: expiry, PoP within a time window ("floor(now
+      / 30) * 30", default five windows) and, when an SRL is loaded,
+      revocation. "Tenuo favors short TTLs over revocation."
+    refusal_authority: verifier
+    note_refusal: >
+      Verification is offline at the enforcement point ("Online revocation
+      check: No. Breaks stateless verifier design"). The Control Plane
+      issues roots and SRLs but does not take part in each decision.
+    invariant_survival: pre_action
+    note_invariant: "All checks in section 6 run before the tool executes."
+    note_replay: >
+      No replay_class selected for the warrant alone. "Tenuo is stateless
+      by design. The Verifier does not track used PoP signatures"; section
+      7.4 asks applications to deduplicate high-value calls on
+      (warrant_id, tool, canonical_args).
+    governed_action_class: delegate
+    note_action_class: >
+      delegate for derivation (I1 to I5). Invocation of a tool under an
+      execution warrant governs whatever class the tool performs, so no
+      single class is declared for that path.
+
+  authorization_receipt:
+    enforcement_class: advisory
+    note_enforcement: >
+      The receipt is evidence of a decision already made; it refuses
+      nothing itself. Read as advisory for that reason, open to correction.
+    validity_temporal: at_issuance
+    refusal_authority: verifier
+    invariant_survival: post_action
+    note_invariant: "Signed at decision time, retained after. 'A signed receipt is proof of what the verifier decided' (docs/security.md)."
+    replay_class: decision_replay
+    note_replay: >
+      The receipt carries the warrant chain (key 2), the PoP signature
+      (key 8) and commitments to arguments (key 7), host policy (key 11),
+      revocation list (keys 12, 13) and trusted roots (key 15). A verifier
+      given the arguments, policy and list bytes can recompute the
+      commitments (A.31) and re-run the decision. The arguments
+      themselves are not carried, so full_replay is not claimed.
+    note_action_class: "No governed_action_class declared. The receipt covers any tool call ('tool:' || tool_name), so the class follows the tool."
+
+# ──────────────────────────────────────────────────────────────
+# TENUO-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET
+# The nearest concept in vocabulary-lifecycle.yaml (INCUBATING,
+# descriptive only) is given in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+tenuo_specific_terms:
+  warrant: "'A signed capability token granting specific permissions to a holder.' Execution warrants carry tools and argument constraints; issuer warrants carry issuable_tools, max_issue_depth and constraint_bounds. [delegated_authority, action_or_capability_binding]"
+  attenuation_invariants: "I1 child.issuer == parent.holder; I2 depth monotonicity; I3 child.expires_at <= parent.expires_at; I4 child.capabilities subset of parent.capabilities; I5 child.parent_hash == SHA256(parent.payload_bytes); I6 PoP verifies under warrant.holder. Same six in AAT -02. [delegated_authority] Related open gap candidate in this registry: #125 (attenuating_delegation)."
+  proof_of_possession: "Holder signs b'tenuo-pop-v1' || CBOR(warrant_id, tool, sorted_args, timestamp_window) per invocation. [presented_credential_or_session, action_or_capability_binding]"
+  planner_worker_separation: "Issuer warrants cannot grant execution to their own key: error self_issuance, 'enforces separation between planners who delegate and workers who execute'."
+  clearance: "u8 'monotonic trust level' in the warrant, compared to a per-tool requirement at authorization."
+  signed_approval: "Ed25519 signature by a key in required_approvers over ApprovalPayload, bound to request_hash = SHA-256 over (warrant_id, tool, args, holder); threshold min_approvals. 'Approvals are single-layer signatures.' [approval]"
+  signed_revocation_list: "Control Plane signed, versioned, additive list of revoked warrant IDs; verifiers reject rollback. [revocation]"
+  revocation_commitment: "Receipt keys 12 and 13. 'Absent means the enforcement point had no revocation data loaded, which is a different claim from having loaded a list that revoked nothing.' [evidence]"
+  delegation_receipt_diff: "DelegationReceipt in tenuo-core/src/diff.rs: parent and child warrant IDs, tools, capability, TTL, clearance and depth diffs, delegator and delegatee fingerprints, intent. No signature field in the struct as read. [delegated_authority]"
+
+# ──────────────────────────────────────────────────────────────
+# OPEN QUESTIONS FOR TENUO'S MAINTAINERS
+# ──────────────────────────────────────────────────────────────
+open_questions:
+  - "Is a normative receipt section planned for protocol-spec or wire-format? Today the format is defined by receipt.rs and test-vectors A.30 and A.31. A citable spec section would let this file pin to prose rather than code."
+  - "Should governance_attestation be read as exact for allow receipts only, with deny receipts outside it, or partial for the artifact as a whole as drafted here?"
+  - "Is prev_receipt_hash always per signer, or can a deployment chain per holder or per root principal? Decides whether decision_lineage stays partial."
+  - "Is the receipt better described as advisory (evidence of a decision) or binding, and is decision_replay the right replay class given that arguments travel only as request_hash?"
+  - "Is DelegationReceipt (diff.rs) a signed or exported artifact anywhere, or an in-process diff only?"
+  - "Should clearance be read as an authority ceiling (as drafted) or as a trust signal the vocabulary should name?"

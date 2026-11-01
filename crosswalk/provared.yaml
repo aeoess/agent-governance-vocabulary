@@ -1,0 +1,355 @@
+# crosswalk/provared.yaml
+#
+# Provared format (slips, stubs, countersignatures, books, seals, passes,
+# denials) -> Agent Governance Vocabulary
+#
+# Mapped artifact: provared/provared
+# @ 0ba33d68e7ce7d7e59213df08bb22eebe8162432 (main, 2026-11-01T17:17:15Z):
+#   - spec/provared-format.md, draft version 0 ("Nothing in it is frozen.
+#     Every label below ends in `v0`"). Sections 1 to 13, 16 to 20, 22, 25
+#     and 28 read in full, and section 26 read in full on 2026-11-01; section
+#     21 read in part; headings only for 14, 15, 23, 24, 27 and 29.
+#   - test-vectors/README.md and the file list of test-vectors/ (stub,
+#     countersignature, pass, cancellation, refusal, denial, chained-books
+#     and witness sets present). Vector contents not opened.
+#   - CONTRIBUTING.md.
+#
+# Related standards-track text, same author:
+#   draft-izmaylov-agent-permission-receipts-01 (individual Internet-Draft,
+#   revision -01 posted 2026-10-24T11:41Z, -00 on 2026-10-07).
+#   CONTRIBUTING.md: "its core is an individual Internet-Draft". The draft's
+#   revision number and the format's version are separate: record labels in
+#   the pinned repository spec end in v0. Rows below cite the repository spec
+#   at the pinned commit, not the draft, and whether -01 matches it was not
+#   checked.
+#
+# Implementation: JavaScript library in src/ and a Python version in
+# python/, both checked against test-vectors/; package version 0.7.0 at the
+# pinned commit. Code is Apache-2.0; the format description is CC BY 4.0
+# (CONTRIBUTING.md).
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by Provared. It is offered for Provared's maintainer to
+# correct or confirm. Corrections to the native reading are checked against
+# the cited source and the canonical vocabulary before recalibration.
+
+system:
+  name: Provared
+  short_name: Provared
+  home: https://prova.red
+  spec: https://github.com/provared/provared/blob/0ba33d68e7ce7d7e59213df08bb22eebe8162432/spec/provared-format.md
+  spec_version: "The Provared format, draft version 0 (labels end in v0); package 0.7.0"
+  repo: https://github.com/provared/provared
+  implementation: "JavaScript library (src/) and Python version (python/), both answering the shared test files in test-vectors/"
+  role: >
+    "A way to write down what an AI agent was allowed to do, and what it
+    then did, so that someone else can check it later with free tools."
+    A person signs a slip with a passkey (actions, limits, conditions,
+    services, validity window, purpose). The agent signs a stub for each
+    action, chained under the slip. The other side may countersign a stub.
+    Entries go in an append-only book whose Merkle root a recorder seals,
+    with outside time-stamps and optional witnesses. A checker compares the
+    stubs with their slip and reports findings. "Evidence, not a verdict.
+    A record shows what was signed and by which keys. People decide what
+    it means."
+  identity_layer: >
+    Keys, not names. "A name in a record is a label. Only keys are
+    checked." An agent or a service is a key set of an Ed25519 key and an
+    ML-DSA-87 key. An organisation may sign a vouching record that a key
+    belongs to a name (section 23); it "does not prove that the
+    organisation checked well".
+  upstream_license: "Apache-2.0 (LICENSE); format description CC BY 4.0 (LICENSE-CC-BY-4.0.txt)."
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: sealwright
+    project: provared/provared
+    confirmed_at: null   # not yet reviewed by the mapped system's maintainer
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: section 3.9. Stubs, countersignatures, refusals,
+# terms, vouching records, withdrawals and passes "MUST carry exactly two
+# signatures ... Ed25519 (RFC 8032), then ML-DSA-87 (FIPS 204)", and "The
+# record counts as signed only if both signatures check." Seals carry a
+# third, SLH-DSA-SHA2-256s. That is the composite case. Exception, stated
+# here rather than as an override: "The issuer's passkey signature on a
+# slip is of today's kind only", and approvals and cancellations are signed
+# as a slip is, so those three records are classical.
+# canonicalization: section 3.4, content "MUST be written in the JSON
+# Canonicalization Scheme (RFC 8785)", narrowed to objects, lists, strings
+# and whole numbers 0 to 2^53-1, nesting at most 8. A checker re-serializes
+# and refuses on any byte difference; signed bytes are never rewritten.
+# hash_family: section 3.5, fingerprints are SHA-256 in base64url; the book
+# tree follows RFC 6962 with SHA-256 (section 10).
+system_attributes:
+  signature_capability: composite
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
+
+# Search basis for every no_mapping row below: the spec sections listed as
+# read in full in the header, at 0ba33d6. A no_mapping row states that those
+# sections were searched and no corresponding field or record was found. It
+# is not a claim about the project outside them.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# One false analog (bilateral_receipt, the stub with its countersignature),
+# the rest no_mapping on the search basis above.
+# decision_lineage is under decision_trajectory.
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "stub (provared.stub.v0, signed by the agent's key set) with its countersignature (provared.countersignature.v0, signed by the service's key set)"
+    match: false_analog
+    notes: >
+      Section 6: the countersignature's content is "{"stub": fingerprint of
+      the stub, "type": "provared.countersignature.v0", "when": a time}. It
+      means: "this action happened with me"." A checker "MUST confirm that
+      `stub` is the fingerprint of the stub it accompanies, and that both
+      signatures check against the keys the slip gives for the service
+      named in the stub's `with`." A stub without one "is one-sided. It is
+      a named state, not a failure."
+
+      A stub with its countersignature is the closest shape in the format
+      to a two-party receipt, close enough that a consumer could wire it up
+      as one, so this row is false_analog rather than no_mapping. It fails
+      the term's defining property. (1) The canonical term has both parties
+      sign "the same canonicalized preimage". Here the agent signs the stub
+      content and the service signs a separate content that names the stub
+      by fingerprint and adds its own type and time. (2) The canonical
+      parties are "the delegating party and the counterparty". Here they
+      are the acting agent and the service it dealt with, and the
+      delegating person signs the slip, not the receipt. (3) No `purpose`
+      is emitted or signed in the stub or the countersignature. The slip
+      carries a signed `purpose`, but that sits on the permission, not on
+      the receipt. This is the same reading as
+      the Tenuo crosswalk, where the holder and the enforcement point also
+      sign different preimages.
+
+      Conformance material exists for both contents
+      (test-vectors/countersignature-contents.json, stub-contents.json).
+      The row does not count toward the term's promotion trigger.
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: >
+      No record in the format attests that an action satisfied a
+      requirement. The comparison of stubs with their slip is the
+      checker's computation and is not signed: "A checker answers three
+      questions and keeps them apart" (section 8), and "Evidence, not a
+      verdict." A stub is the agent's statement of what it did; "A sound
+      record can show that the agent went outside its slip." The approval
+      (section 17) is the person's yes to one action before it happens,
+      listed under provared_specific_terms.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      A countersigned stub may carry an amount ({"unit", "value"}), but the
+      countersignature says only "this action happened with me". It carries
+      no verdict and is not checked against expected terms of a settlement.
+      See bilateral_receipt above.
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: >
+      No verification status or grade of an agent. A vouching record
+      (section 23, headings read only) is an organisation's signed
+      statement "that a key belongs to a name"; section 13 says it "does
+      not prove that the organisation checked well". See open questions.
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of agent behavior in the search basis. Section 8 findings are per stub, not a score."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "No reasoning commitment in the search basis."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No attestation about an action's reasoning in the search basis. The slip's purpose is the person's stated reason for the permission, not the agent's reasoning for an action."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation from a delegator in the search basis."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment of completed tasks in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric in the search basis. A checker counts entries, including denials, but states no ratio."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity claim across sessions in the search basis."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for an agent in the search basis."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment in the search basis. agent.software in a slip is 'a statement' of the program the person approved, which 'a checker MUST show ... as a statement'."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the search basis."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet concept in the search basis. A block time-stamp (section 21.4) uses a public blockchain block as a time anchor only."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet concept in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "the chain: stubs under one slip (or one pass), linked by seq and previous"
+    match: partial
+    notes: >
+      Section 7: "There is one chain for the stubs of the slip's own
+      agent, and one for the stubs under each pass." A checker MUST
+      confirm "the first has `seq` 0 and no `previous`" and "each later one
+      has the next number, and `previous` equal to the fingerprint of the
+      one before", and that "`when` never goes backwards". That is an
+      ordered, content-addressed sequence, the canonical shape.
+
+      Partial on two dimensions. First, subject: entries are records of
+      actions taken, not of decisions. Denials (section 28), which record
+      actions not taken, are "in no chain"; refusals are signed by the
+      service. So the chain is the agent's action lineage under one
+      permission. Second, completeness: "It proves what was recorded, not
+      what was left out. An agent that acts and writes no stub leaves no
+      trace" (section 13). Truncation of the book is addressed outside the
+      chain, by seals over the Merkle root with outside time-stamps and
+      witnesses (sections 10, 21, 29); section 12 lists a public place
+      that gathers seals as not in draft version 0. Those protect history
+      already sealed. The newest part depends on a copy held outside the
+      recorder: whoever keeps a book "can cut off its end, the last seal
+      with it, and what is left still checks", and a seal kept out of the
+      recorder's reach shows it (section 21.5).
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the search basis."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation in the search basis. Section 8 findings (action-not-allowed, over-limit and the rest) are comparisons with a signed permission, not a deviation from a baseline."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Drafter's reading, each value with its basis, open to correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  slip:
+    enforcement_class: advisory
+    note_enforcement: >
+      Read as advisory because the format makes no component refuse an
+      action. Section 20, the check before acting, is optional ("The
+      software around an agent may ask, before each action") and "is a
+      help to whoever runs the agent. It is not evidence: nothing in a
+      record shows that the check was made." Where that check runs on the
+      action path, the slip acts as binding there. Open question below.
+    validity_temporal: at_processing
+    note_validity: >
+      Each stub's `when` is compared with validFrom and validUntil
+      (outside-valid-time), and with any cancellation (after-cancellation).
+    note_refusal: >
+      No refusal_authority value selected. Refusal can come from the
+      service (refusal record, section 18), from the check before acting
+      (denial with source check), from the person (source person) or from
+      the agent's software (source rule). The format records each without
+      ranking them.
+    invariant_survival: pre_action
+    note_invariant: "Signed before any stub that relies on it; the slip MUST come before the entries that rely on it in the book (section 9)."
+    governed_action_class: delegate
+
+  stub_with_countersignature:
+    enforcement_class: advisory
+    note_enforcement: "A record of an action already taken. It refuses nothing."
+    validity_temporal: at_issuance
+    invariant_survival: post_action
+    replay_class: decision_replay
+    note_replay: >
+      Every finding of section 8 can be recomputed from the book alone: the
+      slip, the stubs, passes, cancellations and time-stamps. The documents
+      of an action are not carried ("A stub holds fingerprints of
+      documents, never the documents"), so full_replay is not claimed.
+    note_action_class: "No governed_action_class declared. A stub covers any action name; the shared list (section 16) assigns kinds such as reads, changes, destroys, sends, commits, grants, runs, enters."
+
+  pass:
+    enforcement_class: advisory
+    note_enforcement: "As for the slip. A wider pass is reported (pass-wider), not prevented by the format."
+    validity_temporal: at_processing
+    invariant_survival: pre_action
+    governed_action_class: delegate
+
+# ──────────────────────────────────────────────────────────────
+# PROVARED-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET
+# The nearest concept in vocabulary-lifecycle.yaml (INCUBATING,
+# descriptive only) is given in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+provared_specific_terms:
+  slip: "'A permission that a person signs with a passkey: which agent, which actions, what limits, with whom, from when until when, and why.' Limits are max, each, count, and per-period variants; conditions require a countersignature or the person's approval, optionally above an amount. [delegated_authority, action_or_capability_binding, target_binding]"
+  never: "A slip's list of kinds of action or rules of conduct from the shared list. A slip MUST NOT allow a shared action of a forbidden kind. 'A rule of conduct is the person's signed instruction to the agent. No check of a record can show that the agent kept it.' [delegated_authority]"
+  pass: "'An agent's signed statement that it hands part of its permission to a helper agent.' Depth set by the slip's passes (at most 10). Wider actions or a longer validity are reported as pass-wider; the slip's limits and every pass above always hold for a helper. [delegated_authority, authority_path_and_dependency] Related open gap candidate in this registry: #125 (attenuating_delegation)."
+  approval: "'The person's own yes to one action, signed with the same passkey as the slip.' Bound to slip, action, amount, with and details; reuse reported as approval-reused. [approval]"
+  cancellation: "'The person's signed statement that a slip is ended early.' Stubs after it are reported after-cancellation; stubs before it need a counted time-stamp to be shown as earlier. 'It does not show that the agent, or whoever keeps the book, was told.' [revocation]"
+  acknowledgement: "Section 26: 'the agent's own software states that it was handed the cancellation, and when.' Signed with the keys of the slip's agent or of one helper. Stubs and passes that agent dated after it are reported after-cancellation on the agent's own dates, worded apart from the time-stamp finding of section 22. 'No rule ties its when to the cancellation's when.' [revocation, notice]"
+  refusal: "'A service's signed statement that an agent asked for something and was refused', with a reason from a closed list. One-sided; a checker 'MUST NOT count it as the agent going outside its slip'. [authorization_decision, evidence_attestor]"
+  denial: "The agent's side's signed statement that it did not take an action that was asked for, with source check, person or rule, and finding codes where source is check. In no chain; 'compared with nothing'. [authorization_decision]"
+  terms: "'A service's signed statement of which actions it accepts from agents.' A stub that relied on them names their fingerprint; outside-terms is reported. [external_restriction]"
+  check_before_acting: "Section 20. An optional pre-action query that MUST give the same answer as the section 8 comparison over the book so far, and answers record-not-sound when the book has a problem. 'It is not evidence.' [authorization_decision]"
+  book_seal_witness: "Append-only book of canonical lines, RFC 6962 Merkle tree, seals signed by the recorder with outside time-stamps, and witness statements. [evidence, coverage_and_completeness, evidence_attestor]"
+  show: "A subset of book entries with audit paths. A checker MUST say that a Show cannot show a count, that a limit was kept, or that a slip was not cancelled. [coverage_and_completeness]"
+  vouching_record: "'An organisation's signed statement that a key belongs to a name', ended by a withdrawal. [issuer_standing, principal_binding]"
+  what_a_record_does_not_prove: "Section 13 lists the limits of each record. Rows above quote it where it bounds a match. [coverage_and_completeness]"
+
+# ──────────────────────────────────────────────────────────────
+# OPEN QUESTIONS FOR PROVARED'S MAINTAINER
+# ──────────────────────────────────────────────────────────────
+open_questions:
+  - "An agent starts an authorized action, then receives and acknowledges a cancellation before the action finishes. The stub records when the action was done, and section 26 reports stubs dated after the acknowledgement as after-cancellation. Is an action already running meant to be treated the same as one started after the cancellation, or is handling in-progress actions outside the format's current scope?"
+  - "Does reading the countersignature as the service confirming the agent's stub by its fingerprint, rather than both parties signing one record, match your intent? That reading is why bilateral_receipt is false_analog."
+  - "For a crosswalk, which text should be pinned as the reference: spec/provared-format.md in the repository, or draft-izmaylov-agent-permission-receipts? If they diverge, which governs?"
+  - "Is the slip better described as advisory (as drafted), or as binding where the check before acting (section 20) sits on the action path?"
+  - "Should the chain be read as action lineage only, as drafted, or is there a reading in which denials and refusals form part of a decision sequence for one agent?"
+  - "Is a vouching record (section 23) closer to an identity verification status than this file allows? It is mapped no_mapping against trust_verification here, on headings only for section 23."

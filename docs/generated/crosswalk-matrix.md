@@ -1,6 +1,6 @@
 # Crosswalk Matrix
 
-Auto-generated on 2026-10-30. 27 systems × 16 canonical signal types.
+Auto-generated on 2026-11-01. 27 systems × 16 canonical signal types.
 
 Cell legend:
 
@@ -18,7 +18,7 @@ Cell legend:
 
 | System                  | wallet_state | behavioral_trust | wallet_intelligence | reasoning_integrity | compliance_risk | governance_attestation | passport_grade | trust_verification | security_posture | job_performance | settlement_witness | peer_review | completion_ratio | entity_continuity | cognitive_attestation | bilateral_receipt |
 | ----------------------- | ------------ | ---------------- | ------------------- | ------------------- | --------------- | ---------------------- | -------------- | ------------------ | ---------------- | --------------- | ------------------ | ----------- | ---------------- | ----------------- | --------------------- | ----------------- |
-| Agent-Did               | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | 🟡                | —                     | —                 |
+| Agent-Did               | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | ⚪                | 🟡ʰ               | ⚪                     | ⚪                 |
 | Agentgraph              | ⚪            | ⚪                | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ⚪                  | ✅                | ⚪               | ⚪                  | ⚪           | ⚪                | ⚪                 | —                     | —                 |
 | Agentid                 | ⚪            | 🟡               | ⚪                   | ⚪                   | ⚪               | ⚪                      | ⚪              | ✅                  | ⚪                | ⚪               | ⚪                  | ⚪           | ✅                | 🟡                | —                     | —                 |
 | Agentlair               | ⚪            | ✅                | ⚪                   | ⚪                   | ⚪               | 🟡                     | ⚪              | 🟡                 | ⚪                | ⚪               | ⚪                  | ⚪           | —                | ⚪                 | —                     | —                 |
@@ -70,9 +70,9 @@ Mapped counts systems with an `exact`, `structural` or `partial` match, or a leg
 | `compliance_risk` | 3 / 27 | 26 / 27 | 11% |
 | `wallet_intelligence` | 3 / 27 | 24 / 27 | 11% |
 | `peer_review` | 2 / 27 | 21 / 27 | 7% |
-| `completion_ratio` | 1 / 27 | 10 / 27 | 4% |
-| `bilateral_receipt` | 0 / 27 | 5 / 27 | 0% |
-| `cognitive_attestation` | 0 / 27 | 8 / 27 | 0% |
+| `completion_ratio` | 1 / 27 | 11 / 27 | 4% |
+| `bilateral_receipt` | 0 / 27 | 6 / 27 | 0% |
+| `cognitive_attestation` | 0 / 27 | 9 / 27 | 0% |
 
 ### Top-3 most-mapped
 

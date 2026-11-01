@@ -77,8 +77,6 @@ signal_types:
     canonical: trust_verification
     internal: "DID resolution + verification-relationship binding + Ed25519 signature verification (current and historical keys) + RFC 9421-profile HTTP signature verification"
     match: partial
-    evidence: emitted
-    source_path: "sdk/src/core/AgentIdentity.ts: verifySignature, verifyHistoricalSignature, verifyHttpRequestSignature; sdk/src/core/identity-composition.ts: assertKeyPurpose"
     notes: >
       Agent-DID covers the cryptographic identity-resolution part of
       trust_verification. A verifier resolves the signing agent's DID,
@@ -90,7 +88,11 @@ signal_types:
       A revoked DID fails verification. Divergence from the canonical
       definition: the output is a boolean on cryptographic identity.
       Agent-DID does not emit grades, KYC presence, or principal
-      endorsement, and does not issue credentials.
+      endorsement, and does not issue credentials. No Agent-DID artifact
+      carries the verification result as a field; it is the return value
+      of `verifySignature`, `verifyHistoricalSignature` and
+      `verifyHttpRequestSignature` (sdk/src/core/AgentIdentity.ts), so
+      this row declares no evidence state.
     signed_payload_fields:
       # Per-request HTTP signature (identity in motion)
       - Signature-Input  # header - sig1 covering @request-target, host, date, content-digest, x-request-nonce; params created, expires, keyid, alg="ed25519" (all signed via @signature-params)
@@ -124,8 +126,12 @@ signal_types:
     inference_basis: >
       Key rotation keeps the DID and appends a revision to the DID log.
       A consumer can recompute that the same DID survived a key change
-      by replaying the log. Agent-DID does not assert continuity as a
-      signed claim.
+      by replaying the log, but only when the log was obtained through a
+      trusted resolution of the DID. An exported log alone is not
+      authenticated: importDidWebvhHistory checks that all entries share
+      one DID and that each versionId matches the SCID, and verifies no
+      signatures and no hash chain between revisions. Agent-DID does not
+      assert continuity as a signed claim.
     notes: >
       Same underlying question (is this still the same agent after a key
       change?), different mechanism. Agent-DID covers key rotation only,
@@ -227,12 +233,18 @@ descriptor_dimensions:
   notes: |
     The identity check is evaluated by the verifier at request-processing
     time and refuses before the action is accepted. No post-action receipt
-    is emitted. replay_class describes audit replay, not anti-replay: given
-    a recorded signed request and the DID log, a third party can re-run the
-    verification decision for the key state at signing time. Anti-replay
-    on the wire is separate: `x-request-nonce` is a covered component and
-    `expires` defaults to created + 30 s. governed_action_class is `read`
-    for the identity check itself; downstream actions carry their own class.
+    is emitted. replay_class describes audit replay, not anti-replay.
+    Re-running verification on a recorded signed request repeats the
+    signature check against the key material the verifier resolves at that
+    moment. It does not necessarily reproduce the original decision or the
+    key's standing at signing time: the result also depends on the
+    verifier's clock (created skew, expires), the DID state at processing
+    time, and the verifier's own nonce cache. The signed `created`
+    parameter is asserted by the signer, not an independent timestamp.
+    Anti-replay on the wire is separate: `x-request-nonce` is a covered
+    component and `expires` defaults to created + 30 s. governed_action_class
+    is `read` for the identity check itself; downstream actions carry their
+    own class.
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -361,3 +373,7 @@ crosswalk_metadata:
         rotation state machine are now marked specified_not_implemented
         instead of being described as shipped. Pinned to the revision that
         fixes GHSA-gwjm-x277-ww8p (HTTP signature parameters now signed).
+        Review corrections: trust_verification declares no evidence state
+        (no artifact carries the result), replay notes limit replay to the
+        signature check, and the entity_continuity inference requires a
+        trusted resolution of the DID log.

@@ -20,12 +20,17 @@
 #   carries the same Section 3 correction and posts after this week's IETF
 #   meeting.
 #   The draft says the complete member catalog is the AHR spec. Where the two
-#   differ, both are quoted and the difference is an open question below.
+#   differ, the rows identify the difference and record the author's
+#   clarification on PR #240.
 #
 # Out of scope for this file: the companion artifacts in the same repository
 # (ledger export, capability credential, anchoring checkpoints, refusal
 # digest, selective-disclosure receipts, precommitment atoms, seat
-# evidence). The corpus vectors were listed, not opened.
+# evidence). The corpus vectors were listed, not opened. The decision_lineage
+# row quotes spec/ledger-export.md at ffd6836 (sha256
+# 2cea1ba869559793405ac9966a9ba9e287af8dd2064e96627aa4ec6d0fc36c6c, unchanged at c2eddbd) to point at the closer candidate. The
+# author offered on PR #240 to review a separate mapping of the refusal
+# digest (spec/refusal-transparency.md).
 #
 # This is a third-party crosswalk drafted by aeoess (maintainer of this
 # registry), not by the format's author. It is offered for the author to
@@ -70,7 +75,7 @@ maintainer:
   mapped_system_maintainer:
     github: jsabes24
     project: jsabes24/css-succession-receipts
-    confirmed_at: null   # the author confirmed the reading at 641a155 on PR #240 (comment 6641060233), and the re-pin to ffd6836 awaits his review
+    confirmed_at: "2026-11-04"   # confirmed by the author on PR #240 (comment 6642764426) for 10915e4, on condition of one quote correction, which this revision makes
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi
@@ -129,7 +134,10 @@ signal_types:
       referenced, not carried: legitimacy.legitimacy_id and the optional
       legitimacy_state ("L3", "L4", "L5") name the evaluation, and the
       constitution claim binds the lineage by event hash, but the criteria
-      applied are not in the receipt. (2) "A receipt proves what the issuer
+      applied are not in the receipt. The author wrote on PR #240 that
+      L3 to L5 "are not defined in a public document. The receipt carries
+      the label, the criteria are the issuer's, and 'referenced, not
+      carried' is right." (2) "A receipt proves what the issuer
       recorded, not that the issuer is honest." (3) It is scoped to the
       registry: "A receipt does not attest that anything outside the
       registry was enforced. CSS refusals gate ledger transitions, not
@@ -257,11 +265,17 @@ decision_trajectory:
       hash, and the spec says the evidence is "a cross-stream subset: a
       receipt does not prove stream contiguity or completeness of the
       surrounding ledger". Entries are sorted by (timestamp, event_id) and
-      concern two stewards. The ledger export, out of scope here, is
-      described as replaying "the complete hash chain" and may be the
-      closer candidate. Open question below. The author wrote on PR #240:
-      "bilateral_receipt and decision_lineage as false_analog are both
-      correct as well."
+      concern two stewards. The author wrote on PR #240 that within a
+      receipt "events link by previous_event_id, an identifier, so
+      false_analog stands", and that "The ledger export is the intended
+      artifact for ordered lineage: its audit records link by
+      previous_hash, a content hash." spec/ledger-export.md, out of scope
+      here, says a verified export establishes that "the events form
+      unbroken linear stream chains" and that "every audit record is
+      hash-intact and chain-linked exactly as appended", and that "only a
+      signed export carries the completeness attestation". The author
+      also wrote: "bilateral_receipt and decision_lineage as false_analog
+      are both correct as well."
 
   baseline_revision:
     canonical: baseline_revision
@@ -335,11 +349,8 @@ succession_receipts_specific_terms:
 
 # ──────────────────────────────────────────────────────────────
 # OPEN QUESTIONS FOR THE FORMAT'S AUTHOR
-# Three earlier questions (the authorization_binding format value, equal
-# identity_id values, and member-name order against RFC 8785) were answered
-# by the author on PR #240 and are folded in above.
+# All six questions were answered by the author on PR #240 (comments
+# 6641060233 and 6642764426) and are folded into the rows above. The
+# refusal digest is left to a separate file, which the author offered to
+# review.
 # ──────────────────────────────────────────────────────────────
-open_questions:
-  - "Is the in-receipt evidence meant to be read as a chain? Each event_hash covers previous_event_id, not the predecessor's hash. Is the ledger export the intended answer for ordered lineage?"
-  - "Is legitimacy_state (L3, L4, L5) defined in a public document? It decides whether the governance requirement can be named in this row or only referenced."
-  - "Should a later file map the refusal digest separately? It records refused transitions, which no row here covers."

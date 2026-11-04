@@ -1,9 +1,21 @@
 # crosswalk/ain-wrp.yaml
 #
-# Drafted by @aeoess from the text of draft-tanase-ain-authoritative-resolution-00
-# (2026-09-18). Corrected and confirmed by the draft's author, Elena Tănase
-# (AIDAXIA Ltd.), by email on 2026-10-05 and 2026-10-06. The rows track an
-# individual Internet-Draft at -00 and may change as the draft evolves.
+# Drafted by @aeoess. The rows were first written from
+# draft-tanase-ain-authoritative-resolution-00 (2026-09-18) and corrected and
+# confirmed for -00 by the draft's author, Elena Tănase (AIDAXIA Ltd.), by
+# email on 2026-10-05 and 2026-10-06. This revision refreshes every row against
+# -01 (2026-10-27). The -01 refresh has not yet been reviewed by the author, so
+# confirmed_at is unset until she confirms it.
+#
+# -01 cites draft-pidlisnyi-aps in sections 19.6 and 19.8. The drafter
+# maintains APS.
+#
+# Implementation status: section 18 of -01 classifies public endpoint
+# behaviour as observed with protocol conformance not established, and lists
+# State Proof, atomic consumption and federation as proposed. Section 4.3 says
+# no implementation may claim interoperable conformance to those undefined
+# profiles. The rows below describe the specification text, not a conforming
+# implementation.
 #
 # AIN-WRP resolves a persistent Agent Identity Number (AIN) and correlates
 # identity, lifecycle, operator, mandate, endpoint and restriction assertions
@@ -13,11 +25,11 @@
 system:
   name: AIN-WRP
   home: https://datatracker.ietf.org/doc/draft-tanase-ain-authoritative-resolution/
-  spec: https://datatracker.ietf.org/doc/draft-tanase-ain-authoritative-resolution/
-  spec_version: "draft-tanase-ain-authoritative-resolution-00 (2026-09-18)"
+  spec: https://www.ietf.org/archive/id/draft-tanase-ain-authoritative-resolution-01.txt
+  spec_version: "draft-tanase-ain-authoritative-resolution-01 (2026-10-27)"
   role: >
     Authoritative resolution of persistent digital agent identities and
-    pre-interaction verification across independent administrative domains.
+    pre-interaction correlation across independent administrative domains.
     Produces a relationship-specific Pre-Interaction Trust State, optionally
     conveyed as a signed, time-limited State Proof, which a gateway or relying
     party consumes under its own policy.
@@ -27,54 +39,65 @@ license: Apache-2.0
 maintainer:
   name: Elena Tănase
   affiliation: AIDAXIA Ltd.
-  confirmed_at: "2026-10-06"
+  confirmed_at: null   # -00 confirmed by email 2026-10-06; the -01 refresh awaits her review
 
 signal_types:
 
   trust_verification:
     canonical: trust_verification
-    internal: "Authoritative resolution of an AIN (section 7) plus optional proof of control (section 9)"
+    internal: "Authoritative resolution of an AIN (section 7) plus optional Agent Proof of Control (section 9)"
     match: partial
     notes: >
       Covers identity-layer verification: current lifecycle state (section 8),
-      operator binding, verification material, and challenge-response proof of control,
-      each from a source whose competence is validated (section 7.3). It does
-      not assign grades or KYC tiers. Proof of control establishes key
-      possession only, not mandate or permission (section 9).
+      operator binding (section 7.2.2), verification material, and
+      challenge-response proof of control, each from a source whose competence
+      is established for that assertion (sections 7.3 and 7.5). A signed
+      response is not authoritative merely because its signature is valid
+      (section 7.3), and source discovery does not establish competence
+      (section 7.5). It does not assign grades or KYC tiers. Proof of control
+      establishes possession of a key only, not a mandate, permission, operator
+      binding or source competence (section 9).
 
   entity_continuity:
     canonical: entity_continuity
     internal: "AIN persistence and non-reassignment (section 6.3), identity continuity (Appendix B.5)"
     match: partial
     notes: >
-      An AIN is never reassigned, and key rotation, suspension and revocation do
-      not change it. Section 6.3 says a resolver SHOULD retain enough tombstone information
-      to distinguish a known revoked AIN from one that was never issued. Continuity rests on the registry record and a
-      registration profile's invariants, not on a cryptographic proof carried
-      across the change. Appendix B.5 is non-normative in -00.
+      An AIN is never reassigned, and suspension, revocation, retirement,
+      custody transfer or replacement of a deployment do not cause reuse
+      (section 6.3). A resolver SHOULD retain enough tombstone information to
+      distinguish a known revoked AIN from one that was never issued. Appendix
+      B.5 adds that a registration profile defines the identity invariants,
+      that incremental changes must not avoid a new AIN that one replacement
+      would require, and that retaining an AIN does not carry over its
+      assertions. Continuity rests on the registry record and the profile's
+      invariants, not on a cryptographic proof carried across the change.
+      Appendix B.5 is non-normative in -01.
 
   governance_attestation:
     canonical: governance_attestation
-    internal: "Pre-Interaction State Proof (sections 3, 10.6, Appendix B.1)"
+    internal: "Pre-Interaction State Proof (sections 3 and 10.6, Appendix B.1)"
     match: false_analog
     notes: >
       A signed, time-limited statement of the evaluated state for one
       relationship and audience, which can carry RESTRICT, DENY or REVIEW. It
       is not a statement that an agent satisfied a declared requirement, and
-      section 10.4 says it must not be read as reputation or universal
-      authorisation. It is close enough in shape (signed, time-limited, about
-      an agent) that a consumer could wire it up as governance_attestation,
-      which is why this row is false_analog and not no_mapping. It states
-      whether the decision came from the correlation service or the gateway
-      (section 10.5). Serialization and consumption semantics are deferred past
-      -00.
+      section 10.4 says the Trust State must not be read as a permanent
+      reputation or universal authorisation. It is close enough in shape
+      (signed, time-limited, about an agent) that a consumer could wire it up
+      as governance_attestation, which is why this row is false_analog and not
+      no_mapping. It states whether the decision came from the correlation
+      service or the gateway (section 10.5). Section 10.6 keeps only the
+      semantic bindings normative, defers serialization and canonicalization
+      to a future profile, and leaves the candidate bindings non-normative in
+      Appendix B.1.
 
   behavioral_trust:
     canonical: behavioral_trust
     match: no_mapping
     notes: >
       Out of scope by design. Section 4.2 excludes a universal trust score,
-      risk score or reputation methodology.
+      risk score or behavioural reputation methodology.
 
   passport_grade:
     canonical: passport_grade
@@ -85,22 +108,39 @@ context_dimensions:
 
   counterparty_standing:
     canonical: counterparty_standing
-    internal: "Pre-Interaction Trust State (section 10.4)"
+    internal: "Pre-Interaction Trust State (sections 10.1 and 10.4)"
     match: partial
     notes: >
-      Relationship-specific state for a proposed interaction. The Trust State
-      covers both participants and the relationship, not only the
-      counterparty, including authoritative identity or endpoint binding. It carries
-      verified state and restrictions, not maturity or prior-completion signals.
+      Relationship-specific state for a proposed interaction. The correlation
+      request identifies each participating agent by its own AIN, or a
+      non-agent target by a Target Reference (sections 10.1 and 10.11). The
+      Trust State covers both participants and the relationship, not only the
+      counterparty, including authoritative identity or endpoint binding
+      (section 7.7). It carries verified state and restrictions, not maturity
+      or prior-completion signals.
 
 descriptor_dimensions:
-  refusal_authority: shared   # the gateway decides admission under local policy, but local policy cannot override a mandatory prohibition from a competent source (section 5 and section 10.4, Table 4)
-  validity_temporal: at_acceptance     # evaluated before the operational protocol begins, with optional re-evaluation triggers (section 12)
+  refusal_authority: shared   # the gateway decides admission under local policy and may deny even when every check succeeds, but must not begin on DENY or drop a mandatory restriction it accepts (sections 10.4 and 10.5)
+  validity_temporal: at_acceptance     # evaluated at an explicit evaluation time before the operational protocol begins (section 10.10), with re-evaluation triggers (section 12)
+  note_replay: >
+    No replay_class selected. Section 10.10 asks implementations to preserve
+    the decision-time evidence and says retrospective reconstruction
+    establishes the evidentiary basis for a recorded decision without proving
+    it was substantively correct. The registry's replay classes have no
+    per-class criteria yet (discussion from #231).
 
 gaps:
-  - area: "source competence (section 7.3)"
+  - area: "source competence and issuer standing (sections 7.3 and 7.5)"
     notes: >
       AIN-WRP requires the relying party to establish that the source of an
-      assertion, including the issuer of a mandate, is competent for that
-      principal, scope and domain. The current vocabulary has no canonical
-      term for source competence.
+      assertion is competent for that assertion's scope at the evaluation
+      time, and keeps an unresolved competence check distinguishable from a
+      confirmed invalid or revoked authority. The current vocabulary has no
+      canonical term for source competence.
+  - area: "delegator authority (section 7.6)"
+    notes: >
+      A mandate that names a delegator does not establish that the delegator
+      had authority to grant it. A missing required authority assertion, an
+      expired one, and a valid but insufficient one must remain
+      distinguishable in the evaluation record. The vocabulary has no
+      canonical term that keeps these three outcomes apart.

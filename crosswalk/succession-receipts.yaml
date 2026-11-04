@@ -108,8 +108,8 @@ system_attributes:
   hash_family: sha-256
 
 # Search basis for every no_mapping and false_analog row below: the two
-# documents pinned above. A no_mapping row states that the named sources
-# were searched and no corresponding field or record was found. It is not a
+# documents pinned above. Each no_mapping note names them, so the bound
+# travels with the note when it is quoted. It is a search result, not a
 # claim about the project's capability outside those sources.
 
 # ──────────────────────────────────────────────────────────────
@@ -185,67 +185,67 @@ signal_types:
   trust_verification:
     canonical: trust_verification
     match: no_mapping
-    notes: "No verification status or grade about an agent in the search basis. legitimacy_state grades the evaluation behind a transfer, not the agent."
+    notes: "No verification status or grade about an agent in the AHR spec at ffd6836 or draft -05. legitimacy_state grades the evaluation behind a transfer, not the agent."
 
   behavioral_trust:
     canonical: behavioral_trust
     match: no_mapping
-    notes: "No scored assessment of agent behavior in the search basis."
+    notes: "No scored assessment of agent behavior in the AHR spec at ffd6836 or draft -05."
 
   cognitive_attestation:
     canonical: cognitive_attestation
     match: no_mapping
-    notes: "No reasoning commitment in the AHR. The repository's seat evidence artifact concerns model output and is out of scope for this file."
+    notes: "No reasoning commitment in the AHR spec at ffd6836 or draft -05. The repository's seat evidence artifact concerns model output and is out of scope for this file."
 
   reasoning_integrity:
     canonical: reasoning_integrity
     match: no_mapping
-    notes: "No attestation about an action's reasoning in the search basis."
+    notes: "No attestation about an action's reasoning in the AHR spec at ffd6836 or draft -05."
 
   settlement_witness:
     canonical: settlement_witness
     match: no_mapping
-    notes: "No settlement or payment outcome record in the search basis."
+    notes: "No settlement or payment outcome record in the AHR spec at ffd6836 or draft -05."
 
   peer_review:
     canonical: peer_review
     match: no_mapping
-    notes: "No task-completion attestation by a delegating agent in the search basis."
+    notes: "No task-completion attestation by a delegating agent in the AHR spec at ffd6836 or draft -05."
 
   job_performance:
     canonical: job_performance
     match: no_mapping
-    notes: "No outcome assessment of completed tasks in the search basis."
+    notes: "No outcome assessment of completed tasks in the AHR spec at ffd6836 or draft -05."
 
   completion_ratio:
     canonical: completion_ratio
     match: no_mapping
-    notes: "No aggregate completion metric in the search basis."
+    notes: "No aggregate completion metric in the AHR spec at ffd6836 or draft -05."
 
   passport_grade:
     canonical: passport_grade
     match: no_mapping
-    notes: "No graded standing for an agent in the search basis."
+    notes: "No graded standing for an agent in the AHR spec at ffd6836 or draft -05."
 
   security_posture:
     canonical: security_posture
     match: no_mapping
-    notes: "No signed posture assessment of an artifact in the search basis."
+    notes: "No signed posture assessment of an artifact in the AHR spec at ffd6836 or draft -05."
 
   compliance_risk:
     canonical: compliance_risk
     match: no_mapping
-    notes: "No scored exposure assessment in the search basis."
+    notes: "No scored exposure assessment in the AHR spec at ffd6836 or draft -05."
 
   wallet_state:
     canonical: wallet_state
     match: no_mapping
-    notes: "No wallet or on-chain concept in the search basis."
+    notes: "No wallet or on-chain concept in the AHR spec at ffd6836 or draft -05."
 
   wallet_intelligence:
     canonical: wallet_intelligence
     match: no_mapping
-    notes: "No wallet or on-chain concept in the search basis."
+    notes: "No wallet or on-chain concept in the AHR spec at ffd6836 or draft -05."
 
 # ──────────────────────────────────────────────────────────────
 # DECISION TRAJECTORY
@@ -280,17 +280,17 @@ decision_trajectory:
   baseline_revision:
     canonical: baseline_revision
     match: no_mapping
-    notes: "No behavioral baseline in the search basis."
+    notes: "No behavioral baseline in the AHR spec at ffd6836 or draft -05."
 
   divergence_signal:
     canonical: divergence_signal
     match: no_mapping
-    notes: "No measured behavioral deviation in the search basis."
+    notes: "No measured behavioral deviation in the AHR spec at ffd6836 or draft -05."
 
   trust_velocity:
     canonical: trust_velocity
     match: no_mapping
-    notes: "No trust score and no rate of change in the search basis."
+    notes: "No trust score and no rate of change in the AHR spec at ffd6836 or draft -05."
 
 # ──────────────────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS

@@ -14,7 +14,15 @@
 #   the repository. Not published on PyPI at the time of reading.
 #
 # Quoted definitions are from those files at the pinned commit. Line numbers
-# refer to that commit.
+# refer to that commit. The maintainer confirmed on PR #231 that the changes
+# from fc1309b to 98d8106 touch only the payment-run demo, its tests and docs,
+# so the pin stays valid for this mapping (checked: the compare lists README.md,
+# docs/case-study-ap-payment-run.md, scripts/ap-payment-run-demo.py and
+# tests/test_ap_payment_run_demo.py, nothing under dam_verify/ or schemas/).
+#
+# Maintainer review, 2026-11-04:
+# https://github.com/aeoess/agent-governance-vocabulary/pull/231#issuecomment-6630743293
+# Statements attributed to the maintainer below come from that comment.
 #
 # This is a third-party crosswalk drafted by aeoess (maintainer of this
 # registry), not by the ODR maintainer. It is offered for the maintainer to
@@ -53,7 +61,7 @@ maintainer:
   mapped_system_maintainer:
     github: lumirosh
     project: lumirosh/open-decision-receipt (LumiRosh Research)
-    confirmed_at: null   # not yet reviewed by the mapped system's maintainer
+    confirmed_at: null   # maintainer reviewed on PR #231 and asked to keep this unset until replay_class criteria and wording settle
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi
@@ -63,6 +71,8 @@ maintainer:
 # signature. dam_verify/chain.py lines 7-8: "This is not a signature scheme.
 # It is an intentionally small tamper-evidence layer for the reference
 # implementation." Precedent for the omission: crosswalk/quesen.yaml.
+# The maintainer confirmed on PR #231 that no signed profile is supported
+# today and that signed-receipt interoperability is a research direction.
 # canonicalization: dam_verify/receipt.py line 29,
 # json.dumps(obj, sort_keys=True, separators=(",", ":"), allow_nan=False),
 # with Python's default ensure_ascii=True. Not RFC 8785: non-ASCII strings
@@ -112,7 +122,10 @@ signal_types:
       authority or a status other than authorized raises ValueError. A sealed
       receipt therefore records that a specific action met the declared
       requirements of its workflow bundle at use time, which overlaps the
-      canonical question.
+      canonical question. The maintainer added on PR #231 that a
+      request-supplied k_of_n compensation cannot introduce or override the
+      rule bound in the authority, and that the reference lifecycle binds
+      condition definitions and compensation into its authority snapshot.
 
       Partial, for three stated reasons. (1) The canonical term is a
       signed attestation. ODR emits no signature; integrity_hash is an
@@ -123,7 +136,10 @@ signal_types:
       made the determination. (3) "status" is not in the schema's
       required list. Sealing semantics come from the reference lifecycle,
       and a third-party producer can emit a schema-valid receipt without
-      them. A consumer that needs issuer-attributable attestation should
+      them. The maintainer confirmed on PR #231 that the seal checks hold
+      for the dam_verify reference lifecycle, not for arbitrary schema-valid
+      producers, and that sealed is distinct from conformance level L3,
+      which also requires observable post-seal lifecycle behavior. A consumer that needs issuer-attributable attestation should
       not treat a sealed receipt as equivalent to a signed
       governance_attestation.
 
@@ -263,6 +279,13 @@ decision_trajectory:
       docs/mappings/conformance.md separates the two: "Chain integrity is
       not the per-receipt L2 test."
 
+      The maintainer confirmed on PR #231 that both readings apply, for
+      different jobs. The parent and child receipts and the referenced
+      events carry the logical re-decision links, and chain.jsonl checks the
+      consistency of the retained local chain and sealed receipt bodies. The
+      chain is not an issuer signature or an externally anchored proof of
+      complete history.
+
   baseline_revision:
     canonical: baseline_revision
     match: no_mapping
@@ -314,7 +337,13 @@ descriptor_dimensions:
       and the receipt records both (context_hash_at_check and
       context_hash_at_execution). After sealing, watch re-evaluates the
       referenced basis and opens a child lifecycle on change, so the
-      sealed record does not claim the basis still holds later.
+      sealed record does not claim the basis still holds later. The
+      maintainer confirmed at_processing on PR #231. watch is a separate
+      operation, and a no-change invocation leaves no persisted record, so
+      the absence of a ReopenEvent is not evidence of current validity or of
+      monitoring. Post-seal condition observations go through
+      check_conditions(), which watch() does not inspect, and neither
+      operation fetches external ground truth.
     refusal_authority: consumer_policy
     note_refusal: >
       README: "Your integration owns authentication, permission
@@ -333,8 +362,13 @@ descriptor_dimensions:
       evidence references, versions and content hashes. Structured-query
       schema entries can additionally carry result_artifact_ref pointers.
       Reconstruction depends on retaining the referenced artifacts
-      (examples/end-to-end-artifact-bundle shows one such bundle). Left
-      for the maintainer to state.
+      (examples/end-to-end-artifact-bundle shows one such bundle). The
+      maintainer stated on PR #231 that dam-verify replay renders the
+      recorded decision and does not recompute the original policy verdict,
+      and that independent re-evaluation of recorded equality-condition
+      states was verified in one retained fixture. The maintainer asked to leave
+      replay_class unset until the registry states criteria for each class.
+      No full_replay claim is made.
     note_governed_action: >
       No governed_action_class selected. decision_type is open
       (approve_claim_payout, merge_pr, send_outreach in the minimum
@@ -361,11 +395,9 @@ odr_specific_terms:
   lifecycle_states: "docs/lifecycle.md canonical states Observed to Sealed. The reference implementation exposes a narrower status set. [approval, authorization_decision, execution, effect, evidence]"
 
 # ──────────────────────────────────────────────────────────────
-# OPEN QUESTIONS FOR THE MAPPED SYSTEM'S MAINTAINER
+# OPEN QUESTIONS
+# The five questions to the maintainer were answered on PR #231 and are
+# folded into the notes above. One question remains, on the registry side.
 # ──────────────────────────────────────────────────────────────
 open_questions:
-  - "Is status 'sealed' meant to carry the seal() checks for any conforming producer, or only for dam_verify? Decides whether governance_attestation stays partial on reason (3)."
-  - "Is a signed profile planned (provenance.md calls interoperability with signed action receipts 'a research direction')? A signature over the sealed body would change reason (1) and would let this file declare signature_capability."
-  - "Which replay_class does ODR claim for a sealed receipt when the referenced evidence artifacts are retained, and which when they are not?"
-  - "Is at_processing the right reading of validity, or does ODR treat a sealed receipt as continuously subject to watch?"
-  - "Should decision_lineage be read from the parent and child receipts, from the store chain, or from both?"
+  - "replay_class: does decision_replay mean reconstructing the recorded decision, or recomputing its verdict independently? vocabulary.yaml lists the replay classes without criteria for each class. Raised by the ODR maintainer on PR #231."

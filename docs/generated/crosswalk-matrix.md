@@ -1,6 +1,6 @@
 # Crosswalk Matrix
 
-Auto-generated on 2026-11-04. 28 systems × 16 canonical signal types.
+Auto-generated on 2026-11-04. 29 systems × 16 canonical signal types.
 
 Cell legend:
 
@@ -50,7 +50,7 @@ Cell legend:
 
 ## Coverage
 
-- Systems represented: 28
+- Systems represented: 29
 - Canonical signal types: 16
 
 ### Per-signal coverage
@@ -59,34 +59,34 @@ Mapped counts systems with an `exact`, `structural` or `partial` match, or a leg
 
 | Signal type | Systems mapped | Systems addressed | Mapped coverage |
 |---|---|---|---|
-| `governance_attestation` | 18 / 28 | 27 / 28 | 64% |
-| `trust_verification` | 14 / 28 | 25 / 28 | 50% |
-| `behavioral_trust` | 10 / 28 | 26 / 28 | 36% |
-| `entity_continuity` | 7 / 28 | 19 / 28 | 25% |
-| `security_posture` | 7 / 28 | 25 / 28 | 25% |
-| `wallet_state` | 6 / 28 | 28 / 28 | 21% |
-| `passport_grade` | 5 / 28 | 25 / 28 | 18% |
-| `settlement_witness` | 5 / 28 | 27 / 28 | 18% |
-| `job_performance` | 4 / 28 | 25 / 28 | 14% |
-| `reasoning_integrity` | 4 / 28 | 25 / 28 | 14% |
-| `compliance_risk` | 3 / 28 | 27 / 28 | 11% |
-| `wallet_intelligence` | 3 / 28 | 25 / 28 | 11% |
-| `peer_review` | 2 / 28 | 22 / 28 | 7% |
-| `completion_ratio` | 1 / 28 | 12 / 28 | 4% |
-| `bilateral_receipt` | 0 / 28 | 7 / 28 | 0% |
-| `cognitive_attestation` | 0 / 28 | 10 / 28 | 0% |
+| `governance_attestation` | 19 / 29 | 28 / 29 | 66% |
+| `trust_verification` | 14 / 29 | 26 / 29 | 48% |
+| `behavioral_trust` | 10 / 29 | 27 / 29 | 34% |
+| `entity_continuity` | 7 / 29 | 20 / 29 | 24% |
+| `security_posture` | 7 / 29 | 26 / 29 | 24% |
+| `wallet_state` | 6 / 29 | 29 / 29 | 21% |
+| `passport_grade` | 5 / 29 | 26 / 29 | 17% |
+| `settlement_witness` | 5 / 29 | 28 / 29 | 17% |
+| `job_performance` | 4 / 29 | 26 / 29 | 14% |
+| `reasoning_integrity` | 4 / 29 | 26 / 29 | 14% |
+| `compliance_risk` | 3 / 29 | 28 / 29 | 10% |
+| `wallet_intelligence` | 3 / 29 | 26 / 29 | 10% |
+| `peer_review` | 2 / 29 | 23 / 29 | 7% |
+| `completion_ratio` | 1 / 29 | 13 / 29 | 3% |
+| `bilateral_receipt` | 0 / 29 | 8 / 29 | 0% |
+| `cognitive_attestation` | 0 / 29 | 11 / 29 | 0% |
 
 ### Top-3 most-mapped
 
-- `governance_attestation` — 18/28 (64%)
-- `trust_verification` — 14/28 (50%)
-- `behavioral_trust` — 10/28 (36%)
+- `governance_attestation` — 19/29 (66%)
+- `trust_verification` — 14/29 (48%)
+- `behavioral_trust` — 10/29 (34%)
 
 ### Top-3 least-mapped
 
-- `cognitive_attestation` — 0/28 (0%)
-- `bilateral_receipt` — 0/28 (0%)
-- `completion_ratio` — 1/28 (4%)
+- `cognitive_attestation` — 0/29 (0%)
+- `bilateral_receipt` — 0/29 (0%)
+- `completion_ratio` — 1/29 (3%)
 
 ---
 

@@ -20,8 +20,10 @@
 #
 # Scope note: draft-gruszka-audit-decision-receipts-05 admits a stricter subset
 # of the predicate (decisionType preActionAuthorization only, validity
-# required, no relationships member, draft 3.8). Rows below follow the
-# predicate pages at the commit above and say where the draft is narrower.
+# required, no relationships member, draft 3.8, Tables 4 and 5 and the
+# member lists in 3.2 and 3.4). Rows below follow the predicate pages at the
+# commit above and say where the draft is narrower. The maintainer confirmed
+# the relationships difference on PR #241 and plans to clarify it in -07.
 #
 # Status of the parts: the decision receipt is "shipped in proofbundle 2.1.0
 # ... stable"; action-outcome/v0.1 and relation/v0.1 are "EXPERIMENTAL ...
@@ -85,7 +87,8 @@ system_attributes:
 #   relation.md sections 1 to 4, both machine schemas, and
 #   draft-gruszka-audit-decision-receipts-05 sections 1 to 6, at the pins
 #   above. Not read: eval-result, trust-pack, SPEC.md, the plugin source.
-# A no_mapping row states that these sources were searched and no
+# Each no_mapping note names the pin, so the bound travels with the note
+# when it is quoted. A no_mapping row states that these sources were searched and no
 # corresponding field or record was found. It is not a claim about the
 # project's capability outside those sources.
 
@@ -156,12 +159,12 @@ signal_types:
   peer_review:
     canonical: peer_review
     match: no_mapping
-    notes: "No task-completion attestation signed by a delegator in the search basis. delegationRefs is an open array of any values (draft Table 4) and draft 2 notes it is not used there."
+    notes: "No task-completion attestation signed by a delegator in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6. delegationRefs is an open array of any values (draft Table 4) and draft 2 notes it is not used there."
 
   settlement_witness:
     canonical: settlement_witness
     match: no_mapping
-    notes: "No settlement outcome record in the search basis."
+    notes: "No settlement outcome record in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   reasoning_integrity:
     canonical: reasoning_integrity
@@ -176,7 +179,7 @@ signal_types:
   behavioral_trust:
     canonical: behavioral_trust
     match: no_mapping
-    notes: "No scored assessment of agent behavior in the search basis."
+    notes: "No scored assessment of agent behavior in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   cognitive_attestation:
     canonical: cognitive_attestation
@@ -186,22 +189,22 @@ signal_types:
   compliance_risk:
     canonical: compliance_risk
     match: no_mapping
-    notes: "No scored exposure assessment in the search basis."
+    notes: "No scored exposure assessment in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   entity_continuity:
     canonical: entity_continuity
     match: no_mapping
-    notes: "No continuity claim about an agent across sessions in the search basis."
+    notes: "No continuity claim about an agent across sessions in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   passport_grade:
     canonical: passport_grade
     match: no_mapping
-    notes: "No graded standing for an agent in the search basis."
+    notes: "No graded standing for an agent in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   security_posture:
     canonical: security_posture
     match: no_mapping
-    notes: "No signed posture assessment in the search basis."
+    notes: "No signed posture assessment in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   completion_ratio:
     canonical: completion_ratio
@@ -211,12 +214,12 @@ signal_types:
   wallet_state:
     canonical: wallet_state
     match: no_mapping
-    notes: "No wallet or on-chain concept in the search basis."
+    notes: "No wallet or on-chain concept in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   wallet_intelligence:
     canonical: wallet_intelligence
     match: no_mapping
-    notes: "No wallet or on-chain concept in the search basis."
+    notes: "No wallet or on-chain concept in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
 # ──────────────────────────────────────────────────────────────
 # DECISION TRAJECTORY
@@ -245,8 +248,17 @@ decision_trajectory:
       there is no sequence of all decisions affecting one agent. (2) "A
       verified edge proves the issuer declared the derivation over exact
       bytes, never that the successor is better" (relation §1). (3) The
-      profile is experimental, and the draft's field rules do not admit a
-      relationships member (draft 3.8, Table 4).
+      profile is experimental. The predicate pages and both pinned schemas
+      (decision-receipt-v0.1 and action-outcome-v0.1, $defs/relationships)
+      admit an optional relationships member under relation/v0.1. Draft -05
+      does not: Tables 4 and 5 omit it, Section 3.8 excludes unlisted
+      predicate members, and the member lists in Sections 3.2 and 3.4 leave
+      it out. The maintainer confirmed this reading on PR #241 and wrote: "I
+      will clarify it in -07, either by admitting the optional member
+      consistently in the member lists and tables, or by explicitly
+      retaining the narrower draft profile." Sources for this row: relation.md
+      and the predicate pages at 6d29ead for the experimental capability,
+      draft -05 for the narrower field rules.
 
       The outcome's decisionRef and the decision's evidenceRefs are content
       root links across record types (evidence, decision, outcome). They are
@@ -256,17 +268,17 @@ decision_trajectory:
   baseline_revision:
     canonical: baseline_revision
     match: no_mapping
-    notes: "No behavioral baseline in the search basis."
+    notes: "No behavioral baseline in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   divergence_signal:
     canonical: divergence_signal
     match: no_mapping
-    notes: "No measured behavioral deviation in the search basis. decisionChangeConditions lists what would change a decision; it records no measured change."
+    notes: "No measured behavioral deviation in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6. decisionChangeConditions lists what would change a decision. It records no measured change."
 
   trust_velocity:
     canonical: trust_velocity
     match: no_mapping
-    notes: "No trust score and no rate of change in the search basis."
+    notes: "No trust score and no rate of change in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
 # ──────────────────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS

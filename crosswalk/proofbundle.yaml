@@ -1,0 +1,352 @@
+# crosswalk/proofbundle.yaml
+#
+# proofbundle decision receipt and action outcome -> Agent Governance Vocabulary
+#
+# Mapped artifacts: the Decision Receipt predicate decision-receipt/v0.1 and its
+# companion Action Outcome predicate action-outcome/v0.1, each an in-toto
+# Statement v1 in a DSSE envelope, plus the relation/v0.1 lineage profile that
+# both predicates may carry. Sources, all at
+#   b7n0de/proofbundle main @ 6d29ead36d8985f49a82b74c77eaa5a373dbeb61 (2026-11-04)
+#   docs/predicates/decision-receipt.md          sha256 1b80ce74952dac13cab161d89a312bd58e4bc7a5dd80007d021ffd53487e7ecf
+#   docs/predicates/action-outcome.md            sha256 92b1ae0e56b72e8b69585eb5a15cf7f29e30dbf07fa40f2ba54576e68061f22d
+#   docs/predicates/relation.md                  sha256 3280f070a49676ea1991c213e63786643cea2bc0bebf7368bc4db6ada78d28ff
+#   schemas/decision-receipt-v0.1.schema.json    sha256 342ffd52ec1c0fcd9087f66dcc07d1876cde8e1872807ebf9a49cca1386ed992
+#   schemas/action-outcome-v0.1.schema.json      sha256 4ad36e88f928c04745a85b10465d38369d1682032aa10c1874098944771e5bc2
+# and the profile of the same receipts in
+#   draft-gruszka-audit-decision-receipts-05 (2026-11-02)
+#                                                sha256 b66f9180e9cd5dca9984d8a6b60987a4a2903f1b1f16abf7f111ca2752a444e6
+# Every quoted definition below is from those files. Section numbers are given
+# as "doc §n" for the predicate pages and "draft n" for the Internet-Draft.
+#
+# Scope note: draft-gruszka-audit-decision-receipts-05 admits a stricter subset
+# of the predicate (decisionType preActionAuthorization only, validity
+# required, no relationships member, draft 3.8). Rows below follow the
+# predicate pages at the commit above and say where the draft is narrower.
+#
+# Status of the parts: the decision receipt is "shipped in proofbundle 2.1.0
+# ... stable"; action-outcome/v0.1 and relation/v0.1 are "EXPERIMENTAL ...
+# API and wire format may change without deprecation".
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the protocol's maintainer. It is offered for the
+# maintainer to correct or confirm.
+
+system:
+  name: proofbundle decision receipts
+  short_name: proofbundle
+  home: https://github.com/b7n0de/proofbundle
+  spec: https://github.com/b7n0de/proofbundle/blob/6d29ead36d8985f49a82b74c77eaa5a373dbeb61/docs/predicates/decision-receipt.md
+  spec_version: "decision-receipt/v0.1 (stable since 2.1.0), action-outcome/v0.1 and relation/v0.1 (experimental). Internet-Draft profile draft-gruszka-audit-decision-receipts-05."
+  repo: https://github.com/b7n0de/proofbundle
+  implementation: "Python package proofbundle (PyPI, 6.4.0 per draft 5), Go checker for the draft vectors, plugin preview in plugins/proofbundle"
+  role: >
+    "A Decision Receipt is a signed, offline-verifiable record that a specific
+    decision maker (an agent gate, a policy engine boundary, a human
+    escalation point) produced a specific verdict about a specific proposed
+    action, over specific digest-bound inputs and evidence, at a specific
+    time" (doc §1). An Action Outcome is "a signed, offline-verifiable record
+    that a specific executor ... carried out, or refused, the action a
+    specific Decision Receipt permitted" (action-outcome §1), naming the
+    decision by its content root in decisionRef.
+  identity_layer: >
+    decisionMaker.id, agent.id, principal.id and executor.id are non-empty
+    strings. "decisionMaker.id is never believed on the JSON claim alone: it
+    is matched against the DSSE signer key via trusted_decision_makers"
+    (doc §9). No identifier scheme is required.
+  upstream_license: MIT
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: b7n0de
+    project: b7n0de/proofbundle
+    confirmed_at: null   # not yet reviewed by the mapped system's maintainer
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: DSSE, "Ed25519 over the DSSE pre-authentication
+# encoding of the payload type and the payload bytes" (draft 2.4).
+# canonicalization: "the producer MUST emit the Statement payload in RFC-8785
+# canonical form", and the verifier "never re-canonicalizes" (doc §7.1). A
+# payload that differs from its own RFC 8785 form is a fail-closed error.
+# hash_family: SHA-256 for the content root and every digest object
+# ({"sha256": "<64 lowercase hex>"}); relation edges and typedDigest name
+# jcs-sha256-v1 explicitly.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row below:
+#   docs/predicates/decision-receipt.md and action-outcome.md read in full,
+#   relation.md sections 1 to 4, both machine schemas, and
+#   draft-gruszka-audit-decision-receipts-05 sections 1 to 6, at the pins
+#   above. Not read: eval-result, trust-pack, SPEC.md, the plugin source.
+# A no_mapping row states that these sources were searched and no
+# corresponding field or record was found. It is not a claim about the
+# project's capability outside those sources.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "decision-receipt/v0.1 with decision.verdict ALLOW, bound to policyBoundary.policyDigest"
+    match: partial
+    evidence: emitted
+    source_path: predicate.decision.verdict
+    notes: >
+      The receipt is the decision maker's signed statement that it produced
+      a verdict on one proposed action "against which policy boundary, on
+      which evidence" (doc §1), with the policy named by digest
+      (policyBoundary.policyId, decisionPath, policyDigest) and the action by
+      proposedAction.parametersDigest. An ALLOW is the closest form to the
+      canonical "signed attestation that an agent or action satisfied a
+      declared governance requirement".
+
+      Partial, for three stated reasons. (1) The receipt states the verdict,
+      not that the action satisfied the requirement in fact: "It does not
+      prove the decision was correct, legal, safe, compliant, or fully
+      informed" (doc §2). (2) The verdict set is wider than an attestation
+      of satisfaction (ALLOW, DENY, REFUSE, ESCALATE, DEFER, OBSERVE), and
+      only ALLOW reads as one. (3) The receipt is "not an access token. A
+      verified ALLOW is a record of a decision, and the executing system
+      makes its own authorization check" (draft 2.5). The receipt's own
+      member notChecked lists what the decision maker did not check, which
+      the canonical term has no slot for.
+    issuers_in_production: []
+    signed_payload_fields:
+      - predicate.decision.verdict
+      - predicate.decision.reasonCodes
+      - predicate.policyBoundary.policyDigest
+      - predicate.policyBoundary.policyId
+      - predicate.proposedAction.parametersDigest
+      - predicate.decisionMaker.id
+      - predicate.notChecked
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "decision receipt plus action outcome, linked by decisionRef (content root of the decision)"
+    match: false_analog
+    notes: >
+      The canonical term requires both parties' signatures over one
+      canonicalized preimage. proofbundle deliberately keeps decision and
+      outcome as two receipts "signed under different keys" (draft 6): the
+      verifier checks that the outcome key "MUST differ from the decision
+      maker's key, and executor.id MUST differ from decisionMaker.id" (draft
+      3.4 step 5). Each party signs its own preimage, and the outcome names
+      the decision by content root. Recorded as false_analog because a
+      decision and outcome pair signed by two parties is close enough to be
+      wired in as a two-party receipt, and the separation of preimages is
+      the property that makes it not one.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "action-outcome status (executed, refused, failed, partial) is the executor's statement about one action, not an assessment of completed work."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation signed by a delegator in the search basis. delegationRefs is an open array of any values (draft Table 4) and draft 2 notes it is not used there."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No settlement outcome record in the search basis."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "The receipt 'carries no chain-of-thought' (doc §2). Inputs are committed by digest; nothing attests reasoning."
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "Binding decisionMaker.id to a key is a relying-party trust policy (doc §9), not a status carried in the receipt."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of agent behavior in the search basis."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "agent.configurationDigest commits to a configuration by digest. Nothing attests the model or runtime."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the search basis."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity claim about an agent across sessions in the search basis."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for an agent in the search basis."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate metric. Computable by a consumer over outcome status values, but none is defined."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "relation/v0.1 edges (predicate.relationships[], relation supersedes, revises, corrects, retracts, renews, derivedFrom, amends)"
+    match: partial
+    evidence: emitted
+    source_path: predicate.relationships[].targetReceiptDigest
+    notes: >
+      When a decision is "deliberately corrected, re-run, or withdrawn, the
+      NEW receipt carries a TYPED, SIGNED relationship edge pointing at its
+      predecessor's content root" (relation §1), inside the signed bytes,
+      and the verifier walks attached ancestors to depth 32 and reports a
+      lineage state (VERIFIED, DECLARED_UNRESOLVED, FAIL, NOT_EVALUATED).
+      Each edge references its predecessor by content hash, which is the
+      canonical shape.
+
+      Partial, for three stated reasons. (1) Edges are optional and are
+      written only on correction, re-run or withdrawal. Ordinary successive
+      decisions are not linked: an earlier ESCALATE receipt "is a separate
+      record; this receipt does not reference it" (draft 2.1), and draft 6
+      notes "Section 3.2 does not define a chain of decision receipts". So
+      there is no sequence of all decisions affecting one agent. (2) "A
+      verified edge proves the issuer declared the derivation over exact
+      bytes, never that the successor is better" (relation §1). (3) The
+      profile is experimental, and the draft's field rules do not admit a
+      relationships member (draft 3.8, Table 4).
+
+      The outcome's decisionRef and the decision's evidenceRefs are content
+      root links across record types (evidence, decision, outcome). They are
+      not counted here. sequence {runId, seq} on outcomes is a counter for
+      gap detection, not a hash link.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the search basis."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation in the search basis. decisionChangeConditions lists what would change a decision; it records no measured change."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Drafter's reading, each value with its basis, open to the maintainer's
+# correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  decision_receipt:
+    enforcement_class: advisory
+    note_enforcement: >
+      The receipt records a verdict and gates nothing itself: "the executing
+      system makes its own authorization check" (draft 2.5), and preventing
+      reuse "remains the relying party's duty" (draft 4). A deployment such
+      as the plugin preview obtains a signed ALLOW before it lets a write
+      run (draft 5), which is the deployment's binding use of an advisory
+      record. Open question below.
+    validity_temporal: at_acceptance
+    note_validity: >
+      validity carries audience, nonce and expiresAt. The verifier supplies
+      the evaluation time T and requires decidedAt <= T < expiresAt (draft
+      3.2 step 9). "A historical audit time MUST NOT make an expired
+      approval usable" (draft 4).
+    refusal_authority: shared
+    note_refusal: >
+      The decision maker issues DENY and REFUSE verdicts. The relying party
+      holds the stop: it makes its own check, enforces single use of
+      approvals (draft 4), and its trust policy decides which keys may
+      decide (doc §9). Neither alone covers refusal, so shared is declared.
+    invariant_survival: pre_action
+    note_invariant: >
+      draft-gruszka-audit-decision-receipts-05 requires decisionType
+      preActionAuthorization. The predicate also admits postHocReview,
+      humanEscalation and policySimulation (doc §6), for which pre_action
+      would not hold.
+    note_replay: >
+      replay_class left unset. Inputs, policy and evidence are bound by
+      digest (inputSnapshot, policyBoundary.policyDigest, evidenceRefs,
+      proposedAction.parametersDigest), so recomputing a verdict needs the
+      referenced bytes and the policy engine. The registry has no per-class
+      criteria yet for decision_replay versus fingerprint_only (question
+      raised on aeoess/agent-governance-vocabulary#231). Left for the
+      maintainer once that is settled.
+    note_action_class: >
+      governed_action_class left unset. proposedAction.actionType is an open
+      string; the plugin preview covers writes (draft 5).
+
+  action_outcome:
+    invariant_survival: post_action
+    note_invariant: "performedAt MUST NOT be earlier than the decision's decidedAt (draft 3.4 step 7)."
+    measurement_point: mutation_boundary
+    note_measurement: >
+      Action Records are produced "at the boundary where the action took
+      effect" (draft 2.3), signed by an executor or an observer under its
+      own key. Draft 2.3 adds that the key separation checks "alone do not
+      establish operational separation or that the outcome signer observed
+      the boundary".
+    refusal_authority: verifier
+    note_refusal: >
+      Verification is fail-closed and ordered: "a later check never rescues
+      an earlier failure" (action-outcome §5). A self-asserted executed
+      status without an effect digest gives execution_proven False.
+
+# ──────────────────────────────────────────────────────────────
+# PROOFBUNDLE-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET
+# The nearest concept in vocabulary-lifecycle.yaml (INCUBATING, descriptive
+# only) is given in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+proofbundle_specific_terms:
+  content_root: "SHA-256 over the exact RFC 8785 canonical Statement bytes, never recomputed by re-canonicalizing (doc §3, §7.1). Used by evidenceRefs, decisionRef and relation edges. [evidence]"
+  notChecked: "Required list of {field, reason, impact} stating what the decision maker did not check (doc §6). [coverage_and_completeness]"
+  decisionChangeConditions: "Required list of {conditionType, description, requiredEvidenceType} stating what would change the decision (doc §6). [activation_condition]"
+  approval_record: "Record of one human act approving one action: approvalId, approver, session, actionDigest, approvedAt, validUntil, bound into inputSnapshot by digest; not signed by the approver (draft 2.1, 2.5). [approval]"
+  approval_single_use: "A relying party MUST honour each approval at most once, keyed by (approvalId, actionDigest, session), and MUST keep that state across rotation (draft 4). [approval, expiry_or_exhaustion]"
+  evaluation_receipt_as_evidence: "An evaluation receipt appears only in evidenceRefs; 'A verifier MUST NOT treat a valid Signed Evaluation Receipt ... as permission for an action' (draft 2.6). [evidence]"
+  detached_anchors: "Anchors for a receipt's own content root travel outside the signed bytes; a pending anchor does not satisfy strict mode (doc §8). [evidence]"
+  role_separation: "Outcome key and executor.id must differ from the decision maker's (draft 3.4 step 5, action-outcome §5). [authorization_decision, execution]"
+
+# ──────────────────────────────────────────────────────────────
+# OPEN QUESTIONS FOR THE MAPPED SYSTEM'S MAINTAINER
+# ──────────────────────────────────────────────────────────────
+open_questions:
+  - "Should governance_attestation be read only for verdict ALLOW, or for the receipt as a whole? Decides whether it stays partial or becomes structural for ALLOW receipts."
+  - "Is advisory the right enforcement_class for the format, given that the plugin preview uses a signed ALLOW as a precondition to run a write? Or would you rather describe the receipt as binding where a relying party requires it?"
+  - "Should decision_lineage cite relation/v0.1 edges, given they are optional, experimental, and not admitted by draft -05's field rules? Or would you rather it be no_mapping until the draft admits relationships?"
+  - "Which replay_class fits once the registry defines its criteria: decision_replay (verdict reconstructible when the referenced bytes and policy are retained) or fingerprint_only?"
+  - "Is a crosswalk better pinned to the predicate pages on main, as here, or to draft-gruszka-audit-decision-receipts-05 and its pinned commit e1fec86?"

@@ -16,6 +16,9 @@
 #     17ec7bc touches Section 2.1 (authorization_binding format and a new
 #     "Parties and identity" paragraph), Section 3 (canonical form) and
 #     Section 4 steps 2 and 6, which were re-read in full.
+#   README.md at ffd6836, sha256
+#     68705289498942694ac4baf6610fa98832d1f10f5bcb953793073b77e01fe5dd, quoted
+#     for the implementation cell only.
 #   Draft -05 stays the IETF pin. The author wrote on PR #240 that draft -06
 #   carries the same Section 3 correction and posts after this week's IETF
 #   meeting.
@@ -26,9 +29,8 @@
 # Out of scope for this file: the companion artifacts in the same repository
 # (ledger export, capability credential, anchoring checkpoints, refusal
 # digest, selective-disclosure receipts, precommitment atoms, seat
-# evidence). The corpus vectors were listed, not opened. The decision_lineage
-# row quotes spec/ledger-export.md at ffd6836 (sha256
-# 2cea1ba869559793405ac9966a9ba9e287af8dd2064e96627aa4ec6d0fc36c6c, unchanged at c2eddbd) to point at the closer candidate. The
+# evidence). Five corpus vectors were opened for the receipt proof check
+# described under implementation, and the rest were listed, not opened. The
 # author offered on PR #240 to review a separate mapping of the refusal
 # digest (spec/refusal-transparency.md).
 #
@@ -49,7 +51,15 @@ system:
     "proprietary software of Continuity Laboratories", as is the reference
     verifier sr-verify. The repository holds the specifications, the
     conformance corpus and the Internet-Drafts, and "deliberately contains
-    no verifier or engine code".
+    no verifier or engine code". aeoess recomputed the receipt proof of two
+    golden corpus vectors at ffd6836 (corpus/ahr-v0.2/r1/golden.json and
+    r3/golden-binding-1of1.json) with a script written from Section 3 and
+    Section 4 step 1: canonical bytes, receipt_hash, and the Ed25519 issuer
+    signature against corpus/keys/vector.pub.pem. Both passed, and three
+    altered vectors (proof-signature-bitflip, content-altered, proof-stripped)
+    failed as the corpus manifest expects. Evidence event hashes, claim
+    grounding and the later verification steps were not recomputed, and the
+    issuing engine was not exercised.
   role: >
     "A Succession Receipt is a portable, signed JSON document that proves
     one completed, policy-gated transfer of authority between two agents:
@@ -57,7 +67,10 @@ system:
     legitimacy determination the transfer ran, and which obligations
     carried forward, with every claim grounded in signed evidence events
     embedded in the receipt itself." Verified offline with the issuer's
-    Ed25519 public key.
+    Ed25519 public key. The issuer's proof covers the whole receipt,
+    evidence included. Section 2.2 makes each evidence event's own signature
+    optional, absent in unsigned deployments, so a valid receipt does not
+    show that every embedded event was signed on its own.
   identity_layer: >
     Stewards ("An agent (or agent generation) that can hold authority and
     carry obligations in the issuing system's registry") are named by UUID,
@@ -107,8 +120,8 @@ system_attributes:
   canonicalization_profile: implementation-defined  # AHR Section 3 canonical form, JCS-equal within the subset Section 3 states (ASCII member names, no U+2028 or U+2029, integers within ±(2^53−1))
   hash_family: sha-256
 
-# Search basis for every no_mapping and false_analog row below: the two
-# documents pinned above. Each no_mapping note names them, so the bound
+# Search basis for every no_mapping and false_analog row below: the AHR
+# spec and draft -05 pinned above. Each no_mapping note names them, so the bound
 # travels with the note when it is quoted. It is a search result, not a
 # claim about the project's capability outside those sources.
 
@@ -128,7 +141,9 @@ signal_types:
       permits no other path to Completed)", with the revocations,
       derivation and inheritance that went with it. That is a single-issuer
       signed statement that a transfer satisfied the issuer's governance
-      gates, which overlaps the canonical definition.
+      gates, which overlaps the canonical definition. The signature behind
+      it is the issuer's proof over the receipt. Evidence event signatures
+      are optional (Section 2.2).
 
       Partial, for three stated reasons. (1) The governance requirement is
       referenced, not carried: legitimacy.legitimacy_id and the optional
@@ -137,8 +152,9 @@ signal_types:
       applied are not in the receipt. The author wrote on PR #240 that
       L3 to L5 "are not defined in a public document. The receipt carries
       the label, the criteria are the issuer's, and 'referenced, not
-      carried' is right." (2) "A receipt proves what the issuer
-      recorded, not that the issuer is honest." (3) It is scoped to the
+      carried' is right." (2) Draft -05, Security Considerations: "A
+      receipt proves what the issuer recorded, not that the issuer is
+      honest." (3) It is scoped to the
       registry: "A receipt does not attest that anything outside the
       registry was enforced. CSS refusals gate ledger transitions, not
       external agent actions." The canonical term covers an agent or an
@@ -179,8 +195,11 @@ signal_types:
       carry an "optional signature", which is the platform's event
       signature, not a steward's. Recorded as false_analog because a
       two-party transfer record is close enough to be wired in as a
-      two-party receipt. The author wrote on PR #240: "bilateral_receipt
-      and decision_lineage as false_analog are both correct as well."
+      two-party receipt. No purpose is emitted or signed in a two-party
+      preimage. This row records that absence as a divergence, as the
+      bilateral_receipt field contract requires of a false_analog row that
+      omits purpose. The author wrote on PR #240: "bilateral_receipt and
+      decision_lineage as false_analog are both correct as well."
 
   trust_verification:
     canonical: trust_verification
@@ -269,12 +288,8 @@ decision_trajectory:
       receipt "events link by previous_event_id, an identifier, so
       false_analog stands", and that "The ledger export is the intended
       artifact for ordered lineage: its audit records link by
-      previous_hash, a content hash." spec/ledger-export.md, out of scope
-      here, says a verified export establishes that "the events form
-      unbroken linear stream chains" and that "every audit record is
-      hash-intact and chain-linked exactly as appended", and that "only a
-      signed export carries the completeness attestation". The author
-      also wrote: "bilateral_receipt and decision_lineage as false_analog
+      previous_hash, a content hash." The ledger export is not mapped in
+      this file. The author also wrote: "bilateral_receipt and decision_lineage as false_analog
       are both correct as well."
 
   baseline_revision:
@@ -312,12 +327,14 @@ descriptor_dimensions:
       authority_status as of validFrom and check for newer successions when
       currency matters." There is no revocation of receipts.
     refusal_authority: consumer_policy
-    note_refusal: "Whether to honor the successor is the relying party's decision. The receipt states no acceptance rule beyond verification."
+    note_refusal: "Whether to honor the successor is the relying party's decision. When currency matters, consumers MUST check for newer successions and read authority_status as of validFrom (see note_validity)."
     invariant_survival: post_action
     note_invariant: "Receipts exist only for completed successions: 'a proposed, rejected, or in-flight succession has no receipt.'"
     note_replay: >
-      The proof, every event hash and the claim grounding in both
-      directions are recomputable from the receipt and the issuer key. The
+      The spec states that the proof, every event hash and the claim
+      grounding in both directions are recomputable from the receipt and
+      the issuer key. The proof was recomputed for two corpus vectors (see
+      implementation). Event hashes and claim grounding were not. The
       legitimacy evaluation's inputs are referenced by ID and not carried,
       so full_replay is not claimed. replay_class is left unset while the
       registry clarifies the criteria for each value. Recomputing record
@@ -342,9 +359,9 @@ succession_receipts_specific_terms:
   legitimacy_evaluation: "legitimacy_id recorded by SuccessionApproved, optional legitimacy_state L3, L4 or L5. [approval, authorization_decision]"
   obligation_and_commitment_lineage: "obligations_carried and commitments_carried, sorted UUID lists of what the successor inherits. No vocabulary term covers inherited obligations."
   constitution: "v0.2: genesis_event_hash, amendments_ratified, amendment_head_hash, so a verifier sees 'by which constitution' the transfer was governed. [policy_version, evidence]"
-  ledger_binding: "v0.2: height and event_hash of the final evidence event, the horizon for a completeness check against a ledger export or anchored checkpoint. [coverage_and_completeness]"
-  claim_grounding_both_directions: "Every claim needs a matching evidence event, and every lineage effect in evidence must be declared, so 'a receipt can neither invent nor conceal an effect of the transfer'. [coverage_and_completeness, evidence]"
-  authorization_binding: "Optional cross-format claim (caid, receipt_hash, format) binding the handoff to a pre-execution authorization receipt. Section 2.1 at ffd6836 names 'EP-AUTHORIZATION-RECEIPT-v1' for the Trust Receipt, matching draft -05 Section 6. Native verification failure, an unverified binding and a demonstrated mismatch are three distinct results. [approval, evidence_attestor]"
+  ledger_binding: "v0.2: height and event_hash of the final evidence event, the horizon for a completeness check against a ledger export or anchored checkpoint. The receipt alone does not establish completeness. [coverage_and_completeness]"
+  claim_grounding_both_directions: "Every claim needs a matching evidence event, and every lineage effect in evidence must be declared, so 'a receipt can neither invent nor conceal an effect of the transfer' within the evidence it carries. This checks claims against the embedded evidence. It does not establish completeness against the surrounding ledger or the issuer's honesty. [coverage_and_completeness, evidence]"
+  authorization_binding: "Optional cross-format claim (caid, receipt_hash, format) binding the handoff to a pre-execution authorization receipt. Section 2.1 at ffd6836 names 'EP-AUTHORIZATION-RECEIPT-v1' for the Trust Receipt, matching draft -05 Section 6. Native verification failure, an unverified binding and a demonstrated mismatch are three distinct results. Without the native artifact a verifier reports the binding 'not verified', and Section 4 step 6 says 'a relying party requiring a verified binding MUST NOT accept it as satisfied'. A binding that is only well-formed does not show that the authorization was valid or applies to this handoff. [approval, evidence_attestor]"
   key_id_label: "Issuer-managed label 'deliberately NOT derived from the key'. Rotation adds a mapping and MUST NOT invalidate issued receipts. [signing_key, verifier_trust_policy]"
 
 # ──────────────────────────────────────────────────────────────

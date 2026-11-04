@@ -160,7 +160,18 @@ signal_types:
       external agent actions." The canonical term covers an agent or an
       action. Here the subject is a transfer of authority between stewards.
     issuers_in_production: []
-    signed_payload_fields: []
+    signed_payload_fields:
+      # The issuer's proof covers the canonical receipt with the proof member
+      # absent (AHR Section 3), so every other top-level member is signed.
+      # Members as in corpus/ahr-v0.2/r1/golden.json at ffd6836. Each evidence
+      # event's own signature is optional (Section 2.2).
+      - "@context"
+      - type
+      - spec_version
+      - issuer
+      - validFrom
+      - credentialSubject
+      - evidence
 
   entity_continuity:
     canonical: entity_continuity

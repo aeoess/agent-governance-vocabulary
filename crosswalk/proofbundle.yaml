@@ -139,11 +139,14 @@ signal_types:
       outcome as two receipts "signed under different keys" (draft 6): the
       verifier checks that the outcome key "MUST differ from the decision
       maker's key, and executor.id MUST differ from decisionMaker.id" (draft
-      3.4 step 5). Each party signs its own preimage, and the outcome names
-      the decision by content root. Recorded as false_analog because a
-      decision and outcome pair signed by two parties is close enough to be
-      wired in as a two-party receipt, and the separation of preimages is
-      the property that makes it not one.
+      3.4 step 5). Each signer signs its own record, and the outcome names
+      the decision by content root. Different keys and identifiers do not
+      establish that the signers are independently controlled: the draft
+      says these checks "do not establish that the two keys are controlled
+      by operationally independent parties" (draft 3.4 step 5). Recorded as
+      false_analog because the pair could be mistaken for a bilateral
+      receipt, while the canonical requirement of one signed preimage
+      carrying both signatures is not met.
 
   job_performance:
     canonical: job_performance
@@ -313,18 +316,17 @@ descriptor_dimensions:
   action_outcome:
     invariant_survival: post_action
     note_invariant: "performedAt MUST NOT be earlier than the decision's decidedAt (draft 3.4 step 7)."
-    measurement_point: mutation_boundary
     note_measurement: >
-      Action Records are produced "at the boundary where the action took
-      effect" (draft 2.3), signed by an executor or an observer under its
-      own key. Draft 2.3 adds that the key separation checks "alone do not
-      establish operational separation or that the outcome signer observed
-      the boundary".
-    refusal_authority: verifier
+      measurement_point left unset. The architecture asks for Action Records
+      "at the boundary where the action took effect" (draft 2.3), but a
+      passing verification does not show "that the outcome signer observed
+      the boundary" (draft 3.6). Declaring mutation_boundary would state as
+      a classification what the format only lets the signer claim.
     note_refusal: >
-      Verification is fail-closed and ordered: "a later check never rescues
-      an earlier failure" (action-outcome §5). A self-asserted executed
-      status without an effect digest gives execution_proven False.
+      refusal_authority left unset. The outcome records an action already
+      taken or refused. Rejecting an invalid outcome receipt is evidence
+      verification ("a later check never rescues an earlier failure",
+      action-outcome §5), not authority to stop an action.
 
 # ──────────────────────────────────────────────────────────────
 # PROOFBUNDLE-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET

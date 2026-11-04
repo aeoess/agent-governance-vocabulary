@@ -1,0 +1,77 @@
+name: Matrix pages
+
+# Publishes the crosswalk matrix from main to GitHub Pages. Nothing is
+# committed to the repository: the build renders the matrix from the pushed
+# commit, and the deploy job publishes exactly that artifact.
+#
+# Ordering: runs share one concurrency group without cancelling the run in
+# progress, so deploys never overlap, and a newer push replaces any older run
+# still waiting. Before deploying, the job also checks that main still points
+# at the commit it built, so a delayed older run cannot publish over a newer
+# one. A failed build or deploy publishes nothing, and the previous page, with
+# its own commit stated on it, stays up.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: matrix-pages
+  cancel-in-progress: false
+  # Retain the newest-main run when an older run is manually rerun.
+  queue: max
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: "20"
+      - run: npm ci
+      # The same validation as pull requests, on the exact commit being published.
+      - run: npm test
+      - name: render the site
+        run: node scripts/generate-crosswalk-matrix.js --site _site --source-sha "$GITHUB_SHA"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: publish only the newest main
+        id: guard
+        shell: bash
+        run: |
+          remote=$(git ls-remote --exit-code "https://github.com/${GITHUB_REPOSITORY}" refs/heads/main)
+          head=${remote%%[[:space:]]*}
+          if [[ ! "$head" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Could not resolve a valid main commit" >&2
+            exit 1
+          fi
+          if [ "$head" = "$GITHUB_SHA" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "main is at $head and this run built $GITHUB_SHA. A newer run publishes." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: deploy
+        id: deployment
+        if: steps.guard.outputs.publish == 'true'
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1

@@ -1,13 +1,23 @@
 #!/usr/bin/env node
-// generate-crosswalk-matrix.js — emit a system × signal-type match grid.
-// Reads vocabulary.yaml and crosswalk/*.yaml, writes
-// docs/generated/crosswalk-matrix.md.
-// Usage: node scripts/generate-crosswalk-matrix.js            writes the matrix
-//        node scripts/generate-crosswalk-matrix.js --check    verifies it
-// Exit:  0 when written, or when --check finds the committed file current.
-//        1 only from --check, when the committed matrix differs from what the
-//        generator produces, or is missing. The write path still never fails on
-//        content: the validator owns correctness and this is a docs build.
+// generate-crosswalk-matrix.js — build the system × signal-type match grid.
+// Reads vocabulary.yaml and crosswalk/**.yaml. The matrix is a build output,
+// not a committed file: main publishes it, and PRs render it in CI.
+//
+// Usage:
+//   node scripts/generate-crosswalk-matrix.js
+//       writes .generated/matrix/crosswalk-matrix.md
+//   node scripts/generate-crosswalk-matrix.js --check
+//       loads and renders strictly, checks the output contract, writes nothing
+//   node scripts/generate-crosswalk-matrix.js --stdout
+//       prints the Markdown
+//   node scripts/generate-crosswalk-matrix.js --site <dir> [--source-sha <sha>]
+//       writes <dir>/index.html and <dir>/crosswalk-matrix.md for publication
+//   --root <dir>   read vocabulary.yaml and crosswalk/ from <dir> instead
+//
+// Exit 1 on any load error (a crosswalk that does not parse, or is empty) or
+// output contract failure, in every mode. A file that parses but has no
+// signal_types block is a valid alternative-format crosswalk and is listed,
+// not failed.
 'use strict'
 
 const fs = require('fs')
@@ -15,20 +25,16 @@ const path = require('path')
 const yaml = require('js-yaml')
 const { normalizeDoc, aliasesFromVocab } = require('./match-types')
 
-const ROOT = path.resolve(__dirname, '..')
-const VOCAB_PATH = path.join(ROOT, 'vocabulary.yaml')
-const CROSSWALK_DIR = path.join(ROOT, 'crosswalk')
-const OUT_DIR = path.join(ROOT, 'docs', 'generated')
-const OUT_PATH = path.join(OUT_DIR, 'crosswalk-matrix.md')
-// --check renders and compares instead of writing; see the end of main().
-const checkOnly = process.argv.includes('--check')
+const REPO_ROOT = path.resolve(__dirname, '..')
+const DEFAULT_OUT = path.join(REPO_ROOT, '.generated', 'matrix', 'crosswalk-matrix.md')
+const REPO_URL = 'https://github.com/aeoess/agent-governance-vocabulary'
 
 const BADGE = {
-  exact:                       '✅',  // ✅
-  partial:                     '🟡', // 🟡
-  structural:                  '🟠', // 🟠
-  false_analog:                '🔵', // 🔵
-  no_mapping:                  '⚪',       // ⚪
+  exact:        '✅',
+  partial:      '🟡',
+  structural:   '🟠',
+  false_analog: '🔵',
+  no_mapping:   '⚪',
 }
 // Match types that count as a mapping in the coverage stats. false_analog and
 // no_mapping are documented answers that the system does NOT provide the
@@ -36,13 +42,23 @@ const BADGE = {
 // a legacy row that claims a mapping without a strength, so it counts as mapped.
 const POSITIVE_MATCHES = new Set(['exact', 'structural', 'partial', '__ungraded__'])
 
+const NOT_ADDRESSED = '—' // signal absent from the crosswalk
+const UNGRADED = '·'      // mapped but no `match` field declared
+// Evidence qualifiers. `emitted` is unmarked because it is the reading a bare
+// badge already implies. The marks exist for the states a reader would
+// otherwise over-read.
+const EVIDENCE_MARK = {
+  inferable:  'ʰ', // superscript h, computed by the consumer, not asserted
+  referenced: 'ʳ', // superscript r, resolved out of band
+}
+
 // Per signal: `mapped` counts systems with a positive match, `addressed`
 // counts systems with any entry, including false_analog and no_mapping.
-function coverageCounts(systems, canonicalSignals) {
+function coverageCounts(systems, signals) {
   const out = {}
-  for (const sig of canonicalSignals) out[sig] = { mapped: 0, addressed: 0 }
+  for (const sig of signals) out[sig] = { mapped: 0, addressed: 0 }
   for (const sys of systems) {
-    for (const sig of canonicalSignals) {
+    for (const sig of signals) {
       const cell = sys.cells[sig]
       if (!cell) continue
       out[sig].addressed += 1
@@ -50,16 +66,6 @@ function coverageCounts(systems, canonicalSignals) {
     }
   }
   return out
-}
-
-const NOT_ADDRESSED = '—' // — em dash, signal absent from crosswalk
-const UNGRADED = '·'      // mapped but no `match` field declared
-// Evidence qualifiers. `emitted` is unmarked because it is the reading a bare
-// badge already implies; the marks exist for the states a reader would
-// otherwise over-read.
-const EVIDENCE_MARK = {
-  inferable:  '\u02b0', // superscript h, "computed by the consumer, not asserted"
-  referenced: '\u02b3', // superscript r, "resolved out of band"
 }
 
 function walkYaml(dir) {
@@ -72,146 +78,131 @@ function walkYaml(dir) {
   return out.sort()
 }
 
-// "aeoess-aps.yaml" -> "APS". "agent-did.yaml" -> "Agent-Did".
-// Strip leading "aeoess-" (own-namespace prefix) before title-casing.
-// Special-cases: known acronyms uppercase entirely.
+// "aeoess-aps.yaml" -> "APS". "agent-did.yaml" -> "Agent-Did". Nested files
+// keep their directory prefix.
 const ACRONYMS = new Set(['aps', 'a2a', 'jep', 'sar', 'rnwy', 'satp', 'sint', 'pic', 'asqav', 'dcp'])
-function systemLabel(filePath) {
-  // Take the basename (without extension), strip leading "aeoess-" so
-  // own-namespace crosswalks read as the system, then title-case each
-  // hyphen-separated segment. Known acronyms uppercase entirely.
-  // For nested files (e.g. satp/behavioral-trust.yaml), keep the dir
-  // prefix lowercased so the row stays readable.
-  const rel = path.relative(CROSSWALK_DIR, filePath).replace(/\.yaml$|\.yml$/i, '')
+function systemLabel(crosswalkDir, filePath) {
+  const rel = path.relative(crosswalkDir, filePath).replace(/\.yaml$|\.yml$/i, '')
   const parts = rel.split(path.sep)
   const base = parts[parts.length - 1].replace(/^aeoess-/i, '')
   const titled = base.split('-').map(w =>
     ACRONYMS.has(w.toLowerCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)
   ).join('-')
-  if (parts.length > 1) {
-    const dir = parts.slice(0, -1).join('/')
-    return `${dir}/${titled}`
-  }
-  return titled
+  return parts.length > 1 ? `${parts.slice(0, -1).join('/')}/${titled}` : titled
 }
 
-function loadCrosswalk(filePath, aliases) {
-  try {
-    const doc = yaml.load(fs.readFileSync(filePath, 'utf8'))
-    if (!doc || typeof doc !== 'object') return null
-    // Normalize deprecated match spellings before anything reads `match`
-    // (issue #153). The generator stays silent about it: the validator owns
-    // the deprecation warning, and generated output never shows the alias.
-    normalizeDoc(doc, aliases)
-    return doc
-  } catch {
-    return null
-  }
-}
+// Load vocabulary and crosswalks. Never throws on crosswalk content: problems
+// are returned in `errors` and the caller decides. `normalize: false` exists
+// only so a test can prove the deprecated-spelling check catches a renderer
+// that skips normalization.
+function loadInputs(root = REPO_ROOT, { normalize = true } = {}) {
+  const vocab = yaml.load(fs.readFileSync(path.join(root, 'vocabulary.yaml'), 'utf8'))
+  const signals = Object.entries(vocab.signal_types || {}).map(([name, e]) => ({
+    name, status: (e && typeof e.status === 'string') ? e.status : 'unstated',
+  }))
+  const signalNames = signals.map(s => s.name)
+  const aliases = aliasesFromVocab(vocab)
+  const crosswalkDir = path.join(root, 'crosswalk')
 
-function pad(s, n) { return s + ' '.repeat(Math.max(0, n - s.length)) }
+  const systems = []
+  const altFormat = []
+  const reverseSkipped = []
+  const testFixtures = []
+  const errors = []
 
-function main() {
-  // 1. Load vocabulary, get canonical signal types in declaration order.
-  const vocab = yaml.load(fs.readFileSync(VOCAB_PATH, 'utf8'))
-  const canonicalSignals = Object.keys(vocab.signal_types || {})
+  for (const f of walkYaml(crosswalkDir)) {
+    const rel = path.relative(root, f).split(path.sep).join('/')
+    if (path.basename(f).startsWith('_')) { testFixtures.push(rel); continue }
 
-  // 2. Walk crosswalk/, classify each file.
-  const files = walkYaml(CROSSWALK_DIR)
-  const systems = []   // standard-format, included in matrix
-  const altFormat = [] // no signal_types block — listed in footer
-  const reverseSkipped = [] // crosswalk_type === 'rfc_category_reverse'
-  const testFixtures = [] // _test-invalid.yaml etc
-
-  for (const f of files) {
-    const rel = path.relative(ROOT, f)
-    const base = path.basename(f)
-    if (base.startsWith('_')) { testFixtures.push(rel); continue }
-
-    const doc = loadCrosswalk(f, aliasesFromVocab(vocab))
-    if (!doc) { altFormat.push({ rel, note: 'YAML parse failed or empty file' }); continue }
-
-    if (doc.crosswalk_type === 'rfc_category_reverse') {
-      reverseSkipped.push(rel)
+    let doc
+    try {
+      doc = yaml.load(fs.readFileSync(f, 'utf8'))
+    } catch (e) {
+      errors.push(`${rel}: YAML does not parse (${String(e.reason || e.message).split('\n')[0]})`)
       continue
     }
+    if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
+      errors.push(`${rel}: empty or not a mapping`)
+      continue
+    }
+    // Normalize deprecated match spellings before anything reads `match`
+    // (issue #153). Generated output never shows the alias.
+    if (normalize) normalizeDoc(doc, aliases)
 
+    if (doc.crosswalk_type === 'rfc_category_reverse') { reverseSkipped.push(rel); continue }
     if (!doc.signal_types || typeof doc.signal_types !== 'object') {
       altFormat.push({ rel, note: 'no signal_types block (alternative crosswalk format)' })
       continue
     }
 
-    // Build the per-canonical-signal map for this system.
-    // Entries with a `match` field get the badge; entries that exist
-    // without a graded match get the UNGRADED marker (mapped without
-    // strength grade).
     const cells = {}
     for (const [key, entry] of Object.entries(doc.signal_types)) {
-      const canonical = (entry && entry.canonical) || key
-      if (!canonicalSignals.includes(canonical)) continue
+      const name = (entry && entry.canonical) || key
+      if (!signalNames.includes(name)) continue
       const m = entry && entry.match
       const ev = entry && entry.evidence
-      cells[canonical] = {
+      cells[name] = {
         match: typeof m === 'string' ? m : '__ungraded__',
         evidence: typeof ev === 'string' ? ev : null,
       }
     }
-
-    systems.push({
-      label: systemLabel(f),
-      rel,
-      cells,
-    })
+    systems.push({ label: systemLabel(crosswalkDir, f), rel, cells })
   }
 
   systems.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }))
+  return { signals, systems, altFormat, reverseSkipped, testFixtures, errors }
+}
 
-  // 3. Build the table.
-  const header = ['System', ...canonicalSignals]
-  const rows = [header]
-  for (const sys of systems) {
-    const row = [sys.label]
-    for (const sig of canonicalSignals) {
-      const cell = sys.cells[sig]
-      if (!cell) { row.push(NOT_ADDRESSED); continue }
-      const m = cell.match
-      let base
-      if (m === '__ungraded__') base = UNGRADED
-      else if (BADGE[m]) base = BADGE[m]
-      else base = m // unknown match value, render as-is
-      // The evidence qualifier travels with the claim. A mapping that is exact in
-      // shape but not carried by the artifact must never render as a bare exact.
-      row.push(base + (EVIDENCE_MARK[cell.evidence] || ''))
-    }
-    rows.push(row)
-  }
+function cellText(cell) {
+  if (!cell) return NOT_ADDRESSED
+  const m = cell.match
+  const base = m === '__ungraded__' ? UNGRADED : (BADGE[m] || m) // unknown match value renders as-is
+  // The evidence qualifier travels with the claim. A mapping that is exact in
+  // shape but not carried by the artifact must never render as a bare exact.
+  return base + (EVIDENCE_MARK[cell.evidence] || '')
+}
 
-  // Markdown table emission with sane alignment.
-  const colWidths = header.map((_, c) => Math.max(...rows.map(r => String(r[c]).length)))
-  const renderRow = r => '| ' + r.map((cell, c) => pad(String(cell), colWidths[c])).join(' | ') + ' |'
-  const sep = '| ' + colWidths.map(w => '-'.repeat(w)).join(' | ') + ' |'
-  const tableLines = [renderRow(rows[0]), sep, ...rows.slice(1).map(renderRow)]
-
-  // 4. Coverage stats.
-  // Mapped counts positive matches only (exact, structural, partial, ungraded).
-  // Addressed adds false_analog and no_mapping. Both are unchanged by the
-  // evidence axis.
-  const coverage = coverageCounts(systems, canonicalSignals)
-  const sortedByCoverage = canonicalSignals
-    .map(sig => ({
-      sig,
-      n: coverage[sig].mapped,
-      addressed: coverage[sig].addressed,
-      pct: systems.length === 0 ? 0 : Math.round((coverage[sig].mapped / systems.length) * 100),
+function buildModel(inputs) {
+  const names = inputs.signals.map(s => s.name)
+  const coverage = coverageCounts(inputs.systems, names)
+  const n = inputs.systems.length
+  const byCoverage = inputs.signals
+    .map(s => ({
+      sig: s.name,
+      status: s.status,
+      mapped: coverage[s.name].mapped,
+      addressed: coverage[s.name].addressed,
+      pct: n === 0 ? 0 : Math.round((coverage[s.name].mapped / n) * 100),
     }))
-    .sort((a, b) => b.n - a.n || a.sig.localeCompare(b.sig))
+    .sort((a, b) => b.mapped - a.mapped || a.sig.localeCompare(b.sig))
+  const statusCounts = {}
+  for (const s of inputs.signals) statusCounts[s.status] = (statusCounts[s.status] || 0) + 1
+  return {
+    ...inputs,
+    rows: inputs.systems.map(sys => ({ label: sys.label, rel: sys.rel, cells: names.map(sig => cellText(sys.cells[sig])) })),
+    byCoverage,
+    statusCounts,
+  }
+}
 
-  // 5. Compose the markdown.
-  const today = new Date().toISOString().slice(0, 10)
+function statusSummary(statusCounts) {
+  const order = ['canonical', 'proposed', 'reserved']
+  const keys = [...order.filter(k => statusCounts[k]), ...Object.keys(statusCounts).filter(k => !order.includes(k)).sort()]
+  return keys.map(k => `${statusCounts[k]} ${k}`).join(', ')
+}
+
+function provenance(opts) {
+  return opts.sourceSha ? ` from \`${opts.sourceSha}\`` : ''
+}
+
+function renderMarkdown(model, opts = {}) {
+  const date = opts.date || new Date().toISOString().slice(0, 10)
+  const names = model.signals.map(s => s.name)
+  const n = model.systems.length
   const lines = []
   lines.push('# Crosswalk Matrix')
   lines.push('')
-  lines.push(`Auto-generated on ${today}. ${systems.length} systems × ${canonicalSignals.length} canonical signal types.`)
+  lines.push(`Generated on ${date}${provenance(opts)}. ${n} systems × ${names.length} signal types (${statusSummary(model.statusCounts)}).`)
   lines.push('')
   lines.push('Cell legend:')
   lines.push('')
@@ -227,118 +218,225 @@ function main() {
   lines.push('')
   lines.push('## Matrix')
   lines.push('')
-  lines.push(...tableLines)
+  const table = [['System', ...names], ...model.rows.map(r => [r.label, ...r.cells])]
+  const widths = table[0].map((_, c) => Math.max(...table.map(r => String(r[c]).length)))
+  const row = r => '| ' + r.map((cell, c) => String(cell) + ' '.repeat(Math.max(0, widths[c] - String(cell).length))).join(' | ') + ' |'
+  lines.push(row(table[0]))
+  lines.push('| ' + widths.map(w => '-'.repeat(w)).join(' | ') + ' |')
+  for (const r of table.slice(1)) lines.push(row(r))
   lines.push('')
   lines.push('## Coverage')
   lines.push('')
-  lines.push(`- Systems represented: ${systems.length}`)
-  lines.push(`- Canonical signal types: ${canonicalSignals.length}`)
+  lines.push(`- Systems represented: ${n}`)
+  lines.push(`- Signal types: ${names.length} (${statusSummary(model.statusCounts)})`)
   lines.push('')
   lines.push('### Per-signal coverage')
   lines.push('')
-  lines.push('Mapped counts systems with an `exact`, `structural` or `partial` match, or a legacy ungraded entry. Addressed also counts `false_analog` and `no_mapping`, which document that a system does not provide the signal.')
+  lines.push('Mapped counts systems with an `exact`, `structural` or `partial` match, or a legacy ungraded entry. Addressed also counts `false_analog` and `no_mapping`, which document that a system does not provide the signal. Status is the signal type\'s status in `vocabulary.yaml`.')
   lines.push('')
-  lines.push('| Signal type | Systems mapped | Systems addressed | Mapped coverage |')
-  lines.push('|---|---|---|---|')
-  for (const { sig, n, addressed, pct } of sortedByCoverage) {
-    lines.push(`| \`${sig}\` | ${n} / ${systems.length} | ${addressed} / ${systems.length} | ${pct}% |`)
+  lines.push('| Signal type | Status | Systems mapped | Systems addressed | Mapped coverage |')
+  lines.push('|---|---|---|---|---|')
+  for (const s of model.byCoverage) {
+    lines.push(`| \`${s.sig}\` | ${s.status} | ${s.mapped} / ${n} | ${s.addressed} / ${n} | ${s.pct}% |`)
   }
   lines.push('')
-
-  const top3Most = sortedByCoverage.slice(0, 3)
-  const top3Least = [...sortedByCoverage].reverse().slice(0, 3)
   lines.push('### Top-3 most-mapped')
   lines.push('')
-  for (const { sig, n, pct } of top3Most) {
-    lines.push(`- \`${sig}\` — ${n}/${systems.length} (${pct}%)`)
-  }
+  for (const s of model.byCoverage.slice(0, 3)) lines.push(`- \`${s.sig}\` — ${s.mapped}/${n} (${s.pct}%)`)
   lines.push('')
   lines.push('### Top-3 least-mapped')
   lines.push('')
-  for (const { sig, n, pct } of top3Least) {
-    lines.push(`- \`${sig}\` — ${n}/${systems.length} (${pct}%)`)
-  }
+  for (const s of [...model.byCoverage].reverse().slice(0, 3)) lines.push(`- \`${s.sig}\` — ${s.mapped}/${n} (${s.pct}%)`)
   lines.push('')
-
-  // 6. Footer — alt-format and reverse exclusions.
   lines.push('---')
   lines.push('')
-  lines.push('Auto-generated by `scripts/generate-crosswalk-matrix.js`. Do not edit. Re-run after any crosswalk PR merges.')
+  lines.push('Generated by `scripts/generate-crosswalk-matrix.js` from the crosswalks in this repository. Do not edit.')
   lines.push('')
-  if (altFormat.length > 0) {
+  if (model.altFormat.length > 0) {
     lines.push('## Alternative-format crosswalks not represented in this matrix')
     lines.push('')
-    for (const { rel, note } of altFormat) {
-      lines.push(`- \`${rel}\` — ${note}`)
-    }
+    for (const { rel, note } of model.altFormat) lines.push(`- \`${rel}\` — ${note}`)
     lines.push('')
   }
-  if (reverseSkipped.length > 0) {
+  if (model.reverseSkipped.length > 0) {
     lines.push('## Reverse crosswalks (separate matrix)')
     lines.push('')
-    for (const rel of reverseSkipped) {
-      lines.push(`- \`${rel}\` — \`crosswalk_type: rfc_category_reverse\``)
-    }
+    for (const rel of model.reverseSkipped) lines.push(`- \`${rel}\` — \`crosswalk_type: rfc_category_reverse\``)
     lines.push('')
   }
-  if (testFixtures.length > 0) {
+  if (model.testFixtures.length > 0) {
     lines.push('## Test fixtures (excluded)')
     lines.push('')
-    for (const rel of testFixtures) {
-      lines.push(`- \`${rel}\` — deliberate negative-control fixture`)
-    }
+    for (const rel of model.testFixtures) lines.push(`- \`${rel}\` — deliberate negative-control fixture`)
     lines.push('')
   }
+  return lines.join('\n')
+}
 
-  // 7. Write, or check.
-  //
-  // --check renders the matrix in memory and compares it with the committed
-  // file, failing if they differ. Without it, a test that only READS
-  // docs/generated/crosswalk-matrix.md is not testing the generator: an edit
-  // that made this script emit a deprecated token would leave the committed
-  // file untouched and the suite green. It also catches the committed matrix
-  // going stale against the data, which had happened here silently for weeks.
-  //
-  // The generated-on date is normalized before comparison. It changes every
-  // day by design, and a check that fails daily is a check somebody switches
-  // off.
-  const rendered = lines.join('\n')
-  const DATE_LINE = /^Auto-generated on \d{4}-\d{2}-\d{2}\./m
-  if (checkOnly) {
-    if (!fs.existsSync(OUT_PATH)) {
-      console.error(`generate-crosswalk-matrix --check: ${path.relative(ROOT, OUT_PATH)} does not exist`)
-      process.exit(1)
-    }
-    const committed = fs.readFileSync(OUT_PATH, 'utf8')
-    const norm = t => t.replace(DATE_LINE, 'Auto-generated on <date>.')
-    if (norm(committed) === norm(rendered)) {
-      console.log(`generate-crosswalk-matrix --check: ${path.relative(ROOT, OUT_PATH)} is up to date`)
-      return
-    }
-    const a = norm(committed).split('\n')
-    const b = norm(rendered).split('\n')
-    console.error(`generate-crosswalk-matrix --check: ${path.relative(ROOT, OUT_PATH)} differs from what the generator produces`)
-    let shown = 0
-    for (let i = 0; i < Math.max(a.length, b.length) && shown < 10; i++) {
-      if (a[i] !== b[i]) {
-        console.error(`  line ${i + 1}\n    committed: ${a[i] === undefined ? '(absent)' : a[i]}\n    generated: ${b[i] === undefined ? '(absent)' : b[i]}`)
-        shown++
-      }
-    }
-    console.error('  run `npm run generate:matrix` and commit the result')
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+
+function renderHtml(model, opts = {}) {
+  const date = opts.date || new Date().toISOString().slice(0, 10)
+  const names = model.signals.map(s => s.name)
+  const status = Object.fromEntries(model.signals.map(s => [s.name, s.status]))
+  const n = model.systems.length
+  const sha = opts.sourceSha
+  const src = sha ? ` from <a href="${esc(REPO_URL)}/commit/${esc(sha)}"><code>${esc(sha.slice(0, 12))}</code></a>` : ''
+  const fileLink = rel => sha ? `<a href="${esc(REPO_URL)}/blob/${esc(sha)}/${esc(rel)}"><code>${esc(rel)}</code></a>` : `<code>${esc(rel)}</code>`
+  const h = []
+  h.push('<!doctype html>')
+  h.push('<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
+  h.push('<title>Crosswalk Matrix</title>')
+  h.push(`<meta name="source-commit" content="${esc(sha || '')}">`)
+  h.push('<style>')
+  h.push(':root{--bg:#fff;--fg:#1a1a1a;--muted:#5c5c5c;--line:#d9d9d9;--head:#f4f4f4;--link:#0b57d0}')
+  h.push('@media (prefers-color-scheme:dark){:root{--bg:#141414;--fg:#e8e8e8;--muted:#a8a8a8;--line:#3a3a3a;--head:#1f1f1f;--link:#8ab4f8}}')
+  h.push('body{margin:0 auto;max-width:1200px;padding:16px;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}')
+  h.push('a{color:var(--link)}code{font-size:.9em}.muted{color:var(--muted)}')
+  h.push('.scroll{overflow-x:auto;border:1px solid var(--line);margin:12px 0}')
+  h.push('table{border-collapse:collapse;font-size:14px}th,td{border:1px solid var(--line);padding:4px 8px;text-align:center;white-space:nowrap}')
+  h.push('thead th{background:var(--head);position:sticky;top:0}th.sys,td.sys{text-align:left;position:sticky;left:0;background:var(--bg)}thead th.sys{background:var(--head);z-index:1}')
+  h.push('th.sig{writing-mode:vertical-rl;transform:rotate(180deg);vertical-align:bottom}')
+  h.push('table.cov td{text-align:left}')
+  h.push('</style></head><body>')
+  h.push('<h1>Crosswalk Matrix</h1>')
+  h.push(`<p>Generated on ${esc(date)}${src}. ${n} systems × ${names.length} signal types (${esc(statusSummary(model.statusCounts))}).</p>`)
+  h.push('<h2>Cell legend</h2><ul>')
+  h.push(`<li>${BADGE.exact} <code>exact</code>: same question, same surface shape</li>`)
+  h.push(`<li>${BADGE.structural} <code>structural</code>: same question, different surface</li>`)
+  h.push(`<li>${BADGE.partial} <code>partial</code>: overlapping but not identical scope</li>`)
+  h.push(`<li>${BADGE.false_analog} <code>false_analog</code>: different question, close enough to be mistaken for the canonical primitive</li>`)
+  h.push(`<li>${BADGE.no_mapping} <code>no_mapping</code>: explicit gap with technical rationale</li>`)
+  h.push(`<li>${EVIDENCE_MARK.inferable} suffix: <code>evidence: inferable</code>, the consumer computes the value and the issuer never asserts it</li>`)
+  h.push(`<li>${EVIDENCE_MARK.referenced} suffix: <code>evidence: referenced</code>, resolved out of band against state the artifact does not carry</li>`)
+  h.push(`<li>${UNGRADED} mapped but no <code>match</code> strength declared (legacy schema)</li>`)
+  h.push(`<li>${NOT_ADDRESSED} not addressed by this crosswalk</li></ul>`)
+  h.push('<h2>Matrix</h2><div class="scroll"><table><thead><tr><th class="sys">System</th>')
+  for (const sig of names) h.push(`<th class="sig" title="${esc(status[sig])}"><code>${esc(sig)}</code></th>`)
+  h.push('</tr></thead><tbody>')
+  for (const r of model.rows) {
+    h.push(`<tr><td class="sys">${sha ? `<a href="${esc(REPO_URL)}/blob/${esc(sha)}/${esc(r.rel)}">${esc(r.label)}</a>` : esc(r.label)}</td>`)
+    r.cells.forEach((c, i) => h.push(`<td title="${esc(names[i])}">${esc(c)}</td>`))
+    h.push('</tr>')
+  }
+  h.push('</tbody></table></div>')
+  h.push('<h2>Coverage</h2>')
+  h.push(`<p>Systems represented: ${n}. Signal types: ${names.length} (${esc(statusSummary(model.statusCounts))}).</p>`)
+  h.push('<p>Mapped counts systems with an <code>exact</code>, <code>structural</code> or <code>partial</code> match, or a legacy ungraded entry. Addressed also counts <code>false_analog</code> and <code>no_mapping</code>, which document that a system does not provide the signal. Status is the signal type\'s status in <code>vocabulary.yaml</code>.</p>')
+  h.push('<div class="scroll"><table class="cov"><thead><tr><th>Signal type</th><th>Status</th><th>Systems mapped</th><th>Systems addressed</th><th>Mapped coverage</th></tr></thead><tbody>')
+  for (const s of model.byCoverage) {
+    h.push(`<tr><td><code>${esc(s.sig)}</code></td><td>${esc(s.status)}</td><td>${s.mapped} / ${n}</td><td>${s.addressed} / ${n}</td><td>${s.pct}%</td></tr>`)
+  }
+  h.push('</tbody></table></div>')
+  const list = (title, items) => {
+    if (items.length === 0) return
+    h.push(`<h2>${esc(title)}</h2><ul>`)
+    for (const [rel, note] of items) h.push(`<li>${fileLink(rel)}: ${esc(note)}</li>`)
+    h.push('</ul>')
+  }
+  list('Alternative-format crosswalks not represented in this matrix', model.altFormat.map(a => [a.rel, a.note]))
+  list('Reverse crosswalks (separate matrix)', model.reverseSkipped.map(r => [r, 'crosswalk_type: rfc_category_reverse']))
+  list('Test fixtures (excluded)', model.testFixtures.map(r => [r, 'deliberate negative-control fixture']))
+  h.push(`<p class="muted">Generated by <code>scripts/generate-crosswalk-matrix.js</code> from <a href="${esc(REPO_URL)}">${esc(REPO_URL.replace('https://', ''))}</a>. Do not edit.</p>`)
+  h.push('</body></html>')
+  return h.join('\n') + '\n'
+}
+
+// The output contract. Returns a list of problems, empty when the output is sound.
+function checkOutput(model, markdown, html, legacySpellings = []) {
+  const problems = []
+  if (typeof markdown !== 'string' || markdown.trim().length === 0) problems.push('Markdown output is empty')
+  if (typeof html !== 'string' || html.trim().length === 0) problems.push('HTML output is empty')
+  const width = model.signals.length
+  for (const r of model.rows) {
+    if (r.cells.length !== width) problems.push(`row ${r.label} has ${r.cells.length} cells, expected ${width}`)
+    const source = model.systems.find(system => system.rel === r.rel)
+    model.signals.forEach((signal, index) => {
+      const cell = source && source.cells[signal.name]
+      const mark = cell && EVIDENCE_MARK[cell.evidence]
+      if (mark && !String(r.cells[index]).endsWith(mark)) problems.push(`${r.label}/${signal.name}: evidence qualifier lost`)
+    })
+  }
+  const labels = new Set()
+  for (const r of model.rows) {
+    if (labels.has(r.label)) problems.push(`two crosswalks render as system ${r.label}`)
+    labels.add(r.label)
+  }
+  for (const legacy of legacySpellings) {
+    if (markdown.includes(legacy)) problems.push(`Markdown output contains the deprecated spelling ${legacy}`)
+    if (html.includes(legacy)) problems.push(`HTML output contains the deprecated spelling ${legacy}`)
+  }
+  for (const s of model.byCoverage) {
+    if (s.mapped > s.addressed) problems.push(`${s.sig}: mapped ${s.mapped} exceeds addressed ${s.addressed}`)
+  }
+  return problems
+}
+
+function legacySpellingsFromVocab(root = REPO_ROOT) {
+  const vocab = yaml.load(fs.readFileSync(path.join(root, 'vocabulary.yaml'), 'utf8'))
+  return Object.keys(vocab.crosswalk_match_type_aliases || {})
+}
+
+function arg(name) {
+  const i = process.argv.indexOf(name)
+  if (i === -1) return undefined
+  const value = process.argv[i + 1]
+  if (!value || value.startsWith('--')) throw new Error(`${name} requires a value`)
+  return value
+}
+
+function main() {
+  const root = path.resolve(arg('--root') || REPO_ROOT)
+  const sourceSha = arg('--source-sha')
+  const site = arg('--site')
+  const modes = ['--check', '--stdout', '--site'].filter(name => process.argv.includes(name))
+  if (modes.length > 1) throw new Error('Choose only one output mode')
+  const inputs = loadInputs(root)
+  if (inputs.errors.length > 0) {
+    console.error('generate-crosswalk-matrix: crosswalks that cannot be loaded')
+    for (const e of inputs.errors) console.error(`  ${e}`)
+    process.exit(1)
+  }
+  const model = buildModel(inputs)
+  const md = renderMarkdown(model, { sourceSha })
+  const html = renderHtml(model, { sourceSha })
+  const problems = checkOutput(model, md, html, legacySpellingsFromVocab(root))
+  if (problems.length > 0) {
+    console.error('generate-crosswalk-matrix: output contract failed')
+    for (const p of problems) console.error(`  ${p}`)
     process.exit(1)
   }
 
-  fs.mkdirSync(OUT_DIR, { recursive: true })
-  fs.writeFileSync(OUT_PATH, rendered, 'utf8')
-
-  console.log(`generate-crosswalk-matrix: wrote ${path.relative(ROOT, OUT_PATH)}`)
-  console.log(`  ${systems.length} systems × ${canonicalSignals.length} signal types`)
-  if (altFormat.length > 0) console.log(`  excluded (alt format): ${altFormat.length}`)
-  if (reverseSkipped.length > 0) console.log(`  excluded (reverse):   ${reverseSkipped.length}`)
-  if (testFixtures.length > 0) console.log(`  excluded (fixtures):  ${testFixtures.length}`)
+  if (process.argv.includes('--check')) {
+    console.log(`generate-crosswalk-matrix --check: ${model.systems.length} systems × ${model.signals.length} signal types rendered, output contract holds`)
+    return
+  }
+  if (process.argv.includes('--stdout')) { process.stdout.write(md); return }
+  if (site) {
+    fs.mkdirSync(site, { recursive: true })
+    fs.writeFileSync(path.join(site, 'index.html'), html, 'utf8')
+    fs.writeFileSync(path.join(site, 'crosswalk-matrix.md'), md, 'utf8')
+    console.log(`generate-crosswalk-matrix: wrote ${site}/index.html and crosswalk-matrix.md`)
+    return
+  }
+  fs.mkdirSync(path.dirname(DEFAULT_OUT), { recursive: true })
+  fs.writeFileSync(DEFAULT_OUT, md, 'utf8')
+  console.log(`generate-crosswalk-matrix: wrote ${path.relative(REPO_ROOT, DEFAULT_OUT)}`)
+  console.log(`  ${model.systems.length} systems × ${model.signals.length} signal types`)
 }
 
-if (require.main === module) main()
+if (require.main === module) {
+  try {
+    main()
+  } catch (e) {
+    console.error(`generate-crosswalk-matrix: ${e.message}`)
+    process.exit(1)
+  }
+}
 
-module.exports = { coverageCounts, POSITIVE_MATCHES }
+module.exports = {
+  coverageCounts, POSITIVE_MATCHES, loadInputs, buildModel, renderMarkdown, renderHtml,
+  checkOutput, legacySpellingsFromVocab,
+}

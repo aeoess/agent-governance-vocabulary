@@ -8,9 +8,17 @@
 #     sha256 e58d45cd2dda8ed89bb184d9ddd6a2da4e0885edc338af9b8c24aacd4e695e64
 #     (45991 bytes, dated 23 September 2026), Sections 1 to 9 read in full.
 #   Spec read: spec/authority-handoff-receipts.md in jsabes24/css-succession-receipts
-#     @ 17ec7bcf9332548fb60ffeea3fe648b1bcf0517c (main, 2026-09-23T03:02:00Z)
-#     sha256 b9f8c34978c5644a60e655fd65efc888f15bc4d32ce72fa6160a70b160c980c4,
-#     Sections 1 to 3 and 5 to 9 read in full, Section 4 read where cited.
+#     @ ffd6836fe141f86dd5539ddb668b6aceba876b0e (2026-11-04T17:04:26Z)
+#     sha256 a469e135ffcfef3938007f336222ad5578ad4ddb75e43cc214bfdc3cea2b4c69.
+#     First read in full at 17ec7bc (sha256 b9f8c349...0c4, Sections 1 to 3
+#     and 5 to 9 in full, Section 4 where cited). Re-pinned to ffd6836, the
+#     commit with the author's corrections from PR #240. The diff from
+#     17ec7bc touches Section 2.1 (authorization_binding format and a new
+#     "Parties and identity" paragraph), Section 3 (canonical form) and
+#     Section 4 steps 2 and 6, which were re-read in full.
+#   Draft -05 stays the IETF pin. The author wrote on PR #240 that draft -06
+#   carries the same Section 3 correction and posts after this week's IETF
+#   meeting.
 #   The draft says the complete member catalog is the AHR spec. Where the two
 #   differ, both are quoted and the difference is an open question below.
 #
@@ -28,7 +36,7 @@ system:
   name: Succession Receipts (Authority-Handoff Receipt)
   short_name: Succession-Receipts
   home: https://github.com/jsabes24/css-succession-receipts
-  spec: https://github.com/jsabes24/css-succession-receipts/blob/17ec7bcf9332548fb60ffeea3fe648b1bcf0517c/spec/authority-handoff-receipts.md
+  spec: https://github.com/jsabes24/css-succession-receipts/blob/ffd6836fe141f86dd5539ddb668b6aceba876b0e/spec/authority-handoff-receipts.md
   spec_version: "AHR v0.2 (draft) and draft-sabey-succession-receipts-05 (Informational intent, individual submission)"
   repo: https://github.com/jsabes24/css-succession-receipts
   implementation: >
@@ -62,7 +70,7 @@ maintainer:
   mapped_system_maintainer:
     github: jsabes24
     project: jsabes24/css-succession-receipts
-    confirmed_at: null   # not yet reviewed by the mapped system's author
+    confirmed_at: null   # the author confirmed the reading at 641a155 on PR #240 (comment 6641060233), and the re-pin to ffd6836 awaits his review
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi
@@ -72,21 +80,26 @@ maintainer:
 # the sole algorithm registered at spec versions 0.1 and 0.2." Post-quantum
 # schemes are named as possible "additive prefixes registered by a new spec
 # version".
-# canonicalization: receipt canonical bytes are the JSON "with the proof
-# member absent, object member names sorted lexicographically, no
-# insignificant whitespace, and no HTML escaping", which "coincides with the
-# JSON Canonicalization Scheme [RFC8785]" for the receipt's value domain.
+# canonicalization: spec Section 3 at ffd6836 defines the canonical bytes
+# as the receipt JSON with the proof member absent, "object members sorted
+# by the UTF-8 bytes of their names (equivalently, by Unicode code point)",
+# no insignificant whitespace, an exact escaping rule and integers only.
+# "For a document whose member names are all ASCII, whose strings contain
+# neither U+2028 nor U+2029, and whose integers lie within ±(2^53−1), the
+# canonical bytes are identical to RFC 8785 output". Outside that subset
+# "this section, not RFC 8785, is the rule". The text at 17ec7bc said the
+# form coincides with RFC 8785 for every receipt, and the spec now carries
+# a dated correction. The author wrote on PR #240: "I'd suggest not
+# declaring jcs-rfc-8785; "AHR §3 canonical form, JCS-equal within that
+# subset" is accurate." Hence implementation-defined below.
 # Evidence event hashes use a separate concatenation rule (draft Section
-# 4.3) with the payload "in document member order", which is not JCS. The
-# canonicalization_profile is left unset. Spec Section 3 requires UTF-8
-# byte ordering, while RFC 8785 Section 3.2.3 requires UTF-16 code-unit
-# ordering. Those differ for some Unicode member names, and Section 9
-# permits unknown optional members covered by the proof. The upstream
-# claim that the profiles coincide needs a declared restriction or
-# clarification before this file can select jcs-rfc-8785.
+# 4.3) with the payload "in document member order", which is not JCS. At
+# ffd6836, Section 4 step 2 adds that payload strings are escaped as in
+# Section 3 except that <, > and & are written \u003c, \u003e and \u0026.
 # hash_family: SHA-256 for the receipt hash and every event_hash.
 system_attributes:
   signature_capability: classical
+  canonicalization_profile: implementation-defined  # AHR Section 3 canonical form, JCS-equal within the subset Section 3 states (ASCII member names, no U+2028 or U+2029, integers within ±(2^53−1))
   hash_family: sha-256
 
 # Search basis for every no_mapping and false_analog row below: the two
@@ -139,7 +152,12 @@ signal_types:
       continuity across a change of holder, not identity persistence.
       Recorded as false_analog because both concern an agent being
       "upgraded, replaced, suspended, and restored" and could be read as
-      the same signal. Open question below on the identity_id fields.
+      the same signal. Section 2.1 at ffd6836: "A receipt therefore makes
+      no claim that its two parties are the same entity, and equal
+      `identity_id` values, should an issuer produce them, assert nothing
+      further: verifiers attach no meaning to equality." The author wrote
+      on PR #240: "entity_continuity: false_analog is right, and §2.1 now
+      says so."
 
   bilateral_receipt:
     canonical: bilateral_receipt
@@ -153,7 +171,8 @@ signal_types:
       carry an "optional signature", which is the platform's event
       signature, not a steward's. Recorded as false_analog because a
       two-party transfer record is close enough to be wired in as a
-      two-party receipt.
+      two-party receipt. The author wrote on PR #240: "bilateral_receipt
+      and decision_lineage as false_analog are both correct as well."
 
   trust_verification:
     canonical: trust_verification
@@ -240,7 +259,9 @@ decision_trajectory:
       surrounding ledger". Entries are sorted by (timestamp, event_id) and
       concern two stewards. The ledger export, out of scope here, is
       described as replaying "the complete hash chain" and may be the
-      closer candidate. Open question below.
+      closer candidate. Open question below. The author wrote on PR #240:
+      "bilateral_receipt and decision_lineage as false_analog are both
+      correct as well."
 
   baseline_revision:
     canonical: baseline_revision
@@ -309,16 +330,16 @@ succession_receipts_specific_terms:
   constitution: "v0.2: genesis_event_hash, amendments_ratified, amendment_head_hash, so a verifier sees 'by which constitution' the transfer was governed. [policy_version, evidence]"
   ledger_binding: "v0.2: height and event_hash of the final evidence event, the horizon for a completeness check against a ledger export or anchored checkpoint. [coverage_and_completeness]"
   claim_grounding_both_directions: "Every claim needs a matching evidence event, and every lineage effect in evidence must be declared, so 'a receipt can neither invent nor conceal an effect of the transfer'. [coverage_and_completeness, evidence]"
-  authorization_binding: "Optional cross-format claim (caid, receipt_hash, format) binding the handoff to a pre-execution authorization receipt. Native verification failure, an unverified binding and a demonstrated mismatch are three distinct results. [approval, evidence_attestor]"
+  authorization_binding: "Optional cross-format claim (caid, receipt_hash, format) binding the handoff to a pre-execution authorization receipt. Section 2.1 at ffd6836 names 'EP-AUTHORIZATION-RECEIPT-v1' for the Trust Receipt, matching draft -05 Section 6. Native verification failure, an unverified binding and a demonstrated mismatch are three distinct results. [approval, evidence_attestor]"
   key_id_label: "Issuer-managed label 'deliberately NOT derived from the key'. Rotation adds a mapping and MUST NOT invalidate issued receipts. [signing_key, verifier_trust_policy]"
 
 # ──────────────────────────────────────────────────────────────
 # OPEN QUESTIONS FOR THE FORMAT'S AUTHOR
+# Three earlier questions (the authorization_binding format value, equal
+# identity_id values, and member-name order against RFC 8785) were answered
+# by the author on PR #240 and are folded in above.
 # ──────────────────────────────────────────────────────────────
 open_questions:
-  - "The draft (Section 6) names EP-AUTHORIZATION-RECEIPT-v1 for the Trust Receipt and says EP-RECEIPT-v1 'MUST NOT dispatch to that verifier'. The AHR spec at 17ec7bc (Section 2.1) lists 'EP-RECEIPT-v1' and 'EP-QUORUM-v1' as the format values. Which governs, and will the spec be updated to match -05?"
-  - "Can predecessor.identity_id and successor.identity_id be equal, for an upgrade of one agent rather than a replacement? If so, a receipt with equal identity_id values may be a partial entity_continuity fit and that row should change."
   - "Is the in-receipt evidence meant to be read as a chain? Each event_hash covers previous_event_id, not the predecessor's hash. Is the ledger export the intended answer for ordered lineage?"
   - "Is legitimacy_state (L3, L4, L5) defined in a public document? It decides whether the governance requirement can be named in this row or only referenced."
   - "Should a later file map the refusal digest separately? It records refused transitions, which no row here covers."
-  - "Spec Section 3 sorts member names by UTF-8 bytes and allows a JCS library. RFC 8785 uses UTF-16 code units, which order U+E000 and U+10000 differently. Section 9 permits unknown optional members. Is the intended profile RFC 8785, or is there a member-name restriction that makes the declared byte ordering coincide with it?"

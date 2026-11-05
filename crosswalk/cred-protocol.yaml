@@ -18,6 +18,8 @@
 #     exchanged tokens, IANA requests revised, Implementation Status
 #     rewritten). This file follows the posted text. An earlier draft of this
 #     file was pinned to df90107 and was re-read against the posted text.
+#     The author confirmed on PR #239 that the posted text is the one to cite
+#     and plans to sync cred-ninja/protocol main to it.
 #
 # Section names, not numbers, are used below, matching the readable companion.
 #
@@ -47,8 +49,8 @@ system:
     Vault and issues capability-shaped, DPoP-bound Delegation Tokens to
     agents. Agents exercise credentials only through the DS /exercise
     endpoint and "never" receive the raw credential. Sub-delegation is
-    attenuated: "An attenuated Capability MUST be a strict subset of its
-    parent." Each hop produces a DS-signed delegation receipt referenced
+    attenuated, "equal or narrower, never wider" ("Capability
+    Structure"). Each hop produces a DS-signed delegation receipt referenced
     from the child token's prf claim. Revocation cascades synchronously
     within one DS.
   identity_layer: >
@@ -69,7 +71,7 @@ maintainer:
   mapped_system_maintainer:
     github: kierandotai
     project: cred-ninja/protocol, cred-ninja/sdk
-    confirmed_at: null   # not yet reviewed by the mapped system's author
+    confirmed_at: "2026-11-05"   # approved by the author on PR #239 (review 5792497689) at 6ac73b6 against the posted -02 text, on condition that his answers are folded in, which this revision does
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi
@@ -133,10 +135,15 @@ signal_types:
 
       Partial, for four stated reasons. (1) It attests a delegation hop,
       not an action. Credential exercise ("Exercise Flow") produces no
-      signed record in the -02 text; the per-hop audit record is a SHOULD
-      and "The shape of that record is deployment-defined". (2) The
-      receipt's field list is normative but its serialization and signing
-      input are not defined in -02, so no signed_payload_fields are listed.
+      signed record in the -02 text. The per-hop audit record is a SHOULD
+      and "The shape of that record is deployment-defined". The author
+      plans a signed exercise record for -03 and expects it to be the
+      stronger candidate for this term (PR #239). (2) The receipt's field
+      list is normative but its serialization and signing input are not
+      defined in -02, so no signed_payload_fields are listed. The author
+      says -03 will specify the receipt as a compact JWS (EdDSA or ES256,
+      with kid) and define prf as SHA-256 over the full compact receipt
+      (PR #239).
       (3) "A DS-signed receipt proves that the DS authorized an action
       under its own records; it does not prove that the Subject, rather
       than the operator, approved the grant those records describe"
@@ -144,8 +151,8 @@ signal_types:
       establish that issuer standing or consent remains current."
 
       No evidence state is declared. The receipt carries no explicit
-      verdict field; the attestation is the existence of a DS signature
-      over the listed contents. Left for the author to confirm.
+      verdict field. The attestation is the existence of a DS signature
+      over the listed contents.
     issuers_in_production: []
     signed_payload_fields: []
 
@@ -253,8 +260,11 @@ decision_trajectory:
       is computed. The per-hop audit record ("the decision, and any failed
       or unresolved check with a reason") is the closer candidate, but it
       is a SHOULD with a deployment-defined shape and no stated chaining.
-      Same reading as crosswalk/agent-delegation-receipts.yaml, if that
-      file is merged.
+      The author agrees with false_analog on PR #239, including if a
+      companion document standardizes the per-hop audit record, because
+      that record captures one grant decision per hop across different
+      agents. Same reading as crosswalk/agent-delegation-receipts.yaml, if
+      that file is merged.
 
   baseline_revision:
     canonical: baseline_revision
@@ -306,7 +316,8 @@ descriptor_dimensions:
       sub-delegation. For a Chain-Verifiable Profile token checked away
       from the DS, the offline verifier refuses (verifier), and it must
       deny an action under a cumulative constraint unless it holds the
-      running total.
+      running total. The author confirmed issuer as the declared value on
+      PR #239.
     invariant_survival: pre_action
     note_invariant: >
       Checks run before the DS dispatches the upstream call. "An effect the
@@ -329,7 +340,7 @@ cred_specific_terms:
   delegation_server: "'A service that issues, manages, and revokes Delegation Tokens on behalf of Subjects.' Holds the Credential Vault and makes the upstream call. [issuer, verifier_trust_policy]"
   credential_wrapping: "The agent receives a Delegation Token and an opaque credential_handle, never the credential. 'Credential Exercise: The act of the DS using a stored credential on behalf of an Agent.' [presented_credential_or_session]"
   capability: "RFC 9396 authorization_details of type cred_delegation with provider, operations, resources, expires. [action_or_capability_binding, target_binding]"
-  attenuation: "'An attenuated Capability MUST be a strict subset of its parent. Authority can only narrow at each delegation hop; it can never widen.' The Capability Structure section reads 'equal or narrower, never wider' for the subset check. [delegated_authority] Related open gap candidate in this registry: #125 (attenuating_delegation)."
+  attenuation: "'equal or narrower, never wider' (Capability Structure) governs the subset check. A hop may pass an identical capability set through and may never widen it (author, PR #239). The Terminology wording 'strict subset' is stale per the author and will be corrected in -03. [delegated_authority] Related open gap candidate in this registry: #125 (attenuating_delegation)."
   constraint_ceilings: "delegation_constraints claim (renamed in the posted -02 from constraints, which OpenID Federation 1.0 already registers) with typed ceilings max, min, one_of, not_one_of, prefix, rank (with order), max_lifetime, max_subtree, in the draft-asor Section 4.2 shape. Fail-closed parsing; unknown type carried and any exercise under it denied. 'The type, not the key, states whether a bound is per exercise or cumulative.' [action_or_capability_binding]"
   cumulative_ceiling_single_writer: "max_lifetime and max_subtree are debited atomically by the DS, 'the single writer'. Offline verifiers check only that a child's bound is no wider. [expiry_or_exhaustion]"
   sub_delegation_exchange: "Two steps: the delegating agent obtains a single-use delegation grant bound to the receiving DID; the receiving agent redeems it by RFC 8693 token exchange under its own key."
@@ -341,12 +352,12 @@ cred_specific_terms:
   long_term_evidence: "Classical-signature records retained past their trust horizon SHOULD be anchored by post-quantum time-stamping or an append-only log. [evidence]"
 
 # ──────────────────────────────────────────────────────────────
-# OPEN QUESTIONS FOR THE MAPPED SYSTEM'S AUTHOR
+# AUTHOR ANSWERS
+# The six open questions of the earlier revision were answered by
+# kierandotai on PR #239 (review 5792497689) and are folded into the rows
+# above. Receipt serialization and prf are for -03, so governance_attestation
+# stays partial with empty signed_payload_fields for -02. A signed exercise
+# record is planned for -03. refusal_authority stays issuer. decision_lineage
+# stays false_analog. "equal or narrower, never wider" governs, and "strict
+# subset" is stale. The posted datatracker text is the one cited.
 # ──────────────────────────────────────────────────────────────
-open_questions:
-  - "Is the delegation receipt's serialization and signing input meant to be specified (a compact JWS, as the SDK now mints, or another form), and how is a prf content identifier computed? Decides signed_payload_fields and canonicalization_profile."
-  - "Does credential exercise produce a signed record under -02, or is the audit log the only record? A signed exercise record would be a closer governance_attestation candidate than the hop receipt."
-  - "Is refusal_authority better read as issuer (the DS refuses its own tokens) or shared, given the Chain-Verifiable Profile?"
-  - "Should the per-hop audit record, if a companion document standardizes it, be read as decision_lineage?"
-  - "The Terminology section says 'strict subset' and the Capability Structure section says 'equal or narrower'. Changes from -00 reads 'sub-delegation subset rule reads equal or narrower', which suggests the Terminology entry is the older wording. Which one governs capability containment?"
-  - "cred-ninja/protocol main still carries the 15 October -02 working copy. Is the posted 30 October text the one to cite, and will the repository copy be updated to match? Decides where this file pins."

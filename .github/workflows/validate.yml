@@ -25,6 +25,41 @@ jobs:
       # check. Previously this step ran `npm run validate` alone, so
       # scripts/validators/test-entity-continuity-pdr.js never executed in CI.
       - run: npm test
+      # Review evidence, not a gate: the matrix rendered from this pull request
+      # and from its base, both with this pull request's generator, and the
+      # diff between them. A legitimate crosswalk change is expected to change
+      # the matrix, so the diff never fails the job. The render itself is gated
+      # by `npm test` above and by validate-trusted.
+      - name: checkout base for the matrix diff
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: .base-snapshot
+      - name: matrix summary
+        if: github.event_name == 'pull_request'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TESTED_SHA: ${{ github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          node scripts/generate-crosswalk-matrix.js --stdout > "$RUNNER_TEMP/pr.md"
+          node scripts/generate-crosswalk-matrix.js --stdout --root .base-snapshot > "$RUNNER_TEMP/base.md" || echo "(base did not render)" > "$RUNNER_TEMP/base.md"
+          {
+            echo "## Crosswalk matrix"
+            echo
+            echo "PR head \`$HEAD_SHA\`, tested merge tree \`$TESTED_SHA\`, base data \`$BASE_SHA\`. Both data trees use the tested renderer. This is a data diff, not a renderer-code diff or an equality gate."
+            echo
+            echo '```diff'
+            diff -u "$RUNNER_TEMP/base.md" "$RUNNER_TEMP/pr.md" || true
+            echo '```'
+            echo '<details><summary>Full tested matrix</summary>'
+            echo
+            cat "$RUNNER_TEMP/pr.md"
+            echo
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # Trusted oracle (hostile-review finding 2, 2026-07-17): a PR can edit the
   # validator it is checked by, so this job runs the BASE branch's validator,
@@ -32,9 +67,20 @@ jobs:
   # disabled, against the PR's data tree. This is the required context.
   validate-trusted:
     name: validate-trusted
-    if: github.event_name == 'pull_request'
+    needs: validate
+    # Run even when validate fails, and fail this required context explicitly.
+    # A skipped dependent job must not turn failed proposed-code tests green.
+    if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - name: require proposed-tree tests
+        env:
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+        run: |
+          if [ "$VALIDATE_RESULT" != "success" ]; then
+            echo "Proposed-tree validation did not pass: $VALIDATE_RESULT" >&2
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
@@ -76,3 +122,11 @@ jobs:
       # ruleset workflow, which is a governance decision outside this repository.
       - name: bilateral_receipt purpose gate (trusted oracle)
         run: node trusted/scripts/validators/check-bilateral-receipt-purpose-gate.js "$GITHUB_WORKSPACE/pr-data"
+      # Same oracle property for the crosswalk matrix. The base branch's
+      # generator renders the pull request's crosswalks and fails on any that do
+      # not load, or on an output contract failure. The matrix is not committed,
+      # so this is the required gate on it. Before the generator took --root
+      # (the pull request that introduced this step), the base copy ignored the
+      # flag and checked its own tree.
+      - name: crosswalk matrix render (trusted oracle)
+        run: node trusted/scripts/generate-crosswalk-matrix.js --check --root "$GITHUB_WORKSPACE/pr-data"

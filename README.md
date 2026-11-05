@@ -30,13 +30,13 @@ The registry documents differences as carefully as matches. InsumerAPI's crosswa
 
 ```mermaid
 flowchart TD
-    C1["crosswalk/moltrust.yaml"] --> V["vocabulary.yaml<br/>15 canonical signal types<br/>7 descriptor dimensions"]
+    C1["crosswalk/moltrust.yaml"] --> V["vocabulary.yaml<br/>signal types<br/>descriptor dimensions"]
     C2["crosswalk/insumerapi.yaml"] --> V
     C3["crosswalk/your-system.yaml"] --> V
     V --> D["Verifiers and tooling<br/>compose signals across systems<br/>without learning each one's dialect"]
 ```
 
-Current corpus: 34 crosswalk files, 21 of which declare signal types and render in the grid against the 15 canonical signal types. The remainder use an alternative crosswalk format. Full grid at [`docs/generated/crosswalk-matrix.md`](./docs/generated/crosswalk-matrix.md).
+The crosswalk matrix shows every crosswalk that declares signal types against the vocabulary's signal types, with the counts, coverage and the crosswalks it excludes. It is generated from `main` and published at [aeoess.github.io/agent-governance-vocabulary/](https://aeoess.github.io/agent-governance-vocabulary/), which names the commit it was built from.
 
 **Precedent:** the IANA JWT claim registry and JSON-LD `@context`. Each system keeps its internal code and its production envelope values. This repo provides the shared reference and the per-system mappings.
 
@@ -70,7 +70,7 @@ Renaming live signed envelope `type` values is explicitly out of scope - canonic
 
 Open a PR adding `crosswalk/<your-system>.yaml`. Use the match types from `vocabulary.yaml > crosswalk_match_types`. Partial match and non-equivalent-similar-label are encouraged - this layer exists to clarify differences, not hide them.
 
-See [`docs/generated/crosswalk-matrix.md`](./docs/generated/crosswalk-matrix.md) for the system × signal-type match grid across the corpus.
+See the [crosswalk matrix](https://aeoess.github.io/agent-governance-vocabulary/) for the system × signal-type match grid across the corpus. Run `npm run generate:matrix` to build it locally from your branch.
 
 Committed contributors so far:
 

@@ -26,7 +26,7 @@
 # the relationships difference on PR #241 and plans to clarify it in -07.
 #
 # Status of the parts: the decision receipt is "shipped in proofbundle 2.1.0
-# ... stable"; action-outcome/v0.1 and relation/v0.1 are "EXPERIMENTAL ...
+# ... stable". action-outcome/v0.1 and relation/v0.1 are "EXPERIMENTAL ...
 # API and wire format may change without deprecation".
 #
 # This is a third-party crosswalk drafted by aeoess (maintainer of this
@@ -63,7 +63,7 @@ maintainer:
   mapped_system_maintainer:
     github: b7n0de
     project: b7n0de/proofbundle
-    confirmed_at: "2026-11-05"   # confirmed by the maintainer on PR #241 (comment 6652679943) for 770504e, against proofbundle 6d29ead and draft -05
+    confirmed_at: null   # confirmed for 770504e on PR #241 (comment 6652679943). This revision bounds negative notes and changes two descriptors, re-confirmation requested
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi
@@ -75,7 +75,7 @@ maintainer:
 # canonical form", and the verifier "never re-canonicalizes" (doc §7.1). A
 # payload that differs from its own RFC 8785 form is a fail-closed error.
 # hash_family: SHA-256 for the content root and every digest object
-# ({"sha256": "<64 lowercase hex>"}); relation edges and typedDigest name
+# ({"sha256": "<64 lowercase hex>"}). Relation edges and typedDigest name
 # jcs-sha256-v1 explicitly.
 system_attributes:
   signature_capability: classical
@@ -87,8 +87,8 @@ system_attributes:
 #   relation.md sections 1 to 4, both machine schemas, and
 #   draft-gruszka-audit-decision-receipts-05 sections 1 to 6, at the pins
 #   above. Not read: eval-result, trust-pack, SPEC.md, the plugin source.
-# Each no_mapping note names the pin, so the bound travels with the note
-# when it is quoted. A no_mapping row states that these sources were searched and no
+# Each no_mapping note states this search bound, so the bound travels with
+# the note when it is quoted. A no_mapping row states that these sources were searched and no
 # corresponding field or record was found. It is not a claim about the
 # project's capability outside those sources.
 
@@ -161,7 +161,7 @@ signal_types:
   job_performance:
     canonical: job_performance
     match: no_mapping
-    notes: "action-outcome status (executed, refused, failed, partial) is the executor's statement about one action, not an assessment of completed work."
+    notes: "action-outcome status (executed, refused, failed, partial) is the executor's statement about one action. No assessment of completed work found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   peer_review:
     canonical: peer_review
@@ -176,12 +176,12 @@ signal_types:
   reasoning_integrity:
     canonical: reasoning_integrity
     match: no_mapping
-    notes: "The receipt 'carries no chain-of-thought' (doc §2). Inputs are committed by digest; nothing attests reasoning."
+    notes: "The receipt 'carries no chain-of-thought' (doc §2) and commits inputs by digest. No record attesting reasoning found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   trust_verification:
     canonical: trust_verification
     match: no_mapping
-    notes: "Binding decisionMaker.id to a key is a relying-party trust policy (doc §9), not a status carried in the receipt."
+    notes: "Binding decisionMaker.id to a key is a relying-party trust policy (doc §9). No identity verification status field found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   behavioral_trust:
     canonical: behavioral_trust
@@ -191,7 +191,7 @@ signal_types:
   cognitive_attestation:
     canonical: cognitive_attestation
     match: no_mapping
-    notes: "agent.configurationDigest commits to a configuration by digest. Nothing attests the model or runtime."
+    notes: "agent.configurationDigest commits to a configuration by digest. No attestation of the model or runtime found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
   compliance_risk:
     canonical: compliance_risk
@@ -216,17 +216,17 @@ signal_types:
   completion_ratio:
     canonical: completion_ratio
     match: no_mapping
-    notes: "No aggregate metric. Computable by a consumer over outcome status values, but none is defined."
+    notes: "No aggregate metric found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6. A consumer could compute one over outcome status values."
 
   wallet_state:
     canonical: wallet_state
     match: no_mapping
-    notes: "No wallet or on-chain concept in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No wallet-holdings attestation field found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6. The chia-datalayer/v1 anchor type (doc §8) anchors a receipt's content root and is not a wallet signal."
 
   wallet_intelligence:
     canonical: wallet_intelligence
     match: no_mapping
-    notes: "No wallet or on-chain concept in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No wallet-behavior classification field found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
 
 # ──────────────────────────────────────────────────────────────
 # DECISION TRAJECTORY
@@ -245,7 +245,9 @@ decision_trajectory:
       and the verifier walks attached ancestors to depth 32 and reports a
       lineage state (VERIFIED, DECLARED_UNRESOLVED, FAIL, NOT_EVALUATED).
       Each edge references its predecessor by content hash, which is the
-      canonical shape.
+      canonical shape. The signed edge is what the receipt emits. The
+      lineage state is computed by the verifier from supplied ancestors and
+      is not counted as emitted.
 
       Partial, for three stated reasons. (1) Edges are optional and are
       written only on correction, re-run or withdrawal. Ordinary successive
@@ -298,28 +300,25 @@ descriptor_dimensions:
     note_enforcement: >
       The receipt records a verdict and gates nothing itself: "the executing
       system makes its own authorization check" (draft 2.5), and preventing
-      reuse "remains the relying party's duty" (draft 4). A deployment such
-      as the plugin preview obtains a signed ALLOW before it lets a write
-      run (draft 5), which is the deployment's binding use of an advisory
-      record. The maintainer confirmed advisory for the format on PR #241.
-    validity_temporal: at_acceptance
-    note_validity: >
-      validity carries audience, nonce and expiresAt. The verifier supplies
-      the evaluation time T and requires decidedAt <= T < expiresAt (draft
-      3.2 step 9). "A historical audit time MUST NOT make an expired
-      approval usable" (draft 4).
-    refusal_authority: shared
+      reuse "remains the relying party's duty" (draft 4). The draft
+      describes the plugin preview hook obtaining a signed ALLOW before it
+      allows a covered write, as observations of the source and runbook,
+      not a measured execution (draft 5). The maintainer confirmed advisory
+      for the format on PR #241.
+    refusal_authority: consumer_policy
     note_refusal: >
-      The decision maker issues DENY and REFUSE verdicts. The relying party
-      holds the stop: it makes its own check, enforces single use of
-      approvals (draft 4), and its trust policy decides which keys may
-      decide (doc §9). Neither alone covers refusal, so shared is declared.
-    invariant_survival: pre_action
-    note_invariant: >
-      draft-gruszka-audit-decision-receipts-05 requires decisionType
-      preActionAuthorization. The predicate also admits postHocReview,
-      humanEscalation and policySimulation (doc §6), for which pre_action
-      would not hold.
+      The decision maker issues DENY and REFUSE verdicts, but the receipt
+      "is not an access token" and "the executing system makes its own
+      authorization check" (draft 2.5). The relying party must honour each
+      approval at most once (draft 4), and its trust policy decides which
+      keys may decide (doc §9).
+    note_profile: >
+      validity_temporal and invariant_survival are left unset for the
+      general predicate. validity is optional there (doc §6), and
+      decisionType admits postHocReview, humanEscalation and
+      policySimulation besides preActionAuthorization (doc §6). Both are
+      given below for the draft -05 profile, which requires validity and
+      preActionAuthorization.
     note_replay: >
       replay_class left unset. Inputs, policy and evidence are bound by
       digest (inputSnapshot, policyBoundary.policyDigest, evidenceRefs,
@@ -330,7 +329,19 @@ descriptor_dimensions:
       asked on PR #241 to leave it unset until #231 settles the criteria.
     note_action_class: >
       governed_action_class left unset. proposedAction.actionType is an open
-      string; the plugin preview covers writes (draft 5).
+      string. The plugin preview covers writes (draft 5).
+
+  decision_receipt_draft_05:
+    validity_temporal: at_acceptance
+    note_validity: >
+      Under draft -05, validity carries audience, nonce and expiresAt. The
+      verifier supplies the evaluation time T and requires
+      decidedAt <= T < expiresAt (draft 3.2 step 9). "A historical audit
+      time MUST NOT make an expired approval usable" (draft 4).
+    invariant_survival: pre_action
+    note_invariant: >
+      draft-gruszka-audit-decision-receipts-05 requires decisionType
+      preActionAuthorization (draft 3.8, Table 4).
 
   action_outcome:
     invariant_survival: post_action
@@ -356,10 +367,10 @@ proofbundle_specific_terms:
   content_root: "SHA-256 over the exact RFC 8785 canonical Statement bytes, never recomputed by re-canonicalizing (doc §3, §7.1). Used by evidenceRefs, decisionRef and relation edges. [evidence]"
   notChecked: "List of {field, reason, impact} stating what the decision maker did not check. Required in strict mode and by draft Table 4, optional in the default verify mode (doc §6). [coverage_and_completeness]"
   decisionChangeConditions: "List of {conditionType, description, requiredEvidenceType} stating what would change the decision. Required in strict mode and by draft Table 4, optional in the default verify mode (doc §6). [activation_condition]"
-  approval_record: "Record of one human act approving one action: approvalId, approver, session, actionDigest, approvedAt, validUntil, bound into inputSnapshot by digest; not signed by the approver (draft 2.1, 2.5). [approval]"
+  approval_record: "Record of one human act approving one action: approvalId, approver, session, actionDigest, approvedAt, validUntil, bound into inputSnapshot by digest, and not signed by the approver (draft 2.1, 2.5). [approval]"
   approval_single_use: "A relying party MUST honour each approval at most once, keyed by (approvalId, actionDigest, session), and MUST keep that state across rotation (draft 4). [approval, expiry_or_exhaustion]"
-  evaluation_receipt_as_evidence: "An evaluation receipt appears only in evidenceRefs; 'A verifier MUST NOT treat a valid Signed Evaluation Receipt ... as permission for an action' (draft 2.6). [evidence]"
-  detached_anchors: "Anchors for a receipt's own content root travel outside the signed bytes; a pending anchor does not satisfy strict mode (doc §8). [evidence]"
+  evaluation_receipt_as_evidence: "An evaluation receipt appears only in evidenceRefs. 'A verifier MUST NOT treat a valid Signed Evaluation Receipt ... as permission for an action' (draft 2.6). [evidence]"
+  detached_anchors: "Anchors for a receipt's own content root travel outside the signed bytes. A pending anchor does not satisfy strict mode (doc §8). [evidence]"
   role_separation: "Outcome key and executor.id must differ from the decision maker's (draft 3.4 step 5, action-outcome §5). [authorization_decision, execution]"
 
 # ──────────────────────────────────────────────────────────────

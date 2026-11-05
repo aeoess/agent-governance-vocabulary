@@ -47,7 +47,7 @@ system:
     escalation point) produced a specific verdict about a specific proposed
     action, over specific digest-bound inputs and evidence, at a specific
     time" (doc §1). An Action Outcome is "a signed, offline-verifiable record
-    that a specific executor ... carried out, or refused, the action a
+    that a specific executor ... carried out" or refused "the action a
     specific Decision Receipt permitted" (action-outcome §1), naming the
     decision by its content root in decisionRef.
   identity_layer: >
@@ -254,7 +254,7 @@ decision_trajectory:
       notes "Section 3.2 does not define a chain of decision receipts". So
       there is no sequence of all decisions affecting one agent. (2) "A
       verified edge proves the issuer declared the derivation over exact
-      bytes, never that the successor is better" (relation §1). (3) The
+      bytes", "never that the successor is better" (relation §1). (3) The
       profile is experimental. The predicate pages and both pinned schemas
       (decision-receipt-v0.1 and action-outcome-v0.1, $defs/relationships)
       admit an optional relationships member under relation/v0.1. Draft -05

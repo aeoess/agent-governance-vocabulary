@@ -34,8 +34,9 @@ const PAGES_URL = 'https://aeoess.github.io/agent-governance-vocabulary/'
 // back, so the pointer must keep the link and carry no table.
 const POINTER_REL = path.join('docs', 'generated', 'crosswalk-matrix.md')
 
-// A pipe inside a Markdown table cell would start a new column.
-const mdCell = s => String(s).replace(/\|/g, '\\|')
+// A pipe inside a Markdown table cell would start a new column. It is written
+// as an HTML entity, so no backslash in the text can undo the escape.
+const mdCell = s => String(s).replace(/\|/g, '&#124;')
 
 const BADGE = {
   exact:        '✅',
@@ -359,18 +360,19 @@ function checkPointer(root) {
   if (!fs.existsSync(file)) return []
   const text = fs.readFileSync(file, 'utf8')
   const problems = []
-  if (!text.includes(PAGES_URL)) problems.push(`${POINTER_REL} no longer links to ${PAGES_URL}`)
+  if (!text.split('\n').some(line => line.trim() === PAGES_URL)) problems.push(`${POINTER_REL} no longer links to ${PAGES_URL}`)
   if (/^\|\s*-{3,}/m.test(text)) problems.push(`${POINTER_REL} contains a Markdown table. The matrix is published, not committed.`)
   return problems
 }
 
-// Every line of one Markdown table must have the same number of unescaped pipes.
+// Every line of one Markdown table must have the same number of pipes. Cell
+// text never contains a literal pipe (see mdCell), so every pipe is a border.
 function markdownTableProblems(markdown) {
   const problems = []
   let expected = null
   for (const line of String(markdown).split('\n')) {
     if (!line.startsWith('|')) { expected = null; continue }
-    const pipes = (line.match(/(?<!\\)\|/g) || []).length
+    const pipes = (line.match(/\|/g) || []).length
     if (expected === null) expected = pipes
     else if (pipes !== expected) problems.push(`Markdown table row has ${pipes - 1} columns, expected ${expected - 1}: ${line.slice(0, 60)}`)
   }

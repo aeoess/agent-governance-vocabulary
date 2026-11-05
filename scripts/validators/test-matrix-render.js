@@ -136,9 +136,10 @@ const GOOD = [
 // 10. A pipe in a file name stays inside one Markdown cell, and the table
 //     check catches a row with an extra column.
 {
-  const dir = tree({ 'a|b.yaml': GOOD, 'good.yaml': GOOD })
+  const dir = tree({ 'a|b.yaml': GOOD, 'c\\|d.yaml': GOOD, 'good.yaml': GOOD })
   const md = gen.renderMarkdown(gen.buildModel(gen.loadInputs(dir)))
-  check('10. a pipe in a file name keeps the table aligned', gen.markdownTableProblems(md).length === 0 && md.includes('A\\|b'), gen.markdownTableProblems(md).join('; '))
+  check('10. a pipe in a file name keeps the table aligned', gen.markdownTableProblems(md).length === 0 && md.includes('A&#124;b'), gen.markdownTableProblems(md).join('; '))
+  check('10. a backslash before the pipe cannot undo the escape', md.includes('C\\&#124;d'), md.split('\n').filter(l => l.includes('C')).join(' / '))
   check('10. an unescaped pipe is caught', gen.markdownTableProblems('| a | b |\n| - | - |\n| x | y | z |').length === 1)
 }
 

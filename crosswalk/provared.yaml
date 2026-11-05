@@ -15,13 +15,16 @@
 #   - CONTRIBUTING.md.
 #
 # Related standards-track text, same author:
-#   draft-izmaylov-agent-permission-receipts-01 (individual Internet-Draft,
-#   revision -01 posted 2026-10-24T11:41Z, -00 on 2026-10-07).
+#   draft-izmaylov-agent-permission-receipts (individual Internet-Draft,
+#   -02 posted 2026-11-02T20:39Z, -01 on 2026-10-24, -00 on 2026-10-07).
 #   CONTRIBUTING.md: "its core is an individual Internet-Draft". The draft's
 #   revision number and the format's version are separate: record labels in
 #   the pinned repository spec end in v0. Rows below cite the repository spec
-#   at the pinned commit, not the draft, and whether -01 matches it was not
-#   checked.
+#   at the pinned commit, not the draft. The maintainer asked on PR #238 for
+#   spec/provared-format.md to be the pinned reference: the code and the
+#   shared test files answer to it, the draft covers a core of it, and where
+#   they differ the repository text describes what the code does. Whether -02
+#   matches the repository spec was not checked.
 #
 # Implementation: JavaScript library in src/ and a Python version in
 # python/, both checked against test-vectors/; package version 0.7.0 at the
@@ -131,7 +134,9 @@ signal_types:
       carries a signed `purpose`, but that sits on the permission, not on
       the receipt. This is the same reading as
       the Tenuo crosswalk, where the holder and the enforcement point also
-      sign different preimages.
+      sign different preimages. The maintainer confirmed this reading on
+      PR #238: the service confirms the agent's stub by its fingerprint, and
+      the two do not sign one record.
 
       Conformance material exists for both contents
       (test-vectors/countersignature-contents.json, stub-contents.json).
@@ -166,7 +171,9 @@ signal_types:
       No verification status or grade of an agent. A vouching record
       (section 23, headings read only) is an organisation's signed
       statement "that a key belongs to a name"; section 13 says it "does
-      not prove that the organisation checked well". See open questions.
+      not prove that the organisation checked well". The maintainer
+      confirmed no_mapping on PR #238: a vouching record states that a key
+      belongs to a name, not how the organisation checked.
 
   behavioral_trust:
     canonical: behavioral_trust
@@ -248,7 +255,8 @@ decision_trajectory:
       actions taken, not of decisions. Denials (section 28), which record
       actions not taken, are "in no chain"; refusals are signed by the
       service. So the chain is the agent's action lineage under one
-      permission. Second, completeness: "It proves what was recorded, not
+      permission, which the maintainer confirmed on PR #238. Second,
+      completeness: "It proves what was recorded, not
       what was left out. An agent that acts and writes no stub leaves no
       trace" (section 13). Truncation of the book is addressed outside the
       chain, by seals over the Merkle root with outside time-stamps and
@@ -287,7 +295,10 @@ descriptor_dimensions:
       software around an agent may ask, before each action") and "is a
       help to whoever runs the agent. It is not evidence: nothing in a
       record shows that the check was made." Where that check runs on the
-      action path, the slip acts as binding there. Open question below.
+      action path, the slip acts as binding there. The maintainer confirmed
+      advisory on PR #238: it binds only where software refuses on the
+      action path, as the stub writer's act, the gateway and the MCP
+      executor do, and a record does not show that the check was made.
     validity_temporal: at_processing
     note_validity: >
       Each stub's `when` is compared with validFrom and validUntil
@@ -344,12 +355,21 @@ provared_specific_terms:
   what_a_record_does_not_prove: "Section 13 lists the limits of each record. Rows above quote it where it bounds a match. [coverage_and_completeness]"
 
 # ──────────────────────────────────────────────────────────────
-# OPEN QUESTIONS FOR PROVARED'S MAINTAINER
+# MAINTAINER ANSWERS AND A KNOWN GAP
+# The six open questions of the earlier revision were answered by sealwright
+# on PR #238 and are folded into the rows above.
+#
+# Known gap, stated by the maintainer on PR #238: the format has no state for
+# an action in progress. A stub has one `when`, and nothing records that an
+# action began before a cancellation and ended after it, so this is outside
+# the format's scope in draft version 0. The result depends on how the stub
+# is written. Run by the maintainer on the library at ae6061a: with the stub
+# writer's act, the stub is dated when the action began and nothing is
+# reported even when the action ended after the cancellation. Section 22 can
+# still report that stub if the cancellation has a counted time-stamp, unless
+# a time-stamped seal shows the stub existed in time. With record, a stub written
+# after the cancellation is reported after-cancellation by its place in the
+# book. The maintainer plans to raise the running-action case as an open
+# issue in the next revision of the draft, and to fix section 5.1, which
+# calls `when` "When it was done" while act uses the time the action began.
 # ──────────────────────────────────────────────────────────────
-open_questions:
-  - "An agent starts an authorized action, then receives and acknowledges a cancellation before the action finishes. The stub records when the action was done, and section 26 reports stubs dated after the acknowledgement as after-cancellation. Is an action already running meant to be treated the same as one started after the cancellation, or is handling in-progress actions outside the format's current scope?"
-  - "Does reading the countersignature as the service confirming the agent's stub by its fingerprint, rather than both parties signing one record, match your intent? That reading is why bilateral_receipt is false_analog."
-  - "For a crosswalk, which text should be pinned as the reference: spec/provared-format.md in the repository, or draft-izmaylov-agent-permission-receipts? If they diverge, which governs?"
-  - "Is the slip better described as advisory (as drafted), or as binding where the check before acting (section 20) sits on the action path?"
-  - "Should the chain be read as action lineage only, as drafted, or is there a reading in which denials and refusals form part of a decision sequence for one agent?"
-  - "Is a vouching record (section 23) closer to an identity verification status than this file allows? It is mapped no_mapping against trust_verification here, on headings only for section 23."

@@ -1,13 +1,14 @@
 # Generated Documentation
 
-Files in this directory are auto-generated from the canonical vocabulary and crosswalk corpus. Do not hand-edit.
+Generated output is not committed. It is built from the canonical vocabulary and crosswalk corpus.
 
-## Regenerate
+## Crosswalk matrix
+
+Published from `main` at https://aeoess.github.io/agent-governance-vocabulary/. `crosswalk-matrix.md` in this directory is a pointer to it, kept so existing links still resolve.
+
+To build it locally:
 
 ```bash
-node scripts/generate-crosswalk-matrix.js
+npm run generate:matrix   # writes .generated/matrix/crosswalk-matrix.md
+npm run build:site        # writes .generated/site/index.html and crosswalk-matrix.md
 ```
-
-## Files
-
-- `crosswalk-matrix.md` — System × signal-type match grid across all standard-format crosswalks. Excludes reverse and alternative-format crosswalks.

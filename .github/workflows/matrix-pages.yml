@@ -5,11 +5,12 @@ name: Matrix pages
 # commit, and the deploy job publishes exactly that artifact.
 #
 # Ordering: runs share one concurrency group without cancelling the run in
-# progress, so deploys never overlap, and a newer push replaces any older run
-# still waiting. Before deploying, the job also checks that main still points
-# at the commit it built, so a delayed older run cannot publish over a newer
-# one. A failed build or deploy publishes nothing, and the previous page, with
-# its own commit stated on it, stays up.
+# progress, so deploys never overlap. Waiting runs are kept in order instead of
+# replaced (queue: max). Before deploying, each run checks that main still
+# points at the commit it built, so an older run, including a manual rerun,
+# cannot publish over a newer one. A failed build does not deploy. A deployment
+# can succeed before its client reports a failure, so after an ambiguous deploy
+# result, check the source commit stated on the page.
 
 on:
   push:

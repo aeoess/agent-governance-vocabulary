@@ -63,7 +63,7 @@ maintainer:
   mapped_system_maintainer:
     github: b7n0de
     project: b7n0de/proofbundle
-    confirmed_at: null   # not yet reviewed by the mapped system's maintainer
+    confirmed_at: "2026-11-05"   # confirmed by the maintainer on PR #241 (comment 6652679943) for 770504e, against proofbundle 6d29ead and draft -05
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi

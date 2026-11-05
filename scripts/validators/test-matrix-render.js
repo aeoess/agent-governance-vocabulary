@@ -133,5 +133,36 @@ const GOOD = [
   check('9. two output modes fail', m.exit === 1 && /only one output mode/.test(m.out), m.out)
 }
 
+// 10. A pipe in a file name stays inside one Markdown cell, and the table
+//     check catches a row with an extra column.
+{
+  const dir = tree({ 'a|b.yaml': GOOD, 'good.yaml': GOOD })
+  const md = gen.renderMarkdown(gen.buildModel(gen.loadInputs(dir)))
+  check('10. a pipe in a file name keeps the table aligned', gen.markdownTableProblems(md).length === 0 && md.includes('A\\|b'), gen.markdownTableProblems(md).join('; '))
+  check('10. an unescaped pipe is caught', gen.markdownTableProblems('| a | b |\n| - | - |\n| x | y | z |').length === 1)
+}
+
+// 11. The committed pointer cannot turn back into a matrix.
+{
+  const stale = tree({ 'good.yaml': GOOD })
+  fs.mkdirSync(path.join(stale, 'docs', 'generated'), { recursive: true })
+  fs.writeFileSync(path.join(stale, 'docs', 'generated', 'crosswalk-matrix.md'),
+    fs.readFileSync(path.join(ROOT, 'docs', 'generated', 'crosswalk-matrix.md'), 'utf8') + '\n| System | x |\n| ------ | - |\n| A | ✅ |\n', 'utf8')
+  const r = run(['--check', '--root', stale])
+  check('11. a pointer carrying a table fails --check', r.exit === 1 && /contains a Markdown table/.test(r.out), r.out)
+  fs.writeFileSync(path.join(stale, 'docs', 'generated', 'crosswalk-matrix.md'), '# Crosswalk Matrix\n', 'utf8')
+  const u = run(['--check', '--root', stale])
+  check('11. a pointer without the link fails --check', u.exit === 1 && /no longer links/.test(u.out), u.out)
+  check('11. the repository pointer passes', gen.checkPointer(ROOT).length === 0, gen.checkPointer(ROOT).join('; '))
+}
+
+// 12. The coverage note does not turn a bounded search into an absence claim.
+{
+  const model = gen.buildModel(gen.loadInputs(ROOT))
+  const md = gen.renderMarkdown(model)
+  const html = gen.renderHtml(model)
+  check('12. no absence claim in the coverage note', !/does not provide/.test(md) && !/does not provide/.test(html) && md.includes('not necessarily a capability the system lacks'))
+}
+
 console.log(`${passed} passed, ${failed} failed`)
 process.exit(failed === 0 ? 0 : 1)

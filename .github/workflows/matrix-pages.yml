@@ -70,6 +70,7 @@ jobs:
             echo "publish=true" >> "$GITHUB_OUTPUT"
           else
             echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Not published. main is at $head and this run built $GITHUB_SHA. A newer run publishes."
             echo "main is at $head and this run built $GITHUB_SHA. A newer run publishes." >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: deploy

@@ -28,6 +28,14 @@ const { normalizeDoc, aliasesFromVocab } = require('./match-types')
 const REPO_ROOT = path.resolve(__dirname, '..')
 const DEFAULT_OUT = path.join(REPO_ROOT, '.generated', 'matrix', 'crosswalk-matrix.md')
 const REPO_URL = 'https://github.com/aeoess/agent-governance-vocabulary'
+const PAGES_URL = 'https://aeoess.github.io/agent-governance-vocabulary/'
+// The committed matrix was replaced by a pointer to the published page. An
+// older branch merging its full copy back would bring the stale-copy problem
+// back, so the pointer must keep the link and carry no table.
+const POINTER_REL = path.join('docs', 'generated', 'crosswalk-matrix.md')
+
+// A pipe inside a Markdown table cell would start a new column.
+const mdCell = s => String(s).replace(/\|/g, '\\|')
 
 const BADGE = {
   exact:        '✅',
@@ -37,8 +45,9 @@ const BADGE = {
   no_mapping:   '⚪',
 }
 // Match types that count as a mapping in the coverage stats. false_analog and
-// no_mapping are documented answers that the system does NOT provide the
-// signal, so they count as addressed but never as mapped. An ungraded entry is
+// no_mapping record a difference, or a signal not found in the sources the
+// crosswalk names, so they count as addressed but never as mapped. They do not
+// establish that the system lacks the capability. An ungraded entry is
 // a legacy row that claims a mapping without a strength, so it counts as mapped.
 const POSITIVE_MATCHES = new Set(['exact', 'structural', 'partial', '__ungraded__'])
 
@@ -218,7 +227,7 @@ function renderMarkdown(model, opts = {}) {
   lines.push('')
   lines.push('## Matrix')
   lines.push('')
-  const table = [['System', ...names], ...model.rows.map(r => [r.label, ...r.cells])]
+  const table = [['System', ...names], ...model.rows.map(r => [r.label, ...r.cells])].map(r => r.map(mdCell))
   const widths = table[0].map((_, c) => Math.max(...table.map(r => String(r[c]).length)))
   const row = r => '| ' + r.map((cell, c) => String(cell) + ' '.repeat(Math.max(0, widths[c] - String(cell).length))).join(' | ') + ' |'
   lines.push(row(table[0]))
@@ -232,7 +241,7 @@ function renderMarkdown(model, opts = {}) {
   lines.push('')
   lines.push('### Per-signal coverage')
   lines.push('')
-  lines.push('Mapped counts systems with an `exact`, `structural` or `partial` match, or a legacy ungraded entry. Addressed also counts `false_analog` and `no_mapping`, which document that a system does not provide the signal. Status is the signal type\'s status in `vocabulary.yaml`.')
+  lines.push('Mapped counts systems with an `exact`, `structural` or `partial` match, or a legacy ungraded entry. Addressed also counts `false_analog` and `no_mapping`. Those record a difference, or a signal not found in the sources the crosswalk names, not necessarily a capability the system lacks. Status is the signal type\'s status in `vocabulary.yaml`.')
   lines.push('')
   lines.push('| Signal type | Status | Systems mapped | Systems addressed | Mapped coverage |')
   lines.push('|---|---|---|---|---|')
@@ -324,7 +333,7 @@ function renderHtml(model, opts = {}) {
   h.push('</tbody></table></div>')
   h.push('<h2>Coverage</h2>')
   h.push(`<p>Systems represented: ${n}. Signal types: ${names.length} (${esc(statusSummary(model.statusCounts))}).</p>`)
-  h.push('<p>Mapped counts systems with an <code>exact</code>, <code>structural</code> or <code>partial</code> match, or a legacy ungraded entry. Addressed also counts <code>false_analog</code> and <code>no_mapping</code>, which document that a system does not provide the signal. Status is the signal type\'s status in <code>vocabulary.yaml</code>.</p>')
+  h.push('<p>Mapped counts systems with an <code>exact</code>, <code>structural</code> or <code>partial</code> match, or a legacy ungraded entry. Addressed also counts <code>false_analog</code> and <code>no_mapping</code>. Those record a difference, or a signal not found in the sources the crosswalk names, not necessarily a capability the system lacks. Status is the signal type\'s status in <code>vocabulary.yaml</code>.</p>')
   h.push('<div class="scroll"><table class="cov"><thead><tr><th>Signal type</th><th>Status</th><th>Systems mapped</th><th>Systems addressed</th><th>Mapped coverage</th></tr></thead><tbody>')
   for (const s of model.byCoverage) {
     h.push(`<tr><td><code>${esc(s.sig)}</code></td><td>${esc(s.status)}</td><td>${s.mapped} / ${n}</td><td>${s.addressed} / ${n}</td><td>${s.pct}%</td></tr>`)
@@ -345,9 +354,33 @@ function renderHtml(model, opts = {}) {
 }
 
 // The output contract. Returns a list of problems, empty when the output is sound.
+function checkPointer(root) {
+  const file = path.join(root, POINTER_REL)
+  if (!fs.existsSync(file)) return []
+  const text = fs.readFileSync(file, 'utf8')
+  const problems = []
+  if (!text.includes(PAGES_URL)) problems.push(`${POINTER_REL} no longer links to ${PAGES_URL}`)
+  if (/^\|\s*-{3,}/m.test(text)) problems.push(`${POINTER_REL} contains a Markdown table. The matrix is published, not committed.`)
+  return problems
+}
+
+// Every line of one Markdown table must have the same number of unescaped pipes.
+function markdownTableProblems(markdown) {
+  const problems = []
+  let expected = null
+  for (const line of String(markdown).split('\n')) {
+    if (!line.startsWith('|')) { expected = null; continue }
+    const pipes = (line.match(/(?<!\\)\|/g) || []).length
+    if (expected === null) expected = pipes
+    else if (pipes !== expected) problems.push(`Markdown table row has ${pipes - 1} columns, expected ${expected - 1}: ${line.slice(0, 60)}`)
+  }
+  return problems
+}
+
 function checkOutput(model, markdown, html, legacySpellings = []) {
   const problems = []
   if (typeof markdown !== 'string' || markdown.trim().length === 0) problems.push('Markdown output is empty')
+  problems.push(...markdownTableProblems(markdown))
   if (typeof html !== 'string' || html.trim().length === 0) problems.push('HTML output is empty')
   const width = model.signals.length
   for (const r of model.rows) {
@@ -399,6 +432,12 @@ function main() {
     for (const e of inputs.errors) console.error(`  ${e}`)
     process.exit(1)
   }
+  const pointer = checkPointer(root)
+  if (pointer.length > 0) {
+    console.error('generate-crosswalk-matrix: the committed matrix pointer is wrong')
+    for (const p of pointer) console.error(`  ${p}`)
+    process.exit(1)
+  }
   const model = buildModel(inputs)
   const md = renderMarkdown(model, { sourceSha })
   const html = renderHtml(model, { sourceSha })
@@ -437,6 +476,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  checkPointer,
+  markdownTableProblems,
   coverageCounts, POSITIVE_MATCHES, loadInputs, buildModel, renderMarkdown, renderHtml,
   checkOutput, legacySpellingsFromVocab,
 }

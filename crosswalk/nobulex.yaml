@@ -54,9 +54,9 @@ signal_types:
     notes: >
       Direct mapping. Nobulex ActionLog entries are the primary governance
       attestation artifact. Each entry is independently verifiable via
-      hash chain replay. The evaluator_did equals the agentDid (self-evaluated)
-      — Nobulex collapses the actor and enforcer by design. See
-      descriptor_dimensions.refusal_authority: self_enforced.
+      hash chain replay. The evaluator_did equals the agentDid (self-evaluated).
+      The refusal_authority classification is unresolved, see
+      descriptor_dimensions.note_refusal.
     issuers_in_production: ["Nobulex SDK (@nobulex/sdk)"]
     signed_shapes:
       standard:
@@ -273,11 +273,17 @@ descriptor_dimensions:
 
   refusal_authority: "self_enforced"
   note_refusal: >
-    Nobulex collapses the actor and enforcer by design. The agent
-    evaluates its own actions against its own declared covenant.
-    evaluator_did === agentDid. This is a legitimate architectural
-    choice — the enforcement is structural (middleware intercepts
-    every action), not behavioral (agent choosing to comply).
+    Unresolved. "self_enforced" is outside the canonical refusal_authority
+    enum and is not a valid classification. It stays here, with its
+    validator warning, until evidence supports one of issuer, verifier,
+    consumer_policy or shared (#146). Separate, limited observation: the
+    evaluator is the agent itself (evaluator_did equals agentDid). The
+    optional Vercel AI wrapper at packages/sdk/src/adapters/vercel-ai.ts
+    L98-118 (Nobulex commit 2c0d967c0627be7feb91d435cbd1a123deb50d36)
+    calls evaluateAction and blocks the wrapped tool call on denial. That
+    shows where this wrapper refuses. It does not show that every action
+    goes through the wrapper, who controls the signing key, or where
+    refusal authority sits across deployments.
 
   invariant_survival: "permanent"
   note_invariant: >

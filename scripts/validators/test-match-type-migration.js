@@ -181,10 +181,13 @@ console.log('\n# issue #153 acceptance criteria: match-type migration\n')
     canonBadPurpose.exit === legacyBadPurpose.exit)
 }
 
-// 5. Generated and public output never emits the deprecated spelling.
+// 5. Generated and public output never emits the deprecated spelling. The
+//    matrix is rendered here from the current tree, not read from a committed
+//    file, so a generator edit that emitted the alias would fail this case.
 {
-  const matrix = path.join(ROOT, 'docs', 'generated', 'crosswalk-matrix.md')
-  const text = fs.existsSync(matrix) ? fs.readFileSync(matrix, 'utf8') : ''
+  const gen = require(path.join(ROOT, 'scripts', 'generate-crosswalk-matrix.js'))
+  const model = gen.buildModel(gen.loadInputs(ROOT))
+  const text = gen.renderMarkdown(model) + gen.renderHtml(model)
   check('5. the generated matrix does not contain the deprecated spelling',
     text.length > 0 && !text.includes(LEGACY))
   check('5. the generated matrix names the canonical token', text.includes(CANON))

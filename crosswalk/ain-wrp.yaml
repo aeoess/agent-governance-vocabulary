@@ -120,7 +120,7 @@ context_dimensions:
       or prior-completion signals.
 
 descriptor_dimensions:
-  refusal_authority: shared   # the gateway decides admission under local policy and may deny even when every check succeeds, but must not begin on DENY or drop a mandatory restriction it accepts (sections 10.4 and 10.5)
+  refusal_authority: shared   # The gateway decides admission under local policy and may deny even when every check succeeds, but must preserve applicable mandatory restrictions validly issued by competent sources. (sections 10.4 and 10.5, wording from the author on PR #194)
   validity_temporal: at_acceptance     # evaluated at an explicit evaluation time before the operational protocol begins (section 10.10), with re-evaluation triggers (section 12)
   note_replay: >
     No replay_class selected. Section 10.10 asks implementations to preserve

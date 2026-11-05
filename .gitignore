@@ -20,3 +20,6 @@ specs/ERIK-NEWTON*
 /tmp-*.md
 /scratch-*.md
 *.private.md
+
+# Generated output (crosswalk matrix and site). Published from main by CI.
+.generated/

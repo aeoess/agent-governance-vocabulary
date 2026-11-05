@@ -115,9 +115,10 @@ signal_types:
       Partial, for three stated reasons. (1) The receipt states the verdict,
       not that the action satisfied the requirement in fact: "It does not
       prove the decision was correct, legal, safe, compliant, or fully
-      informed" (doc §2). (2) The verdict set is wider than an attestation
-      of satisfaction (ALLOW, DENY, REFUSE, ESCALATE, DEFER, OBSERVE), and
-      only ALLOW reads as one. (3) The receipt is "not an access token. A
+      informed" (doc §2). (2) The row covers ALLOW receipts only. The verdict
+      set is wider (ALLOW, DENY, REFUSE, ESCALATE, DEFER, OBSERVE), and a
+      DENY or REFUSE does not attest that a requirement was met. The
+      maintainer confirmed this reading on PR #241. (3) The receipt is "not an access token. A
       verified ALLOW is a record of a decision, and the executing system
       makes its own authorization check" (draft 2.5). The receipt's own
       member notChecked lists what the decision maker did not check, which
@@ -150,6 +151,12 @@ signal_types:
       false_analog because the pair could be mistaken for a bilateral
       receipt, while the canonical requirement of one signed preimage
       carrying both signatures is not met.
+
+      The nearest an outcome comes to a second party is receiverRefs, an
+      optional digest-bound reference to a receiver's own statement
+      (action-outcome §4). That is a separate record, not a second signature
+      over one preimage, and the library does not itself verify the
+      referenced statement (action-outcome §5).
 
   job_performance:
     canonical: job_performance
@@ -294,7 +301,7 @@ descriptor_dimensions:
       reuse "remains the relying party's duty" (draft 4). A deployment such
       as the plugin preview obtains a signed ALLOW before it lets a write
       run (draft 5), which is the deployment's binding use of an advisory
-      record. Open question below.
+      record. The maintainer confirmed advisory for the format on PR #241.
     validity_temporal: at_acceptance
     note_validity: >
       validity carries audience, nonce and expiresAt. The verifier supplies
@@ -319,8 +326,8 @@ descriptor_dimensions:
       proposedAction.parametersDigest), so recomputing a verdict needs the
       referenced bytes and the policy engine. The registry has no per-class
       criteria yet for decision_replay versus fingerprint_only (question
-      raised on aeoess/agent-governance-vocabulary#231). Left for the
-      maintainer once that is settled.
+      raised on aeoess/agent-governance-vocabulary#231). The maintainer
+      asked on PR #241 to leave it unset until #231 settles the criteria.
     note_action_class: >
       governed_action_class left unset. proposedAction.actionType is an open
       string; the plugin preview covers writes (draft 5).
@@ -347,8 +354,8 @@ descriptor_dimensions:
 # ──────────────────────────────────────────────────────────────
 proofbundle_specific_terms:
   content_root: "SHA-256 over the exact RFC 8785 canonical Statement bytes, never recomputed by re-canonicalizing (doc §3, §7.1). Used by evidenceRefs, decisionRef and relation edges. [evidence]"
-  notChecked: "Required list of {field, reason, impact} stating what the decision maker did not check (doc §6). [coverage_and_completeness]"
-  decisionChangeConditions: "Required list of {conditionType, description, requiredEvidenceType} stating what would change the decision (doc §6). [activation_condition]"
+  notChecked: "List of {field, reason, impact} stating what the decision maker did not check. Required in strict mode and by draft Table 4, optional in the default verify mode (doc §6). [coverage_and_completeness]"
+  decisionChangeConditions: "List of {conditionType, description, requiredEvidenceType} stating what would change the decision. Required in strict mode and by draft Table 4, optional in the default verify mode (doc §6). [activation_condition]"
   approval_record: "Record of one human act approving one action: approvalId, approver, session, actionDigest, approvedAt, validUntil, bound into inputSnapshot by digest; not signed by the approver (draft 2.1, 2.5). [approval]"
   approval_single_use: "A relying party MUST honour each approval at most once, keyed by (approvalId, actionDigest, session), and MUST keep that state across rotation (draft 4). [approval, expiry_or_exhaustion]"
   evaluation_receipt_as_evidence: "An evaluation receipt appears only in evidenceRefs; 'A verifier MUST NOT treat a valid Signed Evaluation Receipt ... as permission for an action' (draft 2.6). [evidence]"
@@ -356,11 +363,10 @@ proofbundle_specific_terms:
   role_separation: "Outcome key and executor.id must differ from the decision maker's (draft 3.4 step 5, action-outcome §5). [authorization_decision, execution]"
 
 # ──────────────────────────────────────────────────────────────
-# OPEN QUESTIONS FOR THE MAPPED SYSTEM'S MAINTAINER
+# MAINTAINER ANSWERS
+# The five open questions of the earlier revision were answered by b7n0de on
+# PR #241 and are folded into the rows above: governance_attestation is read
+# for ALLOW only and stays partial, enforcement_class advisory is confirmed,
+# decision_lineage stands, replay_class stays unset until #231 settles the
+# criteria, and the crosswalk stays pinned to the predicate pages at a commit.
 # ──────────────────────────────────────────────────────────────
-open_questions:
-  - "Should governance_attestation be read only for verdict ALLOW, or for the receipt as a whole? Decides whether it stays partial or becomes structural for ALLOW receipts."
-  - "Is advisory the right enforcement_class for the format, given that the plugin preview uses a signed ALLOW as a precondition to run a write? Or would you rather describe the receipt as binding where a relying party requires it?"
-  - "Should decision_lineage cite relation/v0.1 edges, given they are optional, experimental, and not admitted by draft -05's field rules? Or would you rather it be no_mapping until the draft admits relationships?"
-  - "Which replay_class fits once the registry defines its criteria: decision_replay (verdict reconstructible when the referenced bytes and policy are retained) or fingerprint_only?"
-  - "Is a crosswalk better pinned to the predicate pages on main, as here, or to draft-gruszka-audit-decision-receipts-05 and its pinned commit e1fec86?"

@@ -1,0 +1,451 @@
+# crosswalk/sijil-aee.yaml
+#
+# Agent Execution Evidence (Sijil) -> Agent Governance Vocabulary
+#
+# Mapped artifact: the SCITT profile draft-thaha-scitt-agent-execution-evidence-02
+# (Standards Track individual draft, S. Thaha and S. Shamsudeen), its eleven
+# Signed Statement types, chiefly the Execution Receipt, the admission receipt,
+# the Agent Credential, Agent Registration and Assurance Statements. Sources, all at
+#   devinwarp/sijil-ietf main @ 3cdcf0bd943087e692e8fde326b41b183ea8b125 (2026-11-02)
+#   draft-thaha-scitt-agent-execution-evidence-02.md  sha256 e07f63ee198e149f17cd1c0602b5d5bdd700362acc0bd30c14c1400d337848e7
+#   draft-thaha-wimse-agent-evidence-binding-03.md    sha256 e69264ed6b990d6e22e98a417034130351e101b4d9fb74ac63bad9f4a7ad9242
+#   vectors/vectors.txt                               sha256 752fe059b4601ef1d36f118e50f22f72459101ff80aeaffb4b32850b64d5c78b
+# Datatracker: scitt draft rev 02 posted 2026-11-01, wimse draft rev 03 posted
+# 2026-11-02. Every quoted definition below is from the SCITT draft unless the
+# WIMSE draft is named. Sections are cited by their titles.
+#
+# Scope note: the WIMSE draft (aee_evidence claim, AEE-Caller-Ref field, in-toto
+# predicate) carries the same records across HTTP and tokens. It is cited only
+# where a row needs it. The Sijil implementation is described in the draft's
+# Implementation Status section as a prototype that does not yet export to the
+# encoding defined there, so no row below is about the implementation.
+#
+# Check run by the drafter: vectors/make_vectors.py at the pin above, with
+# cbor2 and pynacl, regenerates vectors.txt and the four .cose files
+# byte-identical to the committed ones. That is the authors' generator run
+# again, not an independent implementation, and the vectors do not exercise
+# admission, Linked Verification or Assurance Statement checks.
+#
+# Merge eligibility: this is a specification mapping. CONTRIBUTING merge
+# condition 1 asks for a working implementation, and Implementation Status
+# says "no export to the encoding defined here exists yet". evidence values
+# below describe the artifact as specified. No implementation emits it today,
+# so no row here counts as production-emitted evidence.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the protocol's maintainers. It is offered for the
+# maintainers to correct or confirm.
+
+system:
+  name: Agent Execution Evidence (SCITT profile)
+  short_name: sijil-aee
+  home: https://github.com/devinwarp/sijil-ietf
+  spec: https://datatracker.ietf.org/doc/draft-thaha-scitt-agent-execution-evidence/02/
+  spec_version: "draft-thaha-scitt-agent-execution-evidence-02 with draft-thaha-wimse-agent-evidence-binding-03, repository pin 3cdcf0b"
+  repo: https://github.com/devinwarp/sijil-ietf
+  implementation: "Sijil, prototype. Per Implementation Status: Harness-side model and tool doors, hash-chained signed records, offline chain verifier. COSE wrapping, epochs, Bundles, admission receipts and Linked Verification not implemented."
+  role: >
+    "An Execution Receipt is the per-call record. One is produced at every
+    Decision Point for every call, whatever the decision, including blocked
+    calls" (Execution Receipt Statement). A Decision Point "combines a Policy
+    Decision Point and a Policy Enforcement Point ({{RFC3198}}) and adds
+    recording" (Terminology). Receipts are hash-chained per credential and
+    registered on a SCITT Transparency Service, individually or through an
+    Execution Epoch Statement.
+  identity_layer: >
+    A long-term logical_agent_id, which "MUST be a did:web identifier" whose
+    domain equals the host of the issuing Agent Registration Authority
+    (Identifiers), mapped by a signed Agent Credential Statement to Runtime
+    Identities that "SHOULD be a Workload Identifier" (wimse or spiffe).
+  upstream_license: "IETF Trust Legal Provisions (BCP 78, BCP 79); code components under the Revised BSD License"
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: shameerthaha
+    project: devinwarp/sijil-ietf
+    confirmed_at: null   # not yet reviewed by the mapped system's maintainers
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: each statement is "the payload of a COSE_Sign1 Signed
+# Statement" (Common Encoding). alg is any COSE algorithm; the test vectors
+# use Ed25519 (alg -8). Declared classical from the vectors.
+# canonicalization: "Every payload is encoded with the deterministic encoding
+# rules of Section 4.2.1 of RFC8949" (Common Encoding). The JSON alternative
+# "MUST be canonicalized with RFC8785" (JSON Alternative Encoding), and "A
+# single Evidence Chain MUST use one encoding throughout". The registry has no
+# value for deterministic CBOR, so implementation-defined is declared.
+# hash_family: record-hash is "SHA-256 over its canonical encoding"
+# (Evidence Chain); digests carry a COSE algorithm identifier, SHA-256 (-16)
+# throughout the vectors.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row below:
+#   draft-thaha-scitt-agent-execution-evidence-02 read from Introduction
+#   through Implementation Status and Appendix A, and
+#   draft-thaha-wimse-agent-evidence-binding-03 by section headings and the
+#   aee_evidence and admission sections, at the pin above. Not read: the
+#   Sijil product source, which is not in this repository.
+# A no_mapping row states that these sources were searched and no
+# corresponding field or record was found. It is not a claim about the
+# project's capability outside those sources.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "Assurance Statement (aee-type 7) with result pass, bound to the credential, policy pack and configuration digests"
+    match: partial
+    evidence: emitted
+    source_path: "assurance payload key 8 (result)"
+    notes: >
+      "An Assurance Statement is a time-bounded assertion about an identified
+      agent's declared purpose, effective capabilities, deployment and
+      controls" (Assurance Statement), issued by an Agent Assurance Assessor
+      against a named suite (suite_id, suite_version) and "bound to the
+      digests that determine behaviour" (agent_credential_digest,
+      policy_pack_digest, config_integrity_digest). A pass result is the
+      closest form to the canonical "signed attestation that an agent or
+      action satisfied a declared governance requirement".
+
+      Partial, because the requirement is named rather than declared. The
+      statement identifies what was assessed against only by suite_id (a
+      URI) and suite_version. The criteria are not in the statement, and the
+      full report is optional (report_digest, key 9). A consumer holding the
+      artifact can tell that a named suite passed for a bound credential,
+      policy and configuration, but not which governance requirement that
+      pass covers. pass is also one result for the whole assessed scope,
+      with no per-requirement outcome.
+
+      Claim limits that do not by themselves change the match: a PASS does
+      not establish "that an Agent Assurance Assessor's suite is adequate"
+      (Meaning of PASS); at levels 1 and 2 the assessor "MAY be the
+      Responsible Entity" (Terminology); and a Supervisory Authority can
+      restrict, suspend or withdraw the statement (Verification step 14).
+
+      A second candidate is the per-call Execution Receipt with decision
+      allow, made at a Decision Point under policy_pack_digest. It records
+      that a call proceeded under a registered policy, not that a
+      requirement was met: a PASS does not establish "that a decision was
+      correct" (Meaning of PASS). Not mapped here. Open question below.
+    issuers_in_production: []
+    signed_payload_fields:
+      - assessor
+      - agent_credential_digest
+      - policy_pack_digest
+      - config_integrity_digest
+      - suite_id
+      - suite_version
+      - result
+      - validity
+      - assurance_level
+      - assessed_scope
+      - logical_agent_id
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "caller tool_call or egress receipt plus the Serving Party's admission receipt, linked by caller_ref and call_digest; separately, agent_sig on a receipt"
+    match: false_analog
+    notes: >
+      The canonical term requires both parties' signatures over one
+      canonicalized preimage. This profile keeps the two sides of a call as
+      two receipts, each on its own Evidence Chain and signed by its own
+      Evidence Service. The admission receipt names the caller's receipt by
+      caller_ref (evidence_service, seq, record_hash), and both carry a
+      call_digest that each side computes "from the request it sent or
+      received and never taken from the evidence presented" (Linking
+      Records Across Calls). That is a strong two-sided match, but it is two
+      signed records, not one preimage signed twice.
+
+      agent_sig is a second signature on one receipt: a detached COSE_Sign1
+      by the agent's key over "the canonical encoding of the receipt map
+      without key 15", while the Evidence Service signs the statement that
+      includes key 15. The preimages differ, and both signers act for the
+      same side of the call, so it is not the delegator and counterparty
+      pair the canonical term names. Recorded as false_analog because either
+      construction could be mistaken for a bilateral receipt.
+
+  entity_continuity:
+    canonical: entity_continuity
+    internal: "Agent Credential Statement: logical_agent_id, registration_digest and runtime_identities with validity windows; lineage_id across registrations"
+    match: partial
+    evidence: emitted
+    source_path: "agent-credential payload keys 9 (logical_agent_id), 11 (runtime_identities), 13 (registration_digest)"
+    notes: >
+      The credential "records the agent's identity continuity: which
+      registered Logical Agent this runtime is an instance of, and under
+      which Runtime Identities it and its Sub-agents may appear" (Agent
+      Credential Statement), so that an agent that moves between clusters
+      and identity platforms stays one Logical Agent. lineage_id keeps one
+      history across superseding registrations and across a change of
+      Responsible Entity (Agent Identification step 6).
+
+      Partial, for two stated reasons. (1) Continuity is asserted by issuers,
+      not proven by the agent across the change: the credential's Issuer is
+      "the Harness operator or the identity provider", and the logical
+      identity is assigned by an Agent Registration Authority. (2) Key
+      rotation is "performed by registering a new Agent Credential
+      Statement; the old statement remains valid for receipts within its own
+      window". No signed link from the old key to the new one is defined in
+      the format, and each credential scopes its own Evidence Chain.
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "Agent Registration Statement status (Token Status List), Responsible Entity verification by the authority, principal_assurance (Vector of Trust)"
+    match: partial
+    evidence: referenced
+    resolution_path: "agent-registration payload key 8 (status), resolved against a Status List Token"
+    resolution_note: "Registration status is held by the Agent Registration Authority and can change without the registration changing (Agent Identification step 5)."
+    notes: >
+      The authority "verifies the Responsible Entity by its own
+      identity-proofing procedures, which are out of scope" and maintains
+      the registration's status. principal_assurance "records how strongly
+      the Principal's identity was verified, using the identity proofing
+      dimension of Section 2.1 of RFC8485" (Common Encoding). Partial:
+      principal_assurance records identity proofing of the Principal, not of
+      the agent, and registration status records whether the registration is
+      currently accepted. Neither establishes a graded identity
+      verification result for the agent itself.
+
+  passport_grade:
+    canonical: passport_grade
+    internal: "assurance_level, Agent Identity Assurance Levels (AIAL) 1 to 4"
+    match: false_analog
+    notes: >
+      AIAL is a graded level attached to an identified, registered agent,
+      which makes it look like a composite grade from issuance evidence. It
+      answers a different question: the levels "grade the assessment of an
+      agent's purpose, capabilities, deployment and controls", "do not
+      express authentication strength", and "A level carries no statement
+      about how the credential key is protected, nor about how the operator
+      was verified" (Agent Identity Assurance Levels). Recorded as
+      false_analog so that a consumer does not read an AIAL as an identity
+      or issuance grade.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: >
+      config_integrity_digest on every receipt commits to the system prompt,
+      instruction files, skills, hooks, MCP config and tool manifests in
+      force, after mandatory Unicode normalization, and memory_digest
+      commits to memory state at task_start and task_end. These are
+      commitments to configuration inputs, not to a structural property of
+      the agent's reasoning state at a decision, so no row is declared.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "Request and response are committed by digest only: 'Content MUST NOT be included in a receipt' (Execution Receipt Statement). Nothing attests reasoning."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored trust assessment. The draft lists a reputation statement linked through lineage_id as an open issue."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "risk_assessment places the agent itself in a tier of a Supervisory Authority's scheme; 'This profile does not define a universal risk scale'. It is not a scored exposure assessment of a counterparty."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation signed by a delegator. A delegated Task's task_start names its parent Task by delegated_from, within one chain."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No assessment of completed task outcomes in the search basis."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No settlement record. AP2 Mandates are named in Related Work as inputs to a tool_call, by digest."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment of an artifact in the search basis. RATS Evidence for the Harness is referenced, not defined."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric. The draft names an autonomy ratio (tool calls without confirmation to those that required it) as derivable from a verified chain, and sets no threshold (Derivable Risk Facts)."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "Evidence Chain: Execution Receipts linked by seq and prev_hash, sealed by Execution Epoch Statements"
+    match: partial
+    evidence: emitted
+    source_path: "execution-receipt payload key 3 (prev_hash)"
+    notes: >
+      "An ordered sequence of Execution Receipts, each carrying the hash of
+      its predecessor, scoped to one Agent Credential or Serving Party
+      Credential Statement" (Terminology). prev_hash is "the record-hash of
+      the receipt with seq one less", seq "MUST increase by exactly one",
+      and epochs carry an RFC 9162 Merkle root so that adjacent epochs are
+      checked for continuity. Every receipt records the decision (allow,
+      block, confirm, record) and the policy and configuration in force,
+      including blocked calls. This is the canonical shape: ordered, each
+      entry referencing its predecessor by content hash.
+
+      Partial, for two stated reasons. (1) The chain is scoped to one
+      credential, not to one agent. Key rotation registers a new credential,
+      so one Logical Agent's history spans several chains. Consecutive
+      credentials name the same registration, and prior_registration_digest
+      links superseding registrations, which ties the chains to one Logical
+      Agent. This reading found no link from the final receipt under one
+      credential to the first receipt under its replacement. Even with such
+      a link, a chain shows the order of what was recorded, not that every
+      call was recorded (Meaning of PASS). (2) The chain holds records that
+      are not decisions: task_start and task_end, tool_result, and calls
+      with decision record, which "proceeded without policy evaluation".
+
+  divergence_signal:
+    canonical: divergence_signal
+    internal: "monitoring_summary.deviation_count in an Assurance Statement"
+    match: partial
+    evidence: emitted
+    source_path: "assurance payload key 15, member 6 (deviation_count)"
+    notes: >
+      The monitoring summary states, for a completed period, "coverage,
+      maximum interval between reviews, evidence commitment, detected
+      deviations and resulting disposition", where the evidence "MUST
+      support monitoring for deviations from the assessed scope and approved
+      controls" (Assurance Statement). The assessed scope digests act as the
+      reference, and the disposition (continue, reassess, suspend, withdraw)
+      is kept separate from the count, as the canonical term asks.
+
+      Partial, for two stated reasons. (1) No baseline_revision is
+      identified. The assessed scope is bound by digest, but it is the
+      approved scope of the assessment, not a versioned behavioral baseline,
+      which is why baseline_revision is no_mapping below. (2) What counts as
+      one deviation is set by the assessor's suite, not by the format, so
+      two assessors' counts are not comparable measurements.
+      findings_digest is required only when the count is non-zero. A Configuration Drift
+      Statement records a change of configuration ("Drift is an ordinary
+      event; its significance is for the Relying Party to decide") and is
+      not counted here.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "policy_pack_digest and config_integrity_digest on each receipt name the policy and configuration a decision was made under, not a behavioral baseline. The assessed_scope digests commit to the approved scope of an assessment and carry no revision identifier for a behavioral baseline."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Drafter's reading, each value with its basis, open to the maintainers'
+# correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  execution_receipt:
+    enforcement_class: advisory
+    note_enforcement: >
+      The Decision Point enforces; the receipt records what it decided. A
+      PASS does not establish "that the Harness recorded every call, that a
+      decision was correct" (Meaning of PASS). A Relying Party uses the
+      receipt as evidence of conduct, so the artifact is read as advisory.
+    validity_temporal: sequence
+    note_validity: "seq, prev_hash and non-decreasing ts define an ordered chain (Evidence Chain)."
+    note_refusal: >
+      refusal_authority left unset. The receipt's Issuer, when registered
+      individually, "is the Evidence Service" (Execution Receipt
+      Statement). Refusal happens elsewhere: at the Harness Decision Point
+      under the Policy Pack in force, and at ingress by the Serving Party
+      ("A Serving Party decides on every call whether to act",
+      Introduction). The signer of the record is not by that fact the party
+      that refuses, and none of the enum values names the enforcing point
+      alone. Open question below.
+    note_invariant: >
+      invariant_survival left unset. The receipt family mixes records made
+      before a call (tool_call, admission), after it (tool_result, egress),
+      and a model-door block that "can follow forwarding when the decision
+      depends on the response". No single value holds across the family.
+    replay_class: fingerprint_only
+    note_replay: >
+      Requests and responses are committed by digest and "Content MUST NOT
+      be included in a receipt". The policy document is committed by
+      pack_digest and its format is out of scope. Recomputing a decision
+      therefore needs bytes the evidence does not carry. Open question below.
+    note_measurement: >
+      measurement_point left unset. The doors are the model, tool, network
+      and ingress Decision Points. Whether the tool door counts as the
+      mutation boundary depends on where the effect lands, which the profile
+      defers to the Agent Action Capsule (Related Work).
+    note_action_class: "governed_action_class left unset. target is a model_id, a tool name, or for admission the operation requested; no class is declared."
+
+  assurance_statement:
+    enforcement_class: binding
+    note_enforcement: >
+      Where a Relying Party requires assurance, verification fails without a
+      matching pass statement (Verification step 13), and a Serving Party
+      that enforces assurance MUST record it on every allow (Admission).
+      Binding only under that policy.
+    validity_temporal: at_acceptance
+    note_validity: >
+      validity must contain every receipt timestamp relied on, and the
+      status "MUST be no older than the freshness the Serving Party's policy
+      requires when the decision is taken" (Admission).
+    refusal_authority: shared
+    note_refusal: >
+      The Supervisory Authority "alone restricts, suspends or withdraws"
+      assurance (Terminology), the assessor reports suspend and withdraw
+      dispositions to it, and the Serving Party refuses the call. No one of
+      these covers refusal alone.
+
+# ──────────────────────────────────────────────────────────────
+# PROFILE-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET
+# The nearest concept in vocabulary-lifecycle.yaml (INCUBATING, descriptive
+# only) is given in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+sijil_aee_specific_terms:
+  decision_point: "A point that intercepts a call, takes and enforces a policy decision and records it: model, tool, network and ingress doors (Terminology). [authorization_decision, execution]"
+  decision_record: "decision value record: the call 'proceeded without policy evaluation'; a call observed after another party executed it MUST be recorded as record, never allow or block (Execution Receipt Statement). [evidence]"
+  confirm_outcome: "A confirm receipt is followed by exactly one outcome naming it by confirm_seq; until then the call 'is to be read as not having proceeded' (Execution Receipt Statement). [approval]"
+  admission: "The Serving Party's per-call authorization decision, recorded for every call it receives with admission_basis stating what it relied on (Admission). [authorization_decision]"
+  actor_chain: "Ordered list of Actors from nested act claims; 'It records attribution, not authority', and prior actors MUST NOT be used to decide admission (Terminology, Admission). [delegated_authority]"
+  call_digest: "Digest of the request computed by each side under a protocol binding, equal for one call; correlation by txn or principal is 'not a match' (Linking Records Across Calls). [evidence]"
+  principal_link: "SHA-256 over the delegation token octets, letting both parties show they recorded the same Principal without revealing it (Linking Records Across Calls). [principal]"
+  policy_pack_lineage: "Policy Packs layered jurisdiction, sector, institution, deployment by parent_pack_digest; 'A child pack can only tighten', which cannot be checked offline from digests (Policy Pack Statement). [delegated_authority]"
+  configuration_integrity: "Digests of system prompt, instruction files, skills, hooks, MCP config, tool manifest and tool descriptions after Unicode normalization, referenced by every receipt (Configuration Integrity Statement). [evidence]"
+  meaning_of_pass: "The profile states what a PASS establishes and what it does not, including that it does not show every hop of a Call Chain is present (Meaning of PASS). [coverage_and_completeness]"
+
+# ──────────────────────────────────────────────────────────────
+# OPEN QUESTIONS FOR THE MAPPED SYSTEM'S MAINTAINERS
+# ──────────────────────────────────────────────────────────────
+open_questions:
+  - "Should governance_attestation point at the Assurance Statement with result pass, as here, or at the per-call Execution Receipt with decision allow? The first attests an assessment against a suite, the second a decision under a registered policy."
+  - "Each Agent Credential scopes its own Evidence Chain. This reading found the registration and lineage links, but not a link from the final receipt under one credential to the first receipt under its replacement. Is there a defined way to verify that continuity across key rotation?"
+  - "Where should refusal authority be recorded for the Execution Receipt: with the Decision Point or Serving Party that enforces, under its policy, given that the Evidence Service signs the record?"
+  - "Is fingerprint_only the right replay_class for the Execution Receipt, given that content is excluded? Would retained content committed by request_digest, such as an AgentInteractionRecord, change your answer for deployments that keep it?"
+  - "Is a crosswalk better pinned to the datatracker revisions (-02 and -03), as here, or to repository commits as the drafts move?"

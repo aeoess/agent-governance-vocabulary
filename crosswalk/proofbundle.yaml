@@ -63,7 +63,7 @@ maintainer:
   mapped_system_maintainer:
     github: b7n0de
     project: b7n0de/proofbundle
-    confirmed_at: null   # confirmed for 770504e on PR #241 (comment 6652679943). This revision bounds negative notes and changes two descriptors, re-confirmation requested
+    confirmed_at: "2026-11-06"   # confirmed by the maintainer on PR #241 (comment 6679430165) for 9e40730, against proofbundle 6d29ead and draft -05
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi

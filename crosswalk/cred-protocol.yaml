@@ -85,11 +85,13 @@ maintainer:
 # defined.
 # canonicalization: Delegation Tokens are JWTs, so signatures cover the
 # producer's serialized bytes. The -02 text does not define a serialization
-# or signing input for the delegation receipt. RFC 8785 appears in one
-# place only: a child covers a parent constraint of an unknown type only
-# with a constraint "whose JCS serialization [RFC8785] is byte-identical to
-# the parent's" ("Constraint Ceilings"). That is a comparison rule, not a
-# signing rule, so implementation-defined is declared.
+# or signing input for the delegation receipt. RFC 8785 appears in two
+# rules, neither of them a receipt signing rule. A child covers a parent
+# constraint of an unknown type only with a constraint "whose JCS
+# serialization [RFC8785] is byte-identical to the parent's" ("Constraint
+# Ceilings"), a comparison rule. The DPoP proof at exercise binds "a
+# SHA-256 hash of the JCS form [RFC8785] of the exercise request", a
+# request binding. So implementation-defined is declared for the receipt.
 # hash_family: SHA-256 for the cnf jkt thumbprint (RFC 9449, RFC 7638). The
 # SDK's receipt is "a compact JWS at each hop, EdDSA or ES256 with kid"
 # carrying "SHA-256 over the full compact parent receipt" (Implementation
@@ -253,7 +255,7 @@ decision_trajectory:
       Both are linked sequences that a verifier walks, which is the
       substitution hazard. The canonical term is an "ordered
       content-addressable sequence of decisions affecting a single agent".
-      A Cred Delegation Chain is "an ordered sequence of Delegation Tokens
+      A Cred Delegation Chain is "An ordered sequence of Delegation Tokens
       from Subject to Agent_1 to Agent_2 ... to Agent_N", one grant per
       hop across different agents, linked by prf "receipt content
       identifiers". The -02 text does not define how a content identifier

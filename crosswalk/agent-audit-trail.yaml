@@ -1,0 +1,465 @@
+# crosswalk/agent-audit-trail.yaml
+#
+# Agent Audit Trail (AAT) -> Agent Governance Vocabulary
+#
+# Mapped artifact: the AAT audit record and session chain defined in
+#   draft-sharif-agent-audit-trail-09 (datatracker rev 09, posted 2026-10-26)
+#   https://www.ietf.org/archive/id/draft-sharif-agent-audit-trail-09.txt
+#   sha256 4728ea78883abcf8c50629acd58f737e614d0a821e6516cbb1651d3b26532dd1
+# Section numbers are given as "§n" and refer to that text. Every quoted
+# definition below is from it.
+#
+# Implementation references, read but not mapped field by field:
+#   razashariff/aat-conformance main @ c8e3d94741148cc662d4c3e86088fe968b33e3f4
+#   (2026-11-01), 184 vectors, runner and reference verifier for -09, with
+#   SPEC-NOTES.md listing ambiguities the author found while building it.
+#   aat-mcp 0.1.0 on PyPI (razashariff/aat-mcp), described in Appendix E as
+#   covering "record format (Section 3), hash chaining and chain verification
+#   (Section 6), ES256 signatures". Whether aat-mcp emits the fields added
+#   after -06 (principal, signer_kid, trust_assignment) was not checked.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the protocol's maintainer. It is offered for the
+# maintainer to correct or confirm.
+
+system:
+  name: Agent Audit Trail
+  short_name: agent-audit-trail
+  home: https://datatracker.ietf.org/doc/draft-sharif-agent-audit-trail/
+  spec: https://www.ietf.org/archive/id/draft-sharif-agent-audit-trail-09.txt
+  spec_version: "draft-sharif-agent-audit-trail-09 (individual Internet-Draft)"
+  repo: https://github.com/razashariff/aat-conformance
+  implementation: "aat-mcp 0.1.0 (PyPI, Python), aat-conformance reference verifier at c8e3d94. Appendix E also lists cyl-castillo/agent-console (export conforming to -08) and Keyorix (design accepted, no implementation)."
+  role: >
+    AAT is "a standard JSON-based logging format with tamper-evident
+    chaining, a defined action taxonomy, pre-execution recording
+    requirements, and explicit regulatory mapping" (§1.1). An Agent Audit
+    Trail is "An ordered sequence of audit records produced by an agent
+    during a session, linked by hash chaining" (§2). Pre-execution
+    recording is "writing an audit record BEFORE the action it describes is
+    executed, ensuring that the record serves as evidence of an enforcement
+    decision rather than a post-hoc observation" (§2).
+  identity_layer: >
+    agent_id is a URI that "SHOULD be a persistent identifier that survives
+    agent restarts" (§3.1). Every record names a principal, the party "on
+    whose behalf and under whose authority the agent performed this
+    action", with an authority_ref to "the grant, delegation, or
+    authorization under which the agent acted" (§3.1). Signing keys are
+    named by signer_kid, an RFC 7638 thumbprint (§3.2).
+  upstream_license: "Draft text under the IETF Trust provisions. aat-conformance is BUSL-1.1. No license file or PyPI license field found for aat-mcp."
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: razashariff
+    project: draft-sharif-agent-audit-trail, razashariff/aat-conformance
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: signatures are OPTIONAL ("records MAY include a
+# signature", §6.2). "ES256" is the default and is assumed when sig_alg is
+# absent. ML-DSA-65 and Ed25519 are registered, and a hybrid mode carries an
+# ML-DSA-65 signature plus an ES256 signature_classical "produced by two
+# distinct keys" (§3.2, §6.2). classical is declared for the default, and the
+# maintainer may prefer composite for deployments using the hybrid mode
+# (open question 5).
+# canonicalization: "Implementations MUST use JCS (RFC 8785) for
+# canonicalization. Alternative canonicalization schemes MUST NOT be used"
+# (§6.1). The signed message is SHA-256 over the JCS bytes (§6.2 steps 2-4).
+# hash_family: SHA-256 for prev_hash, the signed message, Merkle leaves and
+# every *_hash field.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row below:
+#   draft-sharif-agent-audit-trail-09 Sections 1 to 15 read in full at the
+#   hash above. Not read: Appendices A to D (example trail, EU AI Act
+#   evidence mapping, implementation notes, change log), the aat-mcp source,
+#   the aat-conformance vectors. A no_mapping row states that these sections
+#   were searched and no corresponding field or record was found. It is not
+#   a claim about the project's capability outside them.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "decision record (action_type decision) with record_phase pre_execution, outcome success or denied, and optional action_detail.policy_ref"
+    match: partial
+    evidence: emitted
+    source_path: outcome
+    notes: >
+      A pre-execution decision record states that a policy check ran before
+      the action. In the draft's words, if the outcome is "denied", "the
+      record proves that the action was evaluated and rejected prior to
+      execution", and a "success" record "proves that an authorisation
+      decision was made before execution" (§4.1). A denied or escalated
+      decision MUST be recorded pre-execution (§4.2), and for high-risk
+      systems "two records are expected per action: a pre-execution record
+      documenting the authorisation decision, followed by a post-execution
+      record documenting the outcome" (§4.3).
+
+      Partial, for four stated reasons. (1) The policy is named by an
+      optional string, policy_ref, "Identifier of the policy or rule that
+      governed this decision" (§7.3), with no digest. Only the trust-level
+      classification policy carries one (trust_assignment.policy_digest,
+      §3.2). (2) The signature is optional ("records MAY include a
+      signature", §6.2), and at L0 and L1 the agent may record itself, which
+      the draft says "provides weaker evidentiary guarantees because the
+      agent could, in principle, omit or alter records of its own actions
+      without external detection" (§5.1). (3) The record is the recorder's
+      statement of the outcome. Even with platform attestation the draft
+      says it does "NOT establish that the application-layer facts asserted
+      in each record are true" (§5.4.1). (4) The row covers success
+      outcomes. A denied record attests that a requirement was not met,
+      which the canonical term does not describe.
+    issuers_in_production: []
+    signed_payload_fields:
+      - action_type
+      - action_detail.decision_type
+      - action_detail.policy_ref
+      - outcome
+      - record_phase
+      - principal.authority_ref
+      - deny_reasons
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "trust_level (L0 to L4)"
+    match: partial
+    evidence: emitted
+    source_path: trust_level
+    notes: >
+      Every record carries trust_level, "The trust level at which the agent
+      was operating when this action occurred" (§3.1), on a scale "from L0
+      (no verification) to L4 (full mutual authentication with revocation
+      checking) as defined in [MCPS]" (§2). L1 is "Self-signed identity", L2
+      "Authority-signed identity", L3 "Mutual authentication", L4 adds
+      "revocation checking and continuous monitoring" (§3.1). That is the
+      shape of the canonical "Identity layer verification status".
+
+      Partial, for two stated reasons. (1) The level is also assigned per
+      action. Consequential actions "MUST be assigned a \"trust_level\" of
+      L2 or above by default" (§5.3), and a lower level needs a
+      trust_assignment with downgraded true. So one agent can carry
+      different levels on different records of one session, and a level
+      can reflect the action class as well as the identity verification
+      that took place (open question 1). (2) The level is the recorder's
+      assignment. It is not a signed statement from the party that verified
+      the identity, and the levels are defined by reference to [MCPS],
+      which this crosswalk did not read.
+
+  compliance_risk:
+    canonical: compliance_risk
+    internal: "sanctions_check object (provider, checked_at, result clear|match|error, list_version)"
+    match: false_analog
+    notes: >
+      sanctions_check is the "Result of sanctions screening", with result
+      "One of \"clear\", \"match\", \"error\"" and the provider and list
+      version that produced it (§3.2). The canonical term is a "Scored
+      exposure assessment (counterparty flagged or clean)". The object does
+      not name the screened subject and carries no score, so a clear or
+      match result cannot be read as an exposure assessment of a particular
+      counterparty. Recorded as false_analog, pending the maintainer's
+      clarification, because a consumer could wire the screening result up
+      as the canonical term. risk_score (§3.2) is not this term either: it
+      is "the agent's assessed risk of the action", not an assessment of a
+      counterparty.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "hybrid signature mode (signature plus signature_classical) and independent recording (recorder key distinct from agent key)"
+    match: false_analog
+    notes: >
+      Two AAT features look like a two-party receipt and are not one. In
+      hybrid mode "a record MAY carry two signatures over the single signed
+      message of step 3" (§6.2), and "the two signatures are produced by two
+      distinct keys" (§3.2). Both keys belong to one signing principal
+      during a post-quantum migration. Under independent recording the
+      recorder signs with "its own key, distinct from the agent's key"
+      (§5.2), and the agent does not sign the record at all. Neither gives
+      the canonical requirement of both parties' signatures over one
+      canonicalized preimage. Recorded as false_analog because the
+      two-signature shape could be wired up as a bilateral receipt.
+
+  entity_continuity:
+    canonical: entity_continuity
+    internal: "prior_generation_tail on a genesis record"
+    match: false_analog
+    notes: >
+      prior_generation_tail links a new recording generation, "for example
+      after a storage migration, a recording-key rotation, or a recovery",
+      to the last record of the previous one, "so that continuity across the
+      generation boundary can be proven rather than inferred" (§3.2). That is
+      continuity of the trail, signed by the recording key. The canonical
+      term is continuity of the agent's identity across an infrastructure
+      change. agent_id "SHOULD be a persistent identifier that survives
+      agent restarts" (§3.1) and a lifecycle event key_rotation exists
+      (§7.7), but no field found binds an old agent key to a new one.
+      Recorded as false_analog because a consumer could read a proven
+      generation link as proof the agent is the same.
+
+  passport_grade:
+    canonical: passport_grade
+    internal: "trust_level L2 (\"A Trust Authority has issued the agent's passport\")"
+    match: false_analog
+    notes: >
+      "Agent Passport" in this draft is the MCPS artifact (§3.1 agent_id,
+      §6.2), not the APS passport this registry term was written for. L2 is
+      defined by passport issuance, but L3 and L4 depend on mutual
+      authentication and revocation checking in the session (§3.1), so the
+      level is not a grade derived from issuance evidence. trust_level is
+      mapped under trust_verification above. Recorded as false_analog
+      because of the shared word and the graded shape.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    internal: "reproducibility_class (reproducible | reconstructable) with the closure digests of §13.3"
+    match: false_analog
+    notes: >
+      §13 separates record reproducibility from decision reproducibility,
+      "the ability of an independent party to re-execute the model
+      computation on the recorded input and obtain a byte-identical output"
+      (§13.1), and "A decision that is only recorded is \"reconstructable\",
+      not \"reproducible\"" (§13.1). The class answers whether the
+      computation can be re-run. The canonical term commits to what the
+      agent reasoned over, under a declared reduction map, in one of the
+      classes precondition_set, candidate_set or decision_path. The nearest
+      AAT fields are reasoning_hash, "SHA-256 hash of the agent's reasoning
+      chain or chain-of-thought", and alternatives_considered, a "Count of
+      alternative actions the agent evaluated" (§7.3). Neither declares a
+      reduction map. Recorded as false_analog because reproducibility_class
+      and "determinability class" are easy to confuse.
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "reasoning_hash (§7.3) commits to a reasoning chain by digest and attests nothing about it. No reasoning attestation found in Sections 1 to 15 of -09."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "risk_score and confidence are per-action values. No scored assessment of agent behavior over time found in Sections 1 to 15 of -09."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "outcome (success, failure, timeout, denied, escalated) is per action. No assessment of completed work found in Sections 1 to 15 of -09."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "A delegation record (§7.4) is written by the delegating side. No completion attestation signed by the delegator found in Sections 1 to 15 of -09."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "cost_estimate is an \"Estimated cost of the action\" (§3.2). No settlement record found in Sections 1 to 15 of -09."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "platform_attestation (§3.2, §5.4) carries a RATS attestation result for the recording platform, bound to the chain head. It is not a posture assessment of a published artifact. Nothing closer found in Sections 1 to 15 of -09."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate metric found in Sections 1 to 15 of -09. record_count on the close record (§8.3) counts records, not completions."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet attestation found in Sections 1 to 15 of -09."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet-behavior classification found in Sections 1 to 15 of -09."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "session hash chain (prev_hash and parent_record_id on every record)"
+    match: partial
+    evidence: emitted
+    source_path: prev_hash
+    notes: >
+      Every record after the genesis carries prev_hash, "The SHA-256 hash of
+      the canonical JSON representation (per RFC 8785 [RFC8785]) of the
+      previous record" (§3.1), and parent_record_id. Branching "is NOT
+      permitted within a single session" (§8.2). Decision records sit in
+      this chain, each linked to its predecessor by content hash, which is
+      the canonical shape.
+
+      Partial, for three stated reasons. (1) The chain is per session, not
+      per agent. A Session is "A bounded sequence of agent operations that
+      begins with a genesis record and ends with a session close record"
+      (§2), and parallel paths "MUST use a separate session_id and the
+      delegation record in the parent session MUST reference the child
+      session_id" (§8.2). Across sessions the only hash link found is
+      prior_generation_tail, which joins recording generations. (2) The
+      chain orders every record type (tool_call, tool_response, error,
+      and lifecycle, heartbeats included), not decisions only. A consumer
+      filters by action_type. (3) "A bare hash chain proves that no interior record was
+      altered; it cannot, by itself, prove that records were not removed
+      from the tail" (§6.3 step 10). The draft bounds the tail with the
+      close record, heartbeats and external anchors.
+
+      authorization_record_id (§4.3, §7.3) links a post-execution record to
+      the pre-execution record that authorised it by record_id, not by hash.
+      It is not counted here.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: >
+      The genesis action_detail "SHOULD include the agent's configuration
+      hash, enabled tools list, and operating parameters to establish a
+      baseline for the session" (§8.1), and trust_assignment.policy_version
+      names the classification policy (§3.2). Both are configuration or
+      policy identifiers, not a behavioral baseline that a decision was
+      evaluated against. Nothing closer found in Sections 1 to 15 of -09.
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: >
+      decision_margin is the gap between the top two token scores, where "A
+      larger value indicates a decision more robust to numeric
+      perturbation" (§13.3). It measures numeric robustness of one decision,
+      not deviation from a behavioral baseline. Nothing closer found in
+      Sections 1 to 15 of -09.
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "A lifecycle event trust_level_change exists (§7.7). No rate of change in trust found in Sections 1 to 15 of -09."
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Drafter's reading, each value with its basis, open to the maintainer's
+# correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  audit_record:
+    enforcement_class: advisory
+    note_enforcement: >
+      The record is evidence about a decision and gates nothing itself. A
+      pre-execution record shows "an authorisation decision was made before
+      execution" (§4.1). Where the recording component is a gateway that
+      "writes records before forwarding requests" (§5.2), that gateway may
+      also enforce, but the format does not say so.
+    validity_temporal: sequence
+    note_validity: >
+      Validity is checked over the ordered session chain (§6.3 steps 1 to
+      10), including non-decreasing timestamps and parent_record_id
+      continuity.
+    note_refusal: >
+      refusal_authority left unset. The record names who wrote it
+      (recording_component, §3.2) but not which component made the denial
+      it records (open question 2).
+    note_replay: >
+      replay_class left unset. §13 gives explicit conditions for
+      "reproducible" decisions (open weights, deterministic decoding,
+      attested environment, sealed inputs, attestation closure, §13.2) and
+      marks every other recorded decision "reconstructable". That reads as
+      decision_replay versus fingerprint_only, but the registry has no
+      per-class criteria yet (question raised on
+      aeoess/agent-governance-vocabulary#231), so the reading is offered as
+      open question 4 instead of being declared.
+    note_action_class: >
+      governed_action_class left unset. action_type is a taxonomy of
+      record kinds (tool_call, decision, delegation and so on), not of
+      governed effects. §5.3 names payment, deletion, production
+      deployment, delegation and data egress as consequential.
+
+  pre_execution_decision_record:
+    invariant_survival: pre_action
+    note_invariant: >
+      A decision with outcome denied or escalated, and a delegation with
+      outcome denied, "MUST have record_phase set to \"pre_execution\""
+      (§4.2). "Setting record_phase to \"pre_execution\" for a record
+      written after the action has completed is a conformance violation"
+      (§3.3).
+    note_measurement: >
+      measurement_point left unset. For high-risk systems any action that
+      modifies external state "MUST be preceded by a record with
+      record_phase set to \"pre_execution\"" (§4.3), which is the
+      mutation_boundary framing, but the general profile does not require
+      it.
+
+# ──────────────────────────────────────────────────────────────
+# AAT-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET
+# The nearest concept in vocabulary-lifecycle.yaml (INCUBATING, descriptive
+# only) is given in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+agent_audit_trail_specific_terms:
+  record_phase: "pre_execution, post_execution or concurrent: when the record was written relative to the action. A post-execution record \"cannot prove that a policy gate existed before the action ran\" (§4.1). [authorization_decision, execution]"
+  recording_independence: "Graded recorder independence: self-recording at L0 and L1, an independent recorder with a distinct key and OS principal at L2 and above, hardware-attested recording as the strongest tier (§5.1 to §5.4). \"An in-process signature demonstrates the transit integrity of a record but not recording honesty\" (§5.2). [evidence]"
+  trust_assignment: "Records which classifier assigned a trust level under which policy version, and whether the action was downgraded below its fail-safe default, so a downgrade is \"a tamper-evident, attributable event rather than a silent omission\" (§5.3). [authority]"
+  principal: "The immediate authorizing party with an authority_ref to the grant, delegation record or external grant identifier. authority_ref is null when no authorization artifact exists (§3.1). [authority, delegation]"
+  absence_evidence: "sequence_number, heartbeat records at a declared heartbeat_interval_s, the session close record and externally anchored chain heads, which together bound tail truncation and recorder silence (§3.2, §6.3 steps 9 and 10, §8.3, §8.4). [coverage_and_completeness]"
+  tombstone: "A record that replaces a deleted record's content while preserving the hash chain, with content_fingerprint proving prior existence after erasure (§2, §3.2, §9.3). [evidence]"
+  attestation_closure: "A decision may be marked reproducible only when weights, tokenizer, chat template, engine build, decoding configuration, numeric environment and input are all digested or pinned (§13.6). [evidence]"
+
+# ──────────────────────────────────────────────────────────────
+# OPEN QUESTIONS FOR THE MAINTAINER
+# ──────────────────────────────────────────────────────────────
+open_questions:
+  - id: 1
+    topic: trust_level
+    question: >
+      trust_level is defined as the level at which the agent was operating,
+      on an identity verification scale, and §5.3 also assigns it by action
+      class with a fail-safe default of L2 for consequential actions. Does
+      trust_level record the identity verification that actually occurred,
+      or the level required by the action's policy? If it can represent
+      either, how does a verifier distinguish them? The trust_verification
+      row is partial on that point.
+  - id: 2
+    topic: refusal_authority
+    question: >
+      When a gateway is the recording component and the outcome is denied,
+      is the recorder also the component that refused, or does the format
+      leave the location of the refusal unstated? If it is the recorder,
+      refusal_authority could be declared for independently recorded
+      trails.
+  - id: 3
+    topic: governance_attestation
+    question: >
+      Is policy_ref meant to stay an identifier only, or is a digest of the
+      governing policy in scope (as trust_assignment.policy_digest is for
+      the classification policy)? With a digest the governance_attestation
+      row would lose its first partial reason.
+  - id: 4
+    topic: replay_class
+    question: >
+      Does reading reproducibility_class "reproducible" as decision_replay
+      and "reconstructable" as fingerprint_only match your intent? This
+      registry has an open discussion on the criteria for those classes
+      (#231), and §13.2 is the most explicit set of conditions we have seen.
+  - id: 5
+    topic: signature_capability
+    question: >
+      The crosswalk declares classical for the ES256 default. The draft
+      also defines ML-DSA-65 and a hybrid ML-DSA-65 plus ES256 mode (§6.2).
+      Should the crosswalk describe the full capability of the draft, or
+      only what the implementation is shown to emit? It stays classical
+      until an implementation is shown emitting the other modes.
+
+# Not raised here: the ambiguities the author already lists in
+# aat-conformance SPEC-NOTES.md at c8e3d94 (N1 to N14, among them attestation
+# binding at genesis, record_hash undefined, heartbeat and record_deleted
+# missing from the §7.7 list, tombstone shape, ML-DSA thumbprints, and
+# consequential actions not being machine-identifiable). This crosswalk
+# follows the draft text and does not adopt the corpus's resolutions.

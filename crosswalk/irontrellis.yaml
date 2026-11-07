@@ -1,0 +1,468 @@
+# crosswalk/irontrellis.yaml
+#
+# IronTrellis authority history (history format 2, irontrellis-event/2)
+# and draft-rampertab-audit-agent-authority-history-00
+# -> Agent Governance Vocabulary
+#
+# Mapped artifacts: the authority history as a whole, the admission record
+# (TRANSACTION_INTENT_ADMITTED), the refusal record (REQUEST_REFUSED) and the
+# counterparty receipt wrapper (COUNTERPARTY_RECEIPT_RECORDED).
+#   Internet-Draft read: https://www.ietf.org/archive/id/draft-rampertab-audit-agent-authority-history-00.txt
+#     sha256 9c8174df3d100eb88d23e6cc6f482140799809e59a9bc6eb87805488c1f8680f
+#     (245768 bytes, posted 2026-10-30), Sections 1 to 6 read in full,
+#     the rest where cited.
+#   Spec read: docs/spec/SPEC-IRONTRELLIS-CORE-v2-EFFECTIVE-r5.2.md in
+#     zerohourzulu/irontrellis @ 983a508c499735e4e47034a9795c167181eeb86d
+#     (2026-11-06T18:34:58-08:00)
+#     sha256 2c1a570a5930e74640e4425dd5cbc24bc24727a8e224f99524745d511dae776a.
+#     Read: Preamble P.1 to P.5, Sections 1 to 5 (type table), 8.2, 8.3, 8.5,
+#     8.6, 10 and 11 in full. Not read: 6.5, 7, 9, 12 to 19, appendices.
+#   The draft is the model and the spec is the encoding. Where a row needs a
+#   field name it cites the spec. Where it needs a semantic claim it quotes
+#   the draft. The draft says of itself: "This document alone does not
+#   define byte-level interoperability."
+#
+# Out of scope for this file: owner approval policies and the Proof of
+# Human Lineage profile beyond one row, budgets, duty-policy machinery,
+# anchoring profiles, the ZK ABI, the reconciliation observation beyond one
+# term entry, and the export view.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the format's author. It is offered for the author to
+# correct or confirm. Corrections to the native protocol reading are checked
+# against the cited source and the canonical vocabulary before recalibration.
+
+system:
+  name: IronTrellis authority history
+  short_name: IronTrellis
+  home: https://github.com/zerohourzulu/irontrellis
+  spec: https://github.com/zerohourzulu/irontrellis/blob/983a508c499735e4e47034a9795c167181eeb86d/docs/spec/SPEC-IRONTRELLIS-CORE-v2-EFFECTIVE-r5.2.md
+  spec_version: "history format 2 (irontrellis-event/2), effective text r5.2, release 1.0.0-rc.2.3, draft-rampertab-audit-agent-authority-history-00 (Informational, individual submission)"
+  repo: https://github.com/zerohourzulu/irontrellis
+  implementation: >
+    TypeScript engine published on npm as irontrellis and
+    @ramex-labs/irontrellis (1.0.0-rc.2.3 at the time of reading) and a
+    Python verifier under python/. The repository carries conformance
+    suites under conformance/ and the README describes the release as "a
+    release candidate". aeoess did not run the engine, the Python verifier
+    or the conformance suites for this file. The README states:
+    "Installation checks and passing tests do not establish production
+    readiness, public deployment or certification."
+  role: >
+    Draft abstract: "an append-only, signed record of who granted what to
+    whom, which actions were admitted, which requests were refused, and
+    which unfinished duties survive when one agent replaces another. Given
+    independently authenticated owner keys and history identity, a verifier
+    can replay the history and recompute its recorded authorization
+    decisions while trusting neither the agent nor the operator."
+  identity_layer: >
+    The draft keeps five records apart: principal, agent, runtime session,
+    role and authority. An agent is "A durable identity that can hold
+    grants, occupy roles and owe duties". A runtime session is "One running
+    instance of an agent, admitted with its own public key, a control epoch
+    and an expiry." Identifiers "are opaque strings assigned by the
+    application".
+  upstream_license: "Repository LICENSE is Apache License 2.0. Internet-Draft text under the IETF Trust Legal Provisions (BCP 78)."
+  ietf_status_note: >
+    Individual Internet-Draft -00, offered to the proposed AUDIT effort. The
+    draft: "this individual submission implies no working-group adoption."
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: zerohourzulu
+    project: zerohourzulu/irontrellis
+    # Draft author R. Rampertab, RAmEx Labs. confirmed_at stays unset until
+    # the maintainer confirms on the PR.
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: spec Section 3.3 Signature row lists Ed25519 and
+# EIP-191 (secp256k1, low-s) encodings. Both classical.
+# canonicalization: spec Section 3.1 keeps continuity-canonical/0.2, with keys
+# sorted by UTF-8 byte order and its own escaping rule. Every C0 control
+# code point is written as a lowercase \u00xx escape, "including the
+# characters that JSON allows as \b \t \n \f \r". RFC 8785 writes \n, \t and the others as
+# two-character escapes, so the two diverge on any string containing those
+# characters. Hence implementation-defined.
+# hash_family: spec Section 3.2: "Format 2 uses no other hash", SHA-256,
+# apart from a fixed literal rulesHash carried as a constant.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined  # continuity-canonical/0.2, spec Section 3.1
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row below: the draft -00
+# and the spec r5.2 sections listed above, plus a keyword search of the full
+# pinned draft and spec (settle, payment, reputation, score, behavio,
+# reasoning, peer, completion, posture, KYC, grade, baseline, wallet, drift,
+# outcome, verdict, same agent) with the passages around each hit read. No
+# hit defines a scored, reputational, reasoning, posture, wallet or
+# baseline artifact. "settlement" appears only for counterparty claims and
+# for anchoring chains. OUTCOME_OBSERVATION_RECORDED (type 21) and the duty
+# disposition records (spec Section 13.2 and 13.3) were then read for the
+# peer_review row. It is a search result, not a claim about the project's
+# capability outside those sources.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "admission record (TRANSACTION_INTENT_ADMITTED) with its authorization proof"
+    match: partial
+    evidence: emitted
+    source_path: "TRANSACTION_INTENT_ADMITTED.data (runtimeAuthorizationHash, runtimeSignature, expectedHistoryHead, authorization proof irontrellis-authorization-proof/2), spec Sections 8.2 and 8.3"
+    notes: >
+      The session signs the request and its decision-time context, the
+      runtime authorization challenge of spec Section 8.2. The admission
+      records the resulting ALLOW and its authorization proof, "A proof: the
+      root, the permission path from root to actor, intersections satisfied,
+      effective constraints after attenuation". A verifier checks the
+      session signature and recomputes the proof against the recorded
+      authority history: "The replay re-derives the proof from the
+      pre-event state and the recorded request and requires byte equality
+      of the canonical texts". The draft adds that "admissions instead sign
+      the decision-time challenge" and that "the admission's own identifier
+      is committed by a later owner attestation". This overlaps the
+      canonical definition in part. The session signature authenticates the
+      request context, and replay establishes whether the recorded
+      authorization decision follows from the signed history. The session
+      does not sign the admission record itself, which a later owner
+      attestation commits. Two further limits. (1) The governance
+      requirement is the recorded grants, prohibitions and budgets, not an
+      external policy. External policy composition with engines such as Cedar and OpenFGA is
+      described in the README and draft Section 7 and is not part of the
+      proof. (2) The draft states the result is not an execution right:
+      "Every result MUST state, as constant values, that it is a reading of
+      the captured history and not a capability to execute anything."
+    issuers_in_production: []
+    signed_payload_fields:
+      # Runtime authorization challenge, spec Section 8.2.
+      - version
+      - domain
+      - request
+      - authoritative
+      - consequential
+      - evaluationTime
+      - policyVersion
+      - rootRecognitionPolicy
+      - eventHistoryHash
+      - eventHistoryPosition
+      - runtimeSessionId
+      - credentialKeyId
+      - controlEpoch
+      - roleId
+      - roleTenureId
+      - intentId
+      - nonce
+
+  settlement_witness:
+    canonical: settlement_witness
+    internal: "counterparty-signed envelope (irontrellis-counterparty-receipt/2) inside COUNTERPARTY_RECEIPT_RECORDED"
+    match: false_analog
+    notes: >
+      The envelope is signed by a registered counterparty and carries
+      amount, payloadDigest, outcome ("DELIVERED" | "REFUSED" | "UNKNOWN")
+      and observedAt, bound to the admitted intent by intentDigest (spec
+      Section 11.2). The canonical term is an attestation that a settlement
+      "was verified against its expected terms". The draft says what the
+      envelope establishes: "A counterparty's signature establishes its
+      claim, not settlement, delivery or legal effect." Per spec Section
+      11.2, the engine records the counterparty's claim and binds it to the
+      admitted intent. It does not verify that the reported amount matches
+      the admitted terms. Recorded as false_analog because a counterparty-signed
+      outcome bound to an admitted intent is close enough to be wired in as
+      a settlement witness. The verification against terms is the missing
+      property. Open question 3 asks whether another IronTrellis artifact
+      carries a verified settlement result.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "COUNTERPARTY_RECEIPT_RECORDED (session wrapper around a counterparty-signed envelope)"
+    match: false_analog
+    notes: >
+      Two signatures are present: the counterparty's over
+      envelopeSigningHash (the envelope without its signature) and the
+      recording session's over the wrapper challenge, which carries
+      envelopeDigest. The canonical term requires both parties' signatures
+      over the same canonicalized preimage. Here the two preimages differ
+      and nest: the session signs a digest of the counterparty's signed
+      envelope. The session is also the receiving side of a delivery, not
+      a delegating party. Recorded as false_analog because a two-signature
+      receipt bound to one intent is close enough to be wired in as a
+      bilateral receipt. No purpose is emitted or signed in a two-party
+      preimage. This row records that absence as a divergence, as the
+      bilateral_receipt field contract requires of a false_analog row that
+      omits purpose.
+
+  entity_continuity:
+    canonical: entity_continuity
+    internal: "agent record across control epoch advances and session re-admission, within one authority history"
+    match: partial
+    evidence: inferable
+    inferred_from:
+      - "AGENT_CREATED.data.agentId"
+      - "CONTROL_EPOCH_ADVANCED (owner-signed)"
+      - "RUNTIME_SESSION_ADMITTED.data (agentId, credentialPublicKey, controlEpoch), owner-signed"
+    inference_basis: >
+      No record states that the agent continued. A verifier concludes it by
+      replaying the history from authenticated owner keys and history
+      identity and finding owner-signed session admissions for the same
+      agentId before and after an epoch advance, with no AGENT_TERMINATED
+      between them.
+    notes: >
+      The draft treats the agent as durable while its running instances are
+      replaced. A control epoch is "A per-agent counter. Advancing it
+      retires every session admitted under an older epoch without
+      terminating the agent." So within one authenticated history the same
+      agent persists across a key and instance change, which overlaps the
+      canonical question "is this still the same agent?". Partial, for two
+      stated reasons. (1) The continuity is derived from the authenticated
+      owner, the history identity and the repeated agentId, which is an
+      opaque application identifier. There is no cryptographic link between
+      the old and new session keys. (2) The conclusion is scoped to that
+      history. Nothing read establishes that a relying party can recognize
+      the same agent across unrelated histories or principals. A role
+      handover is a different case and is not continuity: in the draft
+      example, after the handover "grant G does not pass to A2", and A2 is
+      a different agent.
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "key class HUMAN under the attested floor (Proof of Human Lineage profile)"
+    match: false_analog
+    notes: >
+      The optional Proof of Human Lineage profile classes owner keys as
+      HUMAN, LAPSED, AGENT or NONE under attester statements. The canonical
+      term is identity-layer verification status of an agent. The class
+      here is about which owner keys may count toward a control record's
+      quorum, and the draft limits it: "Not uniqueness, legal identity or
+      continuing control." Recorded as false_analog because "human-attested"
+      reads like a verification grade and could be wired in as one.
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: >
+      No task-completion attestation by a delegating agent in draft -00 or
+      spec r5.2. Four nearby records were checked. TRANSACTION_OUTCOME_RECORDED
+      (confirmed, failed, disputed or unknown) is signed by the actor's own
+      session, a first-party claim. OUTCOME_OBSERVATION_RECORDED (type 21,
+      E5 and E6 histories only) records a remote-service report
+      acknowledgment for an intent under an administrative authorization
+      (docs/reference/history-events.md and packages/core/src/events.ts at
+      983a508c). OBLIGATION_STATUS_RECORDED moves a duty to a status such as
+      DISCHARGED and names an attesterId. ATTEMPT_DUTY_DISPOSITION_RECORDED
+      (type 30) carries an attester's purpose-bound finding that a duty
+      investigation is COMPLETED_UNDER_POLICY or ESCALATED against four local
+      criteria (spec Section 13.2). The subject of each is an operation's
+      outcome or a duty owed under a role, and the signer is a session,
+      adapter or attester role, not the agent that delegated the task. The
+      draft also limits the disposition: "Completion under a local policy
+      MUST NOT be reported as external proof or legal discharge", and the
+      duty view carries externalOutcome "NOT_PROVEN" (spec Section 13.3).
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of agent behavior in draft -00 or spec r5.2."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "No reasoning commitment in draft -00 or spec r5.2. The draft excludes it from authority evidence: an instantiation 'MUST NOT accept a language model's interpretation as authority evidence.'"
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No attestation about an action's reasoning in draft -00 or spec r5.2."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment of completed tasks in draft -00 or spec r5.2."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric in draft -00 or spec r5.2."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for an agent in draft -00 or spec r5.2."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment of an artifact in draft -00 or spec r5.2."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in draft -00 or spec r5.2. A prohibition is a rule, not a score."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet holdings concept in draft -00 or spec r5.2. Optional anchoring of heads on a public chain is out of scope for this file and records no holdings."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet analytics in draft -00 or spec r5.2."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "the record chain (recordHash per position, previousHash per store line)"
+    match: partial
+    evidence: emitted
+    source_path: "store line previousHash and recordHash, spec Sections 4.1 and 4.3"
+    notes: >
+      recordHash(p) is SHA-256 over a domain string, recordHash(p−1),
+      eventHash(e_p) and the position, so each entry references its
+      predecessor by content hash, and admissions and refusals sit in that
+      chain at their positions. Partial, for two stated reasons. (1) One
+      history belongs to one principal and holds every agent, session, role
+      and control record of that principal, so the chain is not a sequence
+      of decisions affecting a single agent. A per-agent lineage is a
+      filtered view, with each entry still committed by the shared chain.
+      (2) Most records are not decisions: grants, revocations, sessions,
+      duties and effects share the chain. The draft notes a chain limit the
+      canonical term does not state: "removal of a complete suffix is not
+      detectable from the chain alone".
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in draft -00 or spec r5.2. The genesis policyVersion names the replay policy, not a behavioral baseline."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation in draft -00 or spec r5.2."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in draft -00 or spec r5.2."
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Drafter's reading, each value with its basis, open to the author's
+# correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  authority_history:
+    validity_temporal: sequence
+    note_validity: "An ordered, append-only sequence of records. 'The state at position p is a deterministic function of records 0 through p.'"
+    note_replay: >
+      replay_class is left unset while the registry clarifies the criteria
+      for each value. Drafter's reading for the author to check: admissions
+      and CORE and BUDGET refusals are re-derived on replay, which reads as
+      decision_replay or stronger for those records. CONNECTOR refusals,
+      effects and counterparty envelopes are "attested, not re-derived".
+
+  admission_record:
+    validity_temporal: at_issuance
+    note_validity: "Decided on the head the admission names: expectedHistoryHead is the full head before the admission, and evaluationTime equals the record's timestamp (spec Section 8.3)."
+    note_enforcement: >
+      enforcement_class left unset. Replay "rejects a history whose recorded
+      decision does not reproduce", so the admission binds historical
+      verification. That does not show that a tool execution was blocked or
+      allowed in the world, and the draft keeps the two apart: "A deployment
+      that wants refusals enforced as well as recorded MUST place the
+      decision point where the action is executed".
+    note_refusal: >
+      refusal_authority left unset. The engine evaluates recorded authority.
+      It is not necessarily the issuer of the grant or the enforcement point
+      that runs the tool, and which party refuses depends on the
+      deployment's placement of the decision point. Open question 4.
+    note_invariant: >
+      invariant_survival left unset. The admission precedes consumption and
+      outcome records for the same intent in the recorded sequence, and
+      that ordering alone is not an execution safeguard.
+    note_action_class: "No governed_action_class declared. Actions and resources are application identifiers, outside the draft's scope."
+
+  refusal_record:
+    enforcement_class: advisory
+    note_enforcement: "The record documents a refusal. The record itself refuses nothing."
+    validity_temporal: at_issuance
+    note_validity: "evaluationTime MUST equal the record's timestamp and expectedHistoryHead MUST be the head immediately before it (spec Section 10.1)."
+    note_refusal: >
+      refusal_authority left unset because the record holds two different
+      classes. CORE and BUDGET refusals are the engine's decision and are
+      re-derived on replay. A CONNECTOR refusal is a signed report from
+      another enforcement point and is attested, not re-derived: "CONNECTOR
+      means: the named agent says so."
+    note_invariant: "invariant_survival left unset, for the reason given under admission_record."
+
+# ──────────────────────────────────────────────────────────────
+# IRONTRELLIS TERMS WITH NO CLEAN CANONICAL TARGET
+# The nearest concept in vocabulary-lifecycle.yaml (INCUBATING,
+# descriptive only) is given in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+irontrellis_specific_terms:
+  indeterminate_result: "A third decision result beside ALLOW and DENY: 'MUST NOT be treated as ALLOW; an enforcement point that must choose MUST treat it as a refusal'. The vocabulary has no decision-result term. [authorization_decision]"
+  attenuated_delegation: "A delegation 'may narrow its parent, never widen it'. Actions and resources MUST be subsets, depth MUST be strictly smaller, and 'A conforming replay MUST reject a delegation that is not attenuated'. [delegated_authority]"
+  prohibition: "ROOT-scoped (attached to a root grant, loses effect when its anchor path ends) or GLOBAL (issued by the global policy source named in the genesis). [revocation, policy_version]"
+  control_epoch: "Per-agent counter whose advance fences every older session without terminating the agent. No vocabulary term covers session fencing. [revocation]"
+  role_and_tenure: "A role is 'A durable office held by one agent at a time, in numbered tenures. Transferring a role does not transfer grants.' [delegated_authority]"
+  surviving_duty: "Unfinished work owed under a role. 'An instantiation MUST preserve unfinished duties across an applicable succession and MUST require an authorized signed assignment before changing their performer.' No vocabulary term covers inherited obligations."
+  refusal_source: "CORE, BUDGET or CONNECTOR. The first two are recomputed on replay. CONNECTOR is attested only. [authorization_decision, evidence_attestor]"
+  reconciliation_observation: "A reconciler session's signed claim that one provider-stream event matched, or did not match, a decision in the history. Reports bypass of the decision point 'without a completeness guarantee'. [coverage_and_completeness]"
+  owner_approval_policy: "Optional M-of-N owner quorum with per-type thresholds. A lowered threshold is allowed only for records that reduce power by effect. [approval]"
+  head: "'The identity of a history prefix: chain hash, position and time of the last record.' Admissions and refusals name the head they were decided on. [evidence]"
+
+# ──────────────────────────────────────────────────────────────
+# OPEN QUESTIONS FOR THE FORMAT'S AUTHOR
+# ──────────────────────────────────────────────────────────────
+open_questions:
+  - id: q1
+    topic: governance_attestation signer
+    question: >
+      The actor's session signs the decision-time challenge, and the
+      recorded ALLOW gets its weight from replay against owner-signed
+      grants. Is partial the right
+      reading, or do you treat an admission as an owner-grounded attestation
+      once a verifier has replayed it?
+  - id: q2
+    topic: entity_continuity
+    question: >
+      When an owner advances an agent's control epoch and admits a new
+      session under the same agentId, can an outside verifier establish that
+      the same agent continues using the authenticated history alone? Is
+      that conclusion limited to the same history?
+  - id: q3
+    topic: settlement
+    question: >
+      The counterparty envelope is mapped as false_analog to
+      settlement_witness because the engine records the counterparty's claim
+      and does not verify it against the declared terms. Does any other
+      IronTrellis artifact carry a verified settlement result that should be
+      mapped instead?
+  - id: q4
+    topic: refusal authority
+    question: >
+      enforcement_class, refusal_authority and invariant_survival are left
+      unset on the admission because the history records decisions and the
+      deployment places the enforcement point. Is there a way for a verifier
+      to tell from the history whether a given admission was enforced at the
+      point of execution, or is that outside what the record states?
+  - id: q5
+    topic: replay class
+    question: >
+      Which records do you consider fully replayable from the export alone?
+      The reading above is admissions and CORE and BUDGET refusals. It is
+      left unset in this file until the registry settles the replay_class
+      criteria.

@@ -61,7 +61,7 @@ maintainer:
   mapped_system_maintainer:
     github: lumirosh
     project: lumirosh/open-decision-receipt (LumiRosh Research)
-    confirmed_at: null   # maintainer asked on PR #231 to keep this unset until the wording is settled
+    confirmed_at: "2026-11-07"   # maintainer confirmed the crosswalk wording on PR #231 (comment 6705411434) for the pinned implementation at fc1309b; a confirmation of wording, not a certification or a capability claim
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi

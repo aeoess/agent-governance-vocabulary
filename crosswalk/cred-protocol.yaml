@@ -1,0 +1,365 @@
+# crosswalk/cred-protocol.yaml
+#
+# Cred Credential Delegation Protocol
+# (draft-sweeney-wimse-credential-delegation-02) -> Agent Governance Vocabulary
+#
+# Mapped artifact: the Delegation Token and the per-hop delegation receipt as
+# specified in draft-sweeney-wimse-credential-delegation-02 as posted on
+# datatracker (document date 30 October 2026).
+#   Text read: https://www.ietf.org/archive/id/draft-sweeney-wimse-credential-delegation-02.txt
+#     sha256 bea0e59cb82b84264deba2930fddf604d48a073b486c682a4f390afb1ed41c70
+#     (108961 bytes). Every quoted definition below is from that file.
+#   Repository note: cred-ninja/protocol main @ 75427838c37716eb606d0886c9608be731a9e112
+#     (2026-11-02T16:46:39Z) still holds the 15 October -02 working copy in
+#     ietf/ and the readable companion. The posted text differs from it in
+#     substance (the ceiling claim renamed to delegation_constraints, the
+#     receipt naming the child jti assigned at authorization, revocation and
+#     constraint checks listed at exercise, the 1-hour cap extended to
+#     exchanged tokens, IANA requests revised, Implementation Status
+#     rewritten). This file follows the posted text. An earlier draft of this
+#     file was pinned to df90107 and was re-read against the posted text.
+#     The author confirmed on PR #239 that the posted text is the one to cite
+#     and plans to sync cred-ninja/protocol main to it.
+#
+# Section names, not numbers, are used below, matching the readable companion.
+#
+# Implementation: cred-ninja/sdk (Apache-2.0). Not examined for this draft.
+# The posted -02 Implementation Status describes SDK commit 42b39f4 as
+# following "its receipt claim layout, and its Delegation Token, but not its
+# agent authentication or exercise request formats. It is not wire-
+# compatible with this document." Rows below rest on the -02 text unless
+# they say otherwise.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the draft's author. It is offered for the author to
+# correct or confirm. Corrections to the native protocol reading are checked
+# against the cited source and the canonical vocabulary before recalibration.
+
+system:
+  name: Cred Credential Delegation Protocol
+  short_name: Cred
+  home: https://github.com/cred-ninja/protocol
+  spec: https://www.ietf.org/archive/id/draft-sweeney-wimse-credential-delegation-02.txt
+  spec_version: "draft-sweeney-wimse-credential-delegation-02, posted 30 October 2026 (Standards Track intent, individual submission, target WIMSE and OAuth WGs)"
+  repo: https://github.com/cred-ninja/protocol
+  implementation: "cred-ninja/sdk (TypeScript). Per the draft, experimental and not wire-compatible with -02 (agent authentication and exercise request formats differ)."
+  role: >
+    A profile of RFC 8693, RFC 9449, RFC 9396 and CIBA in which a
+    Delegation Server (DS) holds the Subject's credentials in a Credential
+    Vault and issues capability-shaped, DPoP-bound Delegation Tokens to
+    agents. Agents exercise credentials only through the DS /exercise
+    endpoint and "never" receive the raw credential. Sub-delegation is
+    attenuated, "equal or narrower, never wider" ("Capability
+    Structure"). Each hop produces a DS-signed delegation receipt referenced
+    from the child token's prf claim. Revocation cascades synchronously
+    within one DS.
+  identity_layer: >
+    Ephemeral did:key per agent ("Agent Identity"). "No pre-registration is
+    required. The DS MUST NOT reject a DID it has not seen before." The
+    Subject is identified by the DS. agent_model and agent_operator are
+    optional and self-asserted ("Model Identity and Substitution").
+  upstream_license: >
+    README: specification "released under CC BY 4.0". Internet-Draft text
+    under the IETF Trust Legal Provisions (BCP 78). cred-ninja/sdk Apache-2.0.
+  ietf_status_note: >
+    Individual Internet-Draft, work in progress. These rows track a moving
+    draft and carry no interop-stability guarantee.
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: kierandotai
+    project: cred-ninja/protocol, cred-ninja/sdk
+    confirmed_at: "2026-11-05"   # approved by the author on PR #239 (review 5792497689) at 6ac73b6 against the posted -02 text, on condition that his answers are folded in, which this revision does
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: "A DS MUST accept Ed25519 and P-256 and MAY accept
+# ML-DSA" ("Ephemeral Key Pairs"). "Delegation receipts are signed by the
+# DS, with Ed25519 or P-256 unless a deployment uses ML-DSA" ("Long-Term
+# Evidence"). classical is declared for the mandatory set. A deployment
+# signing with ML-DSA would emit post_quantum; no composite signing is
+# defined.
+# canonicalization: Delegation Tokens are JWTs, so signatures cover the
+# producer's serialized bytes. The -02 text does not define a serialization
+# or signing input for the delegation receipt. RFC 8785 appears in two
+# rules, neither of them a receipt signing rule. A child covers a parent
+# constraint of an unknown type only with a constraint "whose JCS
+# serialization [RFC8785] is byte-identical to the parent's" ("Constraint
+# Ceilings"), a comparison rule. The DPoP proof at exercise binds "a
+# SHA-256 hash of the JCS form [RFC8785] of the exercise request", a
+# request binding. So implementation-defined is declared for the receipt.
+# hash_family: SHA-256 for the cnf jkt thumbprint (RFC 9449, RFC 7638). The
+# SDK's receipt is "a compact JWS at each hop, EdDSA or ES256 with kid"
+# carrying "SHA-256 over the full compact parent receipt" (Implementation
+# Status). That describes the SDK, not a -02 wire requirement.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row below:
+#   the posted draft-sweeney-wimse-credential-delegation-02.txt (sha256
+#   above), compared section by section with the df90107 working copy that
+#   the first draft of this file read end to end.
+# A no_mapping row states that the named sources were searched and no
+# corresponding field or record was found. It is not a claim about the
+# project's capability outside those sources.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# One partial fit (governance_attestation, the DS-signed delegation receipt
+# for a hop), one false_analog (bilateral_receipt), the rest no_mapping on
+# the search basis above.
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "delegation receipt, signed by the DS per hop ('Delegation Chain Integrity'), referenced from the child Delegation Token's prf claim"
+    match: partial
+    notes: >
+      "each delegation hop MUST produce a signed delegation receipt
+      containing: the parent DT's jti, the child DT's jti, the delegating
+      agent's DID, the receiving agent's DID, the root delegated subject
+      (the outer sub), the attenuated capability set, and any source
+      identity evidence recorded for the receiving agent". Before issuing,
+      "the DS MUST re-verify the parent token and its signed receipt chain,
+      including issuer trust, signatures, expiry, DPoP binding, and
+      revocation state" and "MUST establish that the delegator currently
+      holds the authority being delegated and is allowed to delegate it."
+      A receipt therefore records that the DS found a delegation hop within
+      the parent's effective authority, which overlaps the canonical
+      definition's "delegation scope" case.
+
+      Partial, for four stated reasons. (1) It attests a delegation hop,
+      not an action. Credential exercise ("Exercise Flow") produces no
+      signed record in the -02 text. The per-hop audit record is a SHOULD
+      and "The shape of that record is deployment-defined". The author
+      plans a signed exercise record for -03 and expects it to be the
+      stronger candidate for this term (PR #239). (2) The receipt's field
+      list is normative but its serialization and signing input are not
+      defined in -02, so no signed_payload_fields are listed. The author
+      says -03 will specify the receipt as a compact JWS (EdDSA or ES256,
+      with kid) and define prf as SHA-256 over the full compact receipt
+      (PR #239).
+      (3) "A DS-signed receipt proves that the DS authorized an action
+      under its own records; it does not prove that the Subject, rather
+      than the operator, approved the grant those records describe"
+      ("Trusted Delegation Server"). (4) "A valid receipt chain does not
+      establish that issuer standing or consent remains current."
+
+      No evidence state is declared. The receipt carries no explicit
+      verdict field. The attestation is the existence of a DS signature
+      over the listed contents.
+    issuers_in_production: []
+    signed_payload_fields: []
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "delegation receipt naming the delegating and receiving agent DIDs"
+    match: false_analog
+    notes: >
+      The canonical term requires both parties' signatures over one
+      canonicalized preimage. The Cred receipt names both agents and is
+      "signed by the DS". In the Sub-Delegation Exchange each agent proves
+      key possession to the DS in its own request (the delegating agent's
+      DPoP proof at authorization, the receiving agent's RFC 7523 assertion
+      and DPoP proof at issuance), but neither agent signs the receipt.
+      Recorded as false_analog because a receipt that names two parties
+      for one delegation is close enough to be wired in as a two-party
+      receipt.
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "No verification status or grade about the agent in the search basis. did:key identities need no registration, and the DS MUST NOT reject an unseen DID."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of agent behavior in the search basis. Re-consent trigger 4, 'a security event triggers policy re-evaluation', is a trigger, not a score."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "agent_model is a self-asserted identifier. 'Verifying model identity requires attestation of the agent runtime and is out of scope for this document.' No reasoning commitment in the search basis."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No attestation about an action's reasoning in the search basis."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No settlement or payment outcome record in the search basis. Cumulative constraints (max_lifetime, max_subtree) bound quantities the DS debits; they do not witness a settlement."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation signed by a delegating agent in the search basis. The receipt is minted before the delegated work."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment of completed tasks in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric in the search basis."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity claim across sessions. 'Agents SHOULD generate a new key pair per session.'"
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for an agent in the search basis."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment of an artifact in the search basis."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the search basis."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "Delegation Chain (prf receipt links back to the root consent event)"
+    match: false_analog
+    notes: >
+      Both are linked sequences that a verifier walks, which is the
+      substitution hazard. The canonical term is an "ordered
+      content-addressable sequence of decisions affecting a single agent".
+      A Cred Delegation Chain is "An ordered sequence of Delegation Tokens
+      from Subject to Agent_1 to Agent_2 ... to Agent_N", one grant per
+      hop across different agents, linked by prf "receipt content
+      identifiers". The -02 text does not define how a content identifier
+      is computed. The per-hop audit record ("the decision, and any failed
+      or unresolved check with a reason") is the closer candidate, but it
+      is a SHOULD with a deployment-defined shape and no stated chaining.
+      The author agrees with false_analog on PR #239, including if a
+      companion document standardizes the per-hop audit record, because
+      that record captures one grant decision per hop across different
+      agents. Same reading as crosswalk/agent-delegation-receipts.yaml, if
+      that file is merged.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the search basis. Re-consent triggers re-request consent; they do not revise a baseline."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation in the search basis."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# For the Delegation Token as exercised through the DS. Drafter's reading,
+# each value with its basis, open to the author's correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  delegation_token:
+    enforcement_class: binding
+    note_enforcement: >
+      The DS is the executor, not only the approver: at /exercise it
+      validates the token, checks "that the requested operation is within
+      the DT's authorization_details", then "Performs the authorized API
+      call against the resource server using the stored credential". The
+      agent holds no credential to act with outside that path. Binding
+      covers calls the DS mediates. Tokens under the Chain-Verifiable
+      Profile, or exchanged for direct presentation to a resource server,
+      bind only the verifiers that check them.
+    validity_temporal: at_processing
+    note_validity: >
+      Checked at each exercise and at each hop. Revocation is synchronous
+      within one DS ("Invalidate the specified DT within 1 second", cascade
+      "within 5 seconds"), and an /exercise "whose authority check
+      (Section 6.1) runs after the revocation takes effect" returns 401
+      delegation_revoked; "a call already dispatched when the revocation
+      takes effect is not recalled". Away from the DS, "an enforcement
+      point off the DS's call path therefore admits no new action under a
+      revoked delegation after the expiry of the token presented, at most
+      1 hour after the DS issued it". "Synchronous cascading revocation
+      holds within one Delegation Server."
+    refusal_authority: issuer
+    note_refusal: >
+      The DS that issues the token also refuses at exercise and at
+      sub-delegation. For a Chain-Verifiable Profile token checked away
+      from the DS, the offline verifier refuses (verifier), and it must
+      deny an action under a cumulative constraint unless it holds the
+      running total. The author confirmed issuer as the declared value on
+      PR #239.
+    invariant_survival: pre_action
+    note_invariant: >
+      Checks run before the DS dispatches the upstream call. "An effect the
+      resource server accepted before revocation and commits later is
+      outside what the DS observes."
+    note_replay: >
+      No replay_class selected. Receipt signatures and chain subsumption
+      can be rechecked offline, but admission also depends on revocation
+      state, consent currency and the DS-held running totals for
+      cumulative constraints, which the chain does not carry.
+    governed_action_class: delegate
+
+# ──────────────────────────────────────────────────────────────
+# CRED-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET
+# Listed so the mapping states what the vocabulary does not name yet.
+# The nearest concept in vocabulary-lifecycle.yaml (INCUBATING,
+# descriptive only) is given in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+cred_specific_terms:
+  delegation_server: "'A service that issues, manages, and revokes Delegation Tokens on behalf of Subjects.' Holds the Credential Vault and makes the upstream call. [issuer, verifier_trust_policy]"
+  credential_wrapping: "The agent receives a Delegation Token and an opaque credential_handle, never the credential. 'Credential Exercise: The act of the DS using a stored credential on behalf of an Agent.' [presented_credential_or_session]"
+  capability: "RFC 9396 authorization_details of type cred_delegation with provider, operations, resources, expires. [action_or_capability_binding, target_binding]"
+  attenuation: "'equal or narrower, never wider' (Capability Structure) governs the subset check. A hop may pass an identical capability set through and may never widen it (author, PR #239). The Terminology wording 'strict subset' is stale per the author and will be corrected in -03. [delegated_authority] Related open gap candidate in this registry: #125 (attenuating_delegation)."
+  constraint_ceilings: "delegation_constraints claim (renamed in the posted -02 from constraints, which OpenID Federation 1.0 already registers) with typed ceilings max, min, one_of, not_one_of, prefix, rank (with order), max_lifetime, max_subtree, in the draft-asor Section 4.2 shape. Fail-closed parsing; unknown type carried and any exercise under it denied. 'The type, not the key, states whether a bound is per exercise or cumulative.' [action_or_capability_binding]"
+  cumulative_ceiling_single_writer: "max_lifetime and max_subtree are debited atomically by the DS, 'the single writer'. Offline verifiers check only that a child's bound is no wider. [expiry_or_exhaustion]"
+  sub_delegation_exchange: "Two steps: the delegating agent obtains a single-use delegation grant bound to the receiving DID; the receiving agent redeems it by RFC 8693 token exchange under its own key."
+  actor_attribution: "Outer sub keeps the root subject, client_id and act.sub name the current actor and MUST agree, nested act is 'historical attribution only'. [principal_binding, agent_identity]"
+  chain_verifiable_profile: "Tokens verified away from the DS use the draft-asor agent_delegation format unchanged and the Section 6 algorithm of that draft."
+  consent_record: "'immutable record of each consent event' with Subject, Agent DID, capabilities, grant time, expiry and chain context, retained at least 90 days. Referenced by consent_id. [approval, accountability_record]"
+  re_consent_triggers: "Broader capabilities, expiry, agent_operator change, security event. [activation_condition]"
+  cascading_revocation: "DELETE /delegation/{jti} with revoked_count. 'revoked_count reports invalidation, not closure.' [revocation]"
+  long_term_evidence: "Classical-signature records retained past their trust horizon SHOULD be anchored by post-quantum time-stamping or an append-only log. [evidence]"
+
+# ──────────────────────────────────────────────────────────────
+# AUTHOR ANSWERS
+# The six open questions of the earlier revision were answered by
+# kierandotai on PR #239 (review 5792497689) and are folded into the rows
+# above. Receipt serialization and prf are for -03, so governance_attestation
+# stays partial with empty signed_payload_fields for -02. A signed exercise
+# record is planned for -03. refusal_authority stays issuer. decision_lineage
+# stays false_analog. "equal or narrower, never wider" governs, and "strict
+# subset" is stale. The posted datatracker text is the one cited.
+# ──────────────────────────────────────────────────────────────

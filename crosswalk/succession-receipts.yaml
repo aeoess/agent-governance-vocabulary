@@ -1,0 +1,384 @@
+# crosswalk/succession-receipts.yaml
+#
+# Succession Receipts, Authority-Handoff Receipt (AHR) v0.2
+# (draft-sabey-succession-receipts-05) -> Agent Governance Vocabulary
+#
+# Mapped artifact: the Authority-Handoff Receipt only.
+#   Internet-Draft read: https://www.ietf.org/archive/id/draft-sabey-succession-receipts-05.txt
+#     sha256 e58d45cd2dda8ed89bb184d9ddd6a2da4e0885edc338af9b8c24aacd4e695e64
+#     (45991 bytes, dated 23 September 2026), Sections 1 to 9 read in full.
+#   Spec read: spec/authority-handoff-receipts.md in jsabes24/css-succession-receipts
+#     @ ffd6836fe141f86dd5539ddb668b6aceba876b0e (2026-11-04T17:04:26Z)
+#     sha256 a469e135ffcfef3938007f336222ad5578ad4ddb75e43cc214bfdc3cea2b4c69.
+#     First read in full at 17ec7bc (sha256 b9f8c349...0c4, Sections 1 to 3
+#     and 5 to 9 in full, Section 4 where cited). Re-pinned to ffd6836, the
+#     commit with the author's corrections from PR #240. The diff from
+#     17ec7bc touches Section 2.1 (authorization_binding format and a new
+#     "Parties and identity" paragraph), Section 3 (canonical form) and
+#     Section 4 steps 2 and 6, which were re-read in full.
+#   README.md at ffd6836, sha256
+#     68705289498942694ac4baf6610fa98832d1f10f5bcb953793073b77e01fe5dd, quoted
+#     for the implementation cell only.
+#   Draft -05 stays the IETF pin. The author wrote on PR #240 that draft -06
+#   carries the same Section 3 correction and posts after this week's IETF
+#   meeting.
+#   The draft says the complete member catalog is the AHR spec. Where the two
+#   differ, the rows identify the difference and record the author's
+#   clarification on PR #240.
+#
+# Out of scope for this file: the companion artifacts in the same repository
+# (ledger export, capability credential, anchoring checkpoints, refusal
+# digest, selective-disclosure receipts, precommitment atoms, seat
+# evidence). Five corpus vectors were opened for the receipt proof check
+# described under implementation, and the rest were listed, not opened. The
+# author offered on PR #240 to review a separate mapping of the refusal
+# digest (spec/refusal-transparency.md).
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the format's author. It is offered for the author to
+# correct or confirm. Corrections to the native protocol reading are checked
+# against the cited source and the canonical vocabulary before recalibration.
+
+system:
+  name: Succession Receipts (Authority-Handoff Receipt)
+  short_name: Succession-Receipts
+  home: https://github.com/jsabes24/css-succession-receipts
+  spec: https://github.com/jsabes24/css-succession-receipts/blob/ffd6836fe141f86dd5539ddb668b6aceba876b0e/spec/authority-handoff-receipts.md
+  spec_version: "AHR v0.2 (draft) and draft-sabey-succession-receipts-05 (Informational intent, individual submission)"
+  repo: https://github.com/jsabes24/css-succession-receipts
+  implementation: >
+    Receipts are issued by the CSS engine, which the README describes as
+    "proprietary software of Continuity Laboratories", as is the reference
+    verifier sr-verify. The repository holds the specifications, the
+    conformance corpus and the Internet-Drafts, and "deliberately contains
+    no verifier or engine code". aeoess recomputed the receipt proof of two
+    golden corpus vectors at ffd6836 (corpus/ahr-v0.2/r1/golden.json and
+    r3/golden-binding-1of1.json) with a script written from Section 3 and
+    Section 4 step 1: canonical bytes, receipt_hash, and the Ed25519 issuer
+    signature against corpus/keys/vector.pub.pem. Both passed, and three
+    altered vectors (proof-signature-bitflip, content-altered, proof-stripped)
+    failed as the corpus manifest expects. Evidence event hashes, claim
+    grounding and the later verification steps were not recomputed, and the
+    issuing engine was not exercised.
+  role: >
+    "A Succession Receipt is a portable, signed JSON document that proves
+    one completed, policy-gated transfer of authority between two agents:
+    which agent held the authority, which agent holds it now, under what
+    legitimacy determination the transfer ran, and which obligations
+    carried forward, with every claim grounded in signed evidence events
+    embedded in the receipt itself." Verified offline with the issuer's
+    Ed25519 public key. The issuer's proof covers the whole receipt,
+    evidence included. Section 2.2 makes each evidence event's own signature
+    optional, absent in unsigned deployments, so a valid receipt does not
+    show that every embedded event was signed on its own.
+  identity_layer: >
+    Stewards ("An agent (or agent generation) that can hold authority and
+    carry obligations in the issuing system's registry") are named by UUID,
+    each with an optional identity_id "bound at the predecessor's
+    assignment" or the successor's. The issuer is a URN,
+    "urn:css:registry" by default.
+  upstream_license: "Repository LICENSE is Apache License 2.0. Internet-Draft text under the IETF Trust Legal Provisions (BCP 78)."
+  ietf_status_note: >
+    Individual Internet-Draft, work in progress. AHR v0.1 is frozen, v0.2
+    is the current draft on a stated ladder toward 1.0.
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: jsabes24
+    project: jsabes24/css-succession-receipts
+    confirmed_at: "2026-11-04"   # confirmed by the author on PR #240 (comment 6642764426) for 10915e4, on condition of one quote correction, which this revision makes
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: "ed25519 ([RFC8032], deterministic signatures) is
+# the sole algorithm registered at spec versions 0.1 and 0.2." Post-quantum
+# schemes are named as possible "additive prefixes registered by a new spec
+# version".
+# canonicalization: spec Section 3 at ffd6836 defines the canonical bytes
+# as the receipt JSON with the proof member absent, "object members sorted
+# by the UTF-8 bytes of their names (equivalently, by Unicode code point)",
+# no insignificant whitespace, an exact escaping rule and integers only.
+# "For a document whose member names are all ASCII, whose strings contain
+# neither U+2028 nor U+2029, and whose integers lie within ±(2^53−1), the
+# canonical bytes are identical to RFC 8785 output". Outside that subset
+# "this section, not RFC 8785, is the rule". The text at 17ec7bc said the
+# form coincides with RFC 8785 for every receipt, and the spec now carries
+# a dated correction. The author wrote on PR #240: "I'd suggest not
+# declaring jcs-rfc-8785; "AHR §3 canonical form, JCS-equal within that
+# subset" is accurate." Hence implementation-defined below.
+# Evidence event hashes use a separate concatenation rule (draft Section
+# 4.3) with the payload "in document member order", which is not JCS. At
+# ffd6836, Section 4 step 2 adds that payload strings are escaped as in
+# Section 3 except that <, > and & are written \u003c, \u003e and \u0026.
+# hash_family: SHA-256 for the receipt hash and every event_hash.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined  # AHR Section 3 canonical form, JCS-equal within the subset Section 3 states (ASCII member names, no U+2028 or U+2029, integers within ±(2^53−1))
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row below: the AHR
+# spec and draft -05 pinned above. Each no_mapping note names them, so the bound
+# travels with the note when it is quoted. It is a search result, not a
+# claim about the project's capability outside those sources.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "Authority-Handoff Receipt (issuer proof over the claims and the embedded evidence)"
+    match: partial
+    notes: >
+      A valid receipt attests that the issuing registry recorded "a
+      succession that was proposed, validated, approved under a named
+      legitimacy evaluation, and completed (the succession state machine
+      permits no other path to Completed)", with the revocations,
+      derivation and inheritance that went with it. That is a single-issuer
+      signed statement that a transfer satisfied the issuer's governance
+      gates, which overlaps the canonical definition. The signature behind
+      it is the issuer's proof over the receipt. Evidence event signatures
+      are optional (Section 2.2).
+
+      Partial, for three stated reasons. (1) The governance requirement is
+      referenced, not carried: legitimacy.legitimacy_id and the optional
+      legitimacy_state ("L3", "L4", "L5") name the evaluation, and the
+      constitution claim binds the lineage by event hash, but the criteria
+      applied are not in the receipt. The author wrote on PR #240 that
+      L3 to L5 "are not defined in a public document. The receipt carries
+      the label, the criteria are the issuer's, and 'referenced, not
+      carried' is right." (2) Draft -05, Security Considerations: "A
+      receipt proves what the issuer recorded, not that the issuer is
+      honest." (3) It is scoped to the
+      registry: "A receipt does not attest that anything outside the
+      registry was enforced. CSS refusals gate ledger transitions, not
+      external agent actions." The canonical term covers an agent or an
+      action. Here the subject is a transfer of authority between stewards.
+    issuers_in_production: []
+    signed_payload_fields:
+      # The issuer's proof covers the canonical receipt with the proof member
+      # absent (AHR Section 3), so every other top-level member is signed.
+      # Members as in corpus/ahr-v0.2/r1/golden.json at ffd6836. Each evidence
+      # event's own signature is optional (Section 2.2).
+      - "@context"
+      - type
+      - spec_version
+      - issuer
+      - validFrom
+      - credentialSubject
+      - evidence
+
+  entity_continuity:
+    canonical: entity_continuity
+    internal: "predecessor and successor stewards in one succession"
+    match: false_analog
+    notes: >
+      The canonical term answers "is this still the same agent?" across an
+      infrastructure change. A Succession Receipt answers who holds an
+      authority after it moved from one steward to another: "which agent
+      held the authority, which agent holds it now". predecessor.steward_id
+      and successor.steward_id name two stewards, and predecessor.replaced
+      records a StewardReplaced event. The receipt carries authority
+      continuity across a change of holder, not identity persistence.
+      Recorded as false_analog because both concern an agent being
+      "upgraded, replaced, suspended, and restored" and could be read as
+      the same signal. Section 2.1 at ffd6836: "A receipt therefore makes
+      no claim that its two parties are the same entity, and equal
+      `identity_id` values, should an issuer produce them, assert nothing
+      further: verifiers attach no meaning to equality." The author wrote
+      on PR #240: "entity_continuity: false_analog is right, and §2.1 now
+      says so."
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "receipt naming predecessor and successor stewards"
+    match: false_analog
+    notes: >
+      The canonical term requires both parties' signatures over one
+      canonicalized preimage. The receipt names two stewards and is signed
+      by the issuer alone (a relying party "verifies a receipt offline with
+      only the issuer's Ed25519 public key"). Embedded evidence events may
+      carry an "optional signature", which is the platform's event
+      signature, not a steward's. Recorded as false_analog because a
+      two-party transfer record is close enough to be wired in as a
+      two-party receipt. No purpose is emitted or signed in a two-party
+      preimage. This row records that absence as a divergence, as the
+      bilateral_receipt field contract requires of a false_analog row that
+      omits purpose. The author wrote on PR #240: "bilateral_receipt and
+      decision_lineage as false_analog are both correct as well."
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "No verification status or grade about an agent in the AHR spec at ffd6836 or draft -05. legitimacy_state grades the evaluation behind a transfer, not the agent."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of agent behavior in the AHR spec at ffd6836 or draft -05."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "No reasoning commitment in the AHR spec at ffd6836 or draft -05. The repository's seat evidence artifact concerns model output and is out of scope for this file."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No attestation about an action's reasoning in the AHR spec at ffd6836 or draft -05."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No settlement or payment outcome record in the AHR spec at ffd6836 or draft -05."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation by a delegating agent in the AHR spec at ffd6836 or draft -05."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment of completed tasks in the AHR spec at ffd6836 or draft -05."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric in the AHR spec at ffd6836 or draft -05."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for an agent in the AHR spec at ffd6836 or draft -05."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment of an artifact in the AHR spec at ffd6836 or draft -05."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the AHR spec at ffd6836 or draft -05."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the AHR spec at ffd6836 or draft -05."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the AHR spec at ffd6836 or draft -05."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "evidence events (SuccessionProposed, SuccessionValidated, SuccessionApproved, SuccessionCompleted and correlated events)"
+    match: false_analog
+    notes: >
+      The draft calls the evidence "the signed, hash-chained events the
+      issuing system recorded". The canonical term is an "ordered
+      content-addressable sequence of decisions affecting a single agent"
+      in which "each entry references its predecessor by content hash".
+      Within a receipt, each event_hash covers previous_event_id ("empty
+      string when absent"), an identifier rather than the predecessor's
+      hash, and the spec says the evidence is "a cross-stream subset: a
+      receipt does not prove stream contiguity or completeness of the
+      surrounding ledger". Entries are sorted by (timestamp, event_id) and
+      concern two stewards. The author wrote on PR #240 that within a
+      receipt "events link by previous_event_id, an identifier, so
+      false_analog stands", and that "The ledger export is the intended
+      artifact for ordered lineage: its audit records link by
+      previous_hash, a content hash." The ledger export is not mapped in
+      this file. The author also wrote: "bilateral_receipt and decision_lineage as false_analog
+      are both correct as well."
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the AHR spec at ffd6836 or draft -05."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation in the AHR spec at ffd6836 or draft -05."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in the AHR spec at ffd6836 or draft -05."
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# For the Authority-Handoff Receipt. Drafter's reading, each value with
+# its basis, open to the author's correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  authority_handoff_receipt:
+    enforcement_class: advisory
+    note_enforcement: >
+      The receipt refuses nothing. It is "the artifact an integrator,
+      auditor, or counterparty checks before honoring a successor agent".
+      The CSS engine refuses invalid transfers at the ledger, which the
+      receipt reports after the fact and does not itself enforce.
+    validity_temporal: at_issuance
+    note_validity: >
+      "A receipt is a statement about recorded history at validFrom; later
+      constitutional events ... do not invalidate it". Consumers "MUST treat
+      authority_status as of validFrom and check for newer successions when
+      currency matters." There is no revocation of receipts.
+    refusal_authority: consumer_policy
+    note_refusal: "Whether to honor the successor is the relying party's decision. When currency matters, consumers MUST check for newer successions and read authority_status as of validFrom (see note_validity)."
+    invariant_survival: post_action
+    note_invariant: "Receipts exist only for completed successions: 'a proposed, rejected, or in-flight succession has no receipt.'"
+    note_replay: >
+      The spec states that the proof, every event hash and the claim
+      grounding in both directions are recomputable from the receipt and
+      the issuer key. The proof was recomputed for two corpus vectors (see
+      implementation). Event hashes and claim grounding were not. The
+      legitimacy evaluation's inputs are referenced by ID and not carried,
+      so full_replay is not claimed. replay_class is left unset while the
+      registry clarifies the criteria for each value. Recomputing record
+      integrity and claim grounding does not by itself establish that the
+      legitimacy decision can be independently recomputed.
+    note_action_class: >
+      No governed_action_class declared. A transfer of the authority of
+      record between agent generations does not fit delegate (authority is
+      superseded and re-derived, not passed down a chain) and the vocabulary
+      has no succession value. Listed as a gap below.
+
+# ──────────────────────────────────────────────────────────────
+# SUCCESSION-RECEIPT TERMS WITH NO CLEAN CANONICAL TARGET
+# The nearest concept in vocabulary-lifecycle.yaml (INCUBATING,
+# descriptive only) is given in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+succession_receipts_specific_terms:
+  succession: "'The governed process by which authority of record transfers from a predecessor steward to a successor steward. Only completed successions yield receipts.' No governed_action_class value fits. [delegated_authority, revocation]"
+  steward: "'An agent (or agent generation) that can hold authority and carry obligations in the issuing system's registry.' [agent_identity]"
+  revoked_authorities: "Every predecessor authority the completion superseded, each with a revocation_basis ('superseded by succession <id>'). [revocation]"
+  derived_authority: "successor.authority_id with authority_scope verbatim from AuthorityGranted, bound to accountability_chain_id. authority_status is 'granted' (post-succession governance review open) or 'active' (AuthorityValidated on record). [delegated_authority, activation_condition]"
+  legitimacy_evaluation: "legitimacy_id recorded by SuccessionApproved, optional legitimacy_state L3, L4 or L5. [approval, authorization_decision]"
+  obligation_and_commitment_lineage: "obligations_carried and commitments_carried, sorted UUID lists of what the successor inherits. No vocabulary term covers inherited obligations."
+  constitution: "v0.2: genesis_event_hash, amendments_ratified, amendment_head_hash, so a verifier sees 'by which constitution' the transfer was governed. [policy_version, evidence]"
+  ledger_binding: "v0.2: height and event_hash of the final evidence event, the horizon for a completeness check against a ledger export or anchored checkpoint. The receipt alone does not establish completeness. [coverage_and_completeness]"
+  claim_grounding_both_directions: "Every claim needs a matching evidence event, and every lineage effect in evidence must be declared, so 'a receipt can neither invent nor conceal an effect of the transfer' within the evidence it carries. This checks claims against the embedded evidence. It does not establish completeness against the surrounding ledger or the issuer's honesty. [coverage_and_completeness, evidence]"
+  authorization_binding: "Optional cross-format claim (caid, receipt_hash, format) binding the handoff to a pre-execution authorization receipt. Section 2.1 at ffd6836 names 'EP-AUTHORIZATION-RECEIPT-v1' for the Trust Receipt, matching draft -05 Section 6. Native verification failure, an unverified binding and a demonstrated mismatch are three distinct results. Without the native artifact a verifier reports the binding 'not verified', and Section 4 step 6 says 'a relying party requiring a verified binding MUST NOT accept it as satisfied'. A binding that is only well-formed does not show that the authorization was valid or applies to this handoff. [approval, evidence_attestor]"
+  key_id_label: "Issuer-managed label 'deliberately NOT derived from the key'. Rotation adds a mapping and MUST NOT invalidate issued receipts. [signing_key, verifier_trust_policy]"
+
+# ──────────────────────────────────────────────────────────────
+# OPEN QUESTIONS FOR THE FORMAT'S AUTHOR
+# All six questions were answered by the author on PR #240 (comments
+# 6641060233 and 6642764426) and are folded into the rows above. The
+# refusal digest is left to a separate file, which the author offered to
+# review.
+# ──────────────────────────────────────────────────────────────

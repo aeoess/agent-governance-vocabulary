@@ -423,12 +423,23 @@ function validateSignalTypes(doc, file) {
 // existing message format on the top-level nested-per-signal path while
 // extending coverage to nested signal_types.<key>.descriptor_dimensions and
 // to flat top-level shapes (jep / agentlair).
+// Prose annotations that may sit beside descriptor values: `notes`,
+// `<dimension>_notes` and `note_<anything>`. Every other key in a descriptor
+// block is expected to name a dimension in vocabulary.yaml.
+function isDescriptorNoteKey(name) {
+  return name === 'notes' || name.endsWith('_notes') || name.startsWith('note_')
+}
+
 function validateDescriptorBlock(block, file, dotPathPrefix) {
   if (!block || typeof block !== 'object') return
   for (const [dimName, value] of Object.entries(block)) {
-    if (dimName.endsWith('_notes')) continue
+    if (isDescriptorNoteKey(dimName)) continue
     const allowed = descriptorEnums[dimName]
-    if (!allowed) continue
+    if (!allowed) {
+      // A misspelled dimension used to pass silently, because nothing read it.
+      err(file, `${dotPathPrefix}.${dimName}: not a descriptor dimension in vocabulary.yaml (known: ${Object.keys(descriptorEnums).join(', ')}). Prose beside a value goes in a key named notes, <dimension>_notes or note_<name>.`)
+      continue
+    }
     const values = Array.isArray(value) ? value : [value]
     for (const v of values) {
       if (typeof v !== 'string') continue

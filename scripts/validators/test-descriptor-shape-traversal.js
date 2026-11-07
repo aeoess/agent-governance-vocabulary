@@ -174,5 +174,35 @@ console.log('\nIssue #145 — descriptor_dimensions shape traversal\n')
     'a canonical value in a flat block was rejected')
 }
 
+// 6. An unknown dimension name is reported, not skipped. A misspelling such as
+// `replay_clas` used to pass with no diagnostic because nothing read it.
+{
+  const r = runWith(`${HEAD}descriptor_dimensions:
+  replay_clas: decision_replay
+`)
+  check('unknown dimension: reported on this fixture\'s own line',
+    fixtureLineHas(r.out, 'descriptor_dimensions.replay_clas'),
+    'an unknown dimension name passed with no diagnostic')
+  check('unknown dimension: validator exits non-zero', r.exit !== 0, `exit=${r.exit}`)
+  check('unknown dimension: reported as an error, not a warning',
+    fixtureLines(r.out).some(l => l.includes('replay_clas') && !/^\s*WARN/.test(l)),
+    'the unknown dimension was reported only as a warning')
+}
+
+// 7. Note keys are prose and stay silent, in both shapes.
+{
+  const r = runWith(`${HEAD}descriptor_dimensions:
+  governance_attestation:
+    refusal_authority: issuer
+    note_refusal: |
+      Prose beside a value.
+    notes: |
+      More prose.
+`)
+  check('note keys: no diagnostic naming this fixture\'s descriptor block',
+    !fixtureLineHas(r.out, 'descriptor_dimensions'),
+    'a note_* or notes key was reported as an unknown dimension')
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`)
 process.exit(failed === 0 ? 0 : 1)

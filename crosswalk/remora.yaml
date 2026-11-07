@@ -34,7 +34,7 @@ system:
 license: Apache-2.0
 maintainer:
   github: darklordVirtual
-  confirmed_at: "2026-10-29"
+  confirmed_at: "2026-11-07"
 
 # ─────────────────────────────────────────────────
 # SYSTEM ATTRIBUTES
@@ -76,7 +76,23 @@ signal_types:
       capped at 86400 s), a one-time jti consumed at redemption and an
       audience, so it is meant to be used once and then discarded. The gate
       additionally refuses tokens over 3600 s old by issued_at, even if their
-      signed expiry is later (remora/enforcement/gate.py). The action
+      signed expiry is later (remora/enforcement/gate.py). Single use holds
+      only when the redeeming call consumes the jti (check(..., consume=True)
+      on the governed execution paths) and the consumed-jti ledger is
+      durable: PostgreSQL (REMORA_PG_DSN), SQLite (REMORA_CHAIN_DB) or D1
+      (REMORA_STATE_ENDPOINT). Without one of these the gate falls back to an
+      in-process set, and consumed jti values are lost on process restart, so
+      a grant redeemed before the restart can be redeemed again after it
+      while it is still inside its expiry and age bounds. In strict mode
+      (strict=True, the setting used by servers/execution_api.py) an unsigned
+      token is refused, and a consuming check refuses a token without a jti.
+      In non-strict development mode (strict=False) an unsigned token can be
+      accepted with a warning, provided the applicable bindings
+      (observation_hash and context_hash, when the caller supplies them), the
+      audience and the temporal checks pass. On that unsigned legacy path a
+      missing expiry is permitted (an expiry that is present is enforced),
+      the 3600 s age limit still applies, and a token without a jti is not
+      tracked for single use. The action
       field's type admits accept / verify / abstain / escalate, but production
       mints grants only for accept and the PEP authorizes only accept.
       These values are not a pass or fail on a named requirement. The
@@ -91,7 +107,6 @@ signal_types:
       validity_temporal: at_processing
       refusal_authority: verifier
       invariant_survival: pre_action
-      replay_class: decision_replay
       governed_action_class: [read, write, transfer]
     descriptor_notes: >
       refusal_authority is verifier because the PEP refuses execution when a
@@ -100,9 +115,12 @@ signal_types:
       request (verification reasons in remora/enforcement/token.py,
       one-time jti consumption in remora/enforcement/gate.py).
       The gate governs registered tool calls, including reads, writes and
-      transfers. replay_class is decision_replay because
-      observation_hash commits to the evaluated observation, and replaying the
-      decision requires that observation and the pinned policy bundle.
+      transfers. replay_class is not declared. observation_hash and
+      context_hash are cryptographic bindings to the evaluated observation
+      and the authorization context; they let a holder of those inputs check
+      that a token was minted for them, but REMORA does not ship a procedure
+      or vector showing that the original decision can be reconstructed from
+      them, so no replay class is claimed.
     conformance_vectors: "vectors/v3/policy_grant.json"
 
   # ── Gaps. Each note states what was searched, at the pinned commit. ──

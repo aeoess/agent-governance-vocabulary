@@ -12,6 +12,8 @@ The vocabulary, shared files, issues, pull requests and history stay together th
 
 @aeoess would be the only organization owner at transfer. Adding another owner would be a separate decision under the process below.
 
+A single owner is a recovery risk: if that account is lost or locked, nobody can change organization settings until GitHub restores access. The maintainers can keep working on the repository in the meantime, because the Maintain role does not depend on the owner being reachable. Adding a second owner is the lasting fix and goes through the process below.
+
 @darklordVirtual and @Poke-nushi have offered to help maintain the repository. Each would receive the Maintain role after agreeing a scope and time commitment. @ogasurfproject-jpg has also offered bounded help with shared files and crosswalk rows. That offer still needs a scope and access decision.
 
 Maintain permits code and workflow changes, merging under the repository's rules, and some settings changes, including Pages configuration. It does not grant organization ownership or control over repository access, branch protection, deletion or transfer. The exact permissions are documented in [GitHub's role table](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization).
@@ -35,6 +37,14 @@ An account whose access presents an immediate security risk could have that acce
 4. **Repository links.** GitHub redirects repository and Git operation URLs. Update local remotes and published references over time. Do not recreate a repository at the old location, which would remove the redirect where GitHub permits that name to be reused.
 
 5. **Configuration.** Recheck repository and environment secrets by name only, variables, webhooks, deploy keys, Pages settings and organization policies immediately before transfer. Preserve the required configuration and verify its effective behavior afterwards. Do not publish secret values in the inventory.
+
+## If something breaks after transfer
+
+Record the failed check and what it affects on #244. Restore the affected integration, permissions or deployment in the new organization, then rerun the transfer checks. Do not skip a required check or weaken branch protection to restore service.
+
+If the repository cannot be repaired in place, record the available options on #244, including whether a transfer back to the user account is feasible and who can authorize it. A transfer back is not automatic: GitHub can retire the old name, and the same checks apply in the other direction.
+
+Record the final state and any changed links on #244.
 
 ## Sequence
 

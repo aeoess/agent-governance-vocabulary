@@ -1,6 +1,6 @@
 # How shared files are decided
 
-Proposed in [#185](https://github.com/aeoess/agent-governance-vocabulary/issues/185). This file has no force until it is adopted under the bootstrap rule at the end.
+Proposed in [#185](https://github.com/aeoess/agent-governance-vocabulary/issues/185) and adopted on 21 October 2026 in [#201](https://github.com/aeoess/agent-governance-vocabulary/pull/201) under the bootstrap rule at the end.
 
 ## What this covers
 
@@ -106,7 +106,7 @@ No rule here applies to anything decided before it was adopted. Taking part in a
 
 ## Bootstrap
 
-This pull request proposes both the process and the conditions for adopting it. Adoption needs explicit approvals of the final commit from REMORA and invinoveritas, the two participating projects other than Agent Passport System, which authored it. Because this file is adopted in the early stage, its review window is 72 hours from the final commit if every project that answered #185 agrees to that on this pull request. Otherwise it is 14 days from the final commit. The participants for this review are the projects whose public opt-in on #185 exists when the pull request opens. Changing that set, in the table or otherwise, restarts the review. For this review, each project's representative is the maintainer who posted its opt-in on #185, as listed in the table. The fast opt-in rule does not operate before adoption. Any project that answered #185 can raise an objection during this review.
+[#201](https://github.com/aeoess/agent-governance-vocabulary/pull/201) proposed both the process and the conditions for adopting it, and the process was adopted under them on 21 October 2026. The conditions stay here as the record. Adoption needs explicit approvals of the final commit from REMORA and invinoveritas, the two participating projects other than Agent Passport System, which authored it. Because this file is adopted in the early stage, its review window is 72 hours from the final commit if every project that answered #185 agrees to that on this pull request. Otherwise it is 14 days from the final commit. The participants for this review are the projects whose public opt-in on #185 exists when the pull request opens. Changing that set, in the table or otherwise, restarts the review. For this review, each project's representative is the maintainer who posted its opt-in on #185, as listed in the table. The fast opt-in rule does not operate before adoption. Any project that answered #185 can raise an objection during this review.
 
 If those approvals are not given, the process stays unadopted. The two required approvals cannot be lowered.
 

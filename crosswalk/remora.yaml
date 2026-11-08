@@ -1,0 +1,281 @@
+# crosswalk/remora.yaml
+#
+# Maps REMORA's internal naming to the canonical vocabulary in vocabulary.yaml.
+#
+# REMORA is a deterministic policy decision and enforcement layer for
+# tool-calling agents. A policy decision point (PDP) evaluates a proposed tool
+# call and returns one of accept / verify / abstain / escalate. An accept is
+# carried to the enforcement point (PEP) as a signed, single-use
+# PolicyDecisionToken, and the governed dispatcher refuses to execute a call
+# that does not redeem a valid token. Decisions are recorded in a SHA-256
+# hash-chained audit log.
+#
+# Every source path below is pinned to commit
+# 1684a2d83e0711fdb947b1a3a43f1c012a84a4e8 of darklordVirtual/REMORA-research.
+# The REMORA code base is source-available under BUSL-1.1. This crosswalk file
+# alone is contributed under Apache-2.0.
+#
+# Scope of this first crosswalk: the policy-grant token and the tenant-scoped
+# REST control-plane audit chain. The separate JSONL development audit path,
+# execution leases, effect receipts and federation evidence are not mapped.
+
+system:
+  name: REMORA
+  home: https://github.com/darklordVirtual/REMORA-research
+  github: https://github.com/darklordVirtual/REMORA-research
+  pinned_commit: 1684a2d83e0711fdb947b1a3a43f1c012a84a4e8
+  role: >
+    Policy decision and enforcement layer for tool-calling agents. Issues a
+    signed authorization grant per accepted tool call and refuses execution
+    at the governed dispatcher without one. Does not provide agent identity,
+    reputation scoring or settlement.
+  license: "BUSL-1.1 (source-available)"
+
+license: Apache-2.0
+maintainer:
+  github: darklordVirtual
+  confirmed_at: "2026-11-07"
+
+# ─────────────────────────────────────────────────
+# SYSTEM ATTRIBUTES
+# Declared for the PolicyDecisionToken v3 format, the only REMORA format a
+# third party can verify without holding the issuer's secret.
+# ─────────────────────────────────────────────────
+system_attributes:
+  signature_capability: classical  # v3: Ed25519 over "REMORA/POLICY-GRANT/v3" || 0x00 || canonical payload; kid = "ed25519-" + SHA-256(public key). v1/v2 HMAC-SHA256 need a shared key and are out of scope.
+  canonicalization_profile: implementation-defined  # Python json.dumps(sort_keys=True, separators=(",", ":"), ensure_ascii=True); not RFC 8785/JCS (non-ASCII is escaped).
+  hash_family: sha-256  # context_hash, derived key IDs and audit linkage use SHA-256 (v3 signature algorithm is Ed25519).
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    remora_term: "PolicyDecisionToken (format v3)"
+    remora_field: "PolicyDecisionToken.action"
+    match: partial
+    evidence: emitted
+    source_path: "remora/enforcement/token.py#PolicyDecisionToken.action"
+    signed_payload_fields:
+      - action
+      - observation_hash
+      - request_id
+      - issued_at
+      - expires_at
+      - jti
+      - audience
+      - kid
+      - issuer
+      - context_hash
+      - format
+    divergence: >
+      The token is an authorization grant addressed to one enforcement point,
+      not a published attestation. It carries a signed expiry (default 300 s,
+      capped at 86400 s), a one-time jti consumed at redemption and an
+      audience, so it is meant to be used once and then discarded. The gate
+      additionally refuses tokens over 3600 s old by issued_at, even if their
+      signed expiry is later (remora/enforcement/gate.py). Single use holds
+      only when the redeeming call consumes the jti (check(..., consume=True)
+      on the governed execution paths) and the consumed-jti ledger is
+      durable: PostgreSQL (REMORA_PG_DSN), SQLite (REMORA_CHAIN_DB) or D1
+      (REMORA_STATE_ENDPOINT). Without one of these the gate falls back to an
+      in-process set, and consumed jti values are lost on process restart, so
+      a grant redeemed before the restart can be redeemed again after it
+      while it is still inside its expiry and age bounds. In strict mode
+      (strict=True, the setting used by servers/execution_api.py) an unsigned
+      token is refused, and a consuming check refuses a token without a jti.
+      In non-strict development mode (strict=False) an unsigned token can be
+      accepted with a warning, provided the applicable bindings
+      (observation_hash and context_hash, when the caller supplies them), the
+      audience and the temporal checks pass. On that unsigned legacy path a
+      missing expiry is permitted (an expiry that is present is enforced),
+      the 3600 s age limit still applies, and a token without a jti is not
+      tracked for single use. The action
+      field's type admits accept / verify / abstain / escalate, but production
+      mints grants only for accept and the PEP authorizes only accept.
+      These values are not a pass or fail on a named requirement. The
+      governance context (policy bundle, tool contract, principal, tenant) is
+      bound only as context_hash, a SHA-256 over AuthorizationContext; the
+      requirement itself is not in the signed payload, so a consumer learns
+      which context the decision was bound to but cannot read the policy from
+      the token. The subject is the tool call (observation_hash), not the
+      agent.
+    descriptor_dimensions:
+      enforcement_class: refusal_authority
+      validity_temporal: at_processing
+      refusal_authority: verifier
+      invariant_survival: pre_action
+      governed_action_class: [read, write, transfer]
+    descriptor_notes: >
+      refusal_authority is verifier because the PEP refuses execution when a
+      token fails verification, has expired, was already redeemed or its
+      context_hash does not match the context recomputed from the current
+      request (verification reasons in remora/enforcement/token.py,
+      one-time jti consumption in remora/enforcement/gate.py).
+      The gate governs registered tool calls, including reads, writes and
+      transfers. replay_class is not declared. observation_hash and
+      context_hash are cryptographic bindings to the evaluated observation
+      and the authorization context; they let a holder of those inputs check
+      that a token was minted for them, but REMORA does not ship a procedure
+      or vector showing that the original decision can be reconstructed from
+      them, so no replay class is claimed.
+    conformance_vectors: "vectors/v3/policy_grant.json"
+
+  # ── Gaps. Each note states what was searched, at the pinned commit. ──
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: >
+      Searched remora/ at the pinned commit. Adaptive learning state exists
+      (remora/aromer/) but no signed or exported artifact carrying a scored
+      trust assessment of an agent was found.
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: >
+      Searched remora/ at the pinned commit. No agent passport or identity
+      grade is issued. REMORA consumes identity from the deployment.
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: >
+      Searched remora/ at the pinned commit. The principal is an input bound
+      into AuthorizationContext; no identity verification status is issued.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No wallet or on-chain attestation found."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No wallet activity classification found."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: >
+      Searched remora/ at the pinned commit. The decision token attests the
+      outcome for a tool call, not the integrity of the reasoning behind it.
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No signed counterparty exposure score found."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No signed attestation over a repository, commit or output found."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No task outcome assessment is issued."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No settlement or payment receipt found."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No delegator-signed task completion attestation found."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No completion ratio over an observation window is issued."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No proof of agent identity persistence across key or host change found."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No commitment to model reasoning state is signed."
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    match: no_mapping
+    notes: >
+      Searched remora/ at the pinned commit. The decision token is signed by
+      the issuer only; no two-party signed receipt carrying a purpose was
+      found.
+
+# ─────────────────────────────────────────────────
+# DECISION TRAJECTORY (separate vocabulary.yaml namespace)
+# ─────────────────────────────────────────────────
+decision_trajectory:
+
+  decision_lineage:
+    canonical: decision_lineage
+    remora_term: "REST control-plane audit-record chain"
+    remora_field: "audit_record.envelope_previous_hash"
+    match: partial
+    evidence: emitted
+    source_path: "servers/api.py#audit_record.envelope_previous_hash"
+    divergence: >
+      The REST API emits envelope_audit_hash and envelope_previous_hash
+      on persisted audit records; these form a SHA-256 linked sequence
+      per tenant, not per agent. Different agents in one tenant share
+      that sequence, so it is only a partial decision_lineage mapping.
+      Each record also carries envelope_signature: HMAC-SHA256 over
+      envelope_audit_hash if REMORA_ENVELOPE_SIGNING_KEY is configured
+      (required by production startup). Only holders of that shared
+      deployment key can authenticate the HMAC; outsiders can inspect
+      hash linkage but cannot independently verify record authorship.
+      verify_audit_record_chain in remora/adapters/storage/control_plane.py
+      checks linkage and genesis, not HMAC authenticity. Detecting
+      truncation or a rewritten tail requires an externally retained
+      head/checkpoint. The separate unsigned JSONL development adapter
+      (remora/audit/hash_chain.py) is not mapped here.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: >
+      Policy bundle identity is present as policy_bundle_hash in the
+      authorization_context exported beside an accepted grant
+      (remora/execution/service.py#authorization_context) and is committed
+      inside the signed token's context_hash. It identifies the policy used
+      for this decision, not a versioned behavioral baseline for the agent.
+      The bundle digest itself is not a readable signed token field;
+      therefore it is not a baseline_revision artifact.
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: >
+      Searched remora/ at the pinned commit. Session-level intent drift is
+      computed for internal gating (remora/agent_hook/lyapunov_tracker.py),
+      but no signed or exported artifact carrying it was found.
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "Searched remora/ at the pinned commit. No trust score, so no rate of change over one."
+
+# ─────────────────────────────────────────────────
+# VERIFICATION
+# ─────────────────────────────────────────────────
+verification:
+  jwks_url: null
+  test_vectors: "https://github.com/darklordVirtual/REMORA-research/blob/1684a2d83e0711fdb947b1a3a43f1c012a84a4e8/vectors/v3/policy_grant.json"
+  notes: >
+    REMORA is a library and self-hosted service, not a central issuer, so
+    there is no public JWKS. A deployment distributes its Ed25519 verification
+    keys to its enforcement points (REMORA_PDP_VERIFY_KEYS_ED25519). The
+    language-neutral vector includes the tagged signing preimage, public key
+    and signature, which an independent verifier can check. The custody test
+    at tests/test_token_v3_custody.py separately checks verify-only enforcement
+    and that the kid is derived from the public key.

@@ -82,17 +82,19 @@ maintainer:
 
 # signature_capability: spec Section 3.3 Signature row lists Ed25519 and
 # EIP-191 (secp256k1, low-s) encodings. Both classical.
-# canonicalization: spec Section 3.1 keeps continuity-canonical/0.2, with keys
+# canonicalization: continuity-canonical/0.2, fully specified in spec Section 3.1, with keys
 # sorted by UTF-8 byte order and its own escaping rule. Every C0 control
 # code point is written as a lowercase \u00xx escape, "including the
 # characters that JSON allows as \b \t \n \f \r". RFC 8785 writes \n, \t and the others as
 # two-character escapes, so the two diverge on any string containing those
-# characters. Hence implementation-defined.
+# characters. The rule is project-specified, not RFC 8785. The registry has no
+# value for a project-specified rule, so the field takes implementation-defined
+# and the rule is named here.
 # hash_family: spec Section 3.2: "Format 2 uses no other hash", SHA-256,
 # apart from a fixed literal rulesHash carried as a constant.
 system_attributes:
   signature_capability: classical
-  canonicalization_profile: implementation-defined  # continuity-canonical/0.2, spec Section 3.1
+  canonicalization_profile: implementation-defined  # continuity-canonical/0.2, project-specified in spec Section 3.1
   hash_family: sha-256
 
 # Search basis for every no_mapping and false_analog row below: the draft -00
@@ -134,7 +136,13 @@ signal_types:
       request context, and replay establishes whether the recorded
       authorization decision follows from the signed history. The session
       does not sign the admission record itself, which a later owner
-      attestation commits. Two further limits. (1) The governance
+      attestation commits. The maintainer added two facts on PR #250, checked
+      against spec and code at 983a508c. Replay requires the signing
+      session's agent to equal request.actorId, and the proof names the
+      owner-signed grant records it rests on (authorityEvidence: authorityId,
+      grantEventId, grantEventPosition). So an ALLOW is session-signed,
+      grounded in owner-signed grants and checked by replay. No owner key
+      signs the admission, which keeps the match partial. Two further limits. (1) The governance
       requirement is the recorded grants, prohibitions and budgets, not an
       external policy. External policy composition with engines such as Cedar and OpenFGA is
       described in the README and draft Section 7 and is not part of the
@@ -179,8 +187,11 @@ signal_types:
       the admitted terms. Recorded as false_analog because a counterparty-signed
       outcome bound to an admitted intent is close enough to be wired in as
       a settlement witness. The verification against terms is the missing
-      property. Open question 3 asks whether another IronTrellis artifact
-      carries a verified settlement result.
+      property. The maintainer confirmed on PR #250 that no other artifact
+      carries a verified settlement. Core binds the counterparty's amount,
+      payloadDigest and outcome to the intent and does not compare amount
+      with the admitted amount. An auditor can make that comparison, because
+      intentDigest binds the declaration.
 
   bilateral_receipt:
     canonical: bilateral_receipt
@@ -231,7 +242,9 @@ signal_types:
       the same agent across unrelated histories or principals. A role
       handover is a different case and is not continuity: in the draft
       example, after the handover "grant G does not pass to A2", and A2 is
-      a different agent.
+      a different agent. The maintainer confirmed both reasons on PR #250.
+      Continuity holds within one history only, and a fresh genesis must not
+      be presented as a continuation.
 
   trust_verification:
     canonical: trust_verification
@@ -252,8 +265,10 @@ signal_types:
     notes: >
       No task-completion attestation by a delegating agent in draft -00 or
       spec r5.2. Four nearby records were checked. TRANSACTION_OUTCOME_RECORDED
-      (confirmed, failed, disputed or unknown) is signed by the actor's own
-      session, a first-party claim. OUTCOME_OBSERVATION_RECORDED (type 21,
+      (confirmed, failed, disputed or unknown) is signed by the actor's
+      session or by the session of the agent named in attesterId (spec
+      Section 8.8). It is a claim by the actor or a named attester about the
+      operation's outcome, not an attestation by the delegating agent. OUTCOME_OBSERVATION_RECORDED (type 21,
       E5 and E6 histories only) records a remote-service report
       acknowledgment for an intent under an administrative authorization
       (docs/reference/history-events.md and packages/core/src/events.ts at
@@ -329,7 +344,8 @@ decision_trajectory:
     evidence: emitted
     source_path: "store line previousHash and recordHash, spec Sections 4.1 and 4.3"
     notes: >
-      recordHash(p) is SHA-256 over a domain string, recordHash(p−1),
+      recordHash(p) is SHA-256 over a domain string, a 0x00 separator,
+      recordHash(p−1),
       eventHash(e_p) and the position, so each entry references its
       predecessor by content hash, and admissions and refusals sit in that
       chain at their positions. Partial, for two stated reasons. (1) One
@@ -368,10 +384,15 @@ descriptor_dimensions:
     note_validity: "An ordered, append-only sequence of records. 'The state at position p is a deterministic function of records 0 through p.'"
     note_replay: >
       replay_class is left unset while the registry clarifies the criteria
-      for each value. Drafter's reading for the author to check: admissions
-      and CORE and BUDGET refusals are re-derived on replay, which reads as
-      decision_replay or stronger for those records. CONNECTOR refusals,
-      effects and counterparty envelopes are "attested, not re-derived".
+      for each value. The maintainer confirmed this reading on PR #250. Every
+      accepted record is checked on replay, but only admissions and CORE and
+      BUDGET refusals have their authorization decisions recomputed, which
+      reads as decision_replay or stronger for those records. For other
+      records the signatures and bindings are verified and the content is
+      not re-derived. CONNECTOR refusals, effects and counterparty envelopes
+      are "attested, not re-derived". "From the export alone" holds for an
+      export from position 0. A partial export needs an authenticated
+      starting root and its referenced events (spec Section 15).
 
   admission_record:
     validity_temporal: at_issuance
@@ -382,12 +403,20 @@ descriptor_dimensions:
       verification. That does not show that a tool execution was blocked or
       allowed in the world, and the draft keeps the two apart: "A deployment
       that wants refusals enforced as well as recorded MUST place the
-      decision point where the action is executed".
+      decision point where the action is executed". The maintainer
+      confirmed on PR #250 that enforcement is outside what the record
+      states. IronTrellis decides and explains, and the hook, gateway or
+      runtime enforces. The history can carry the runtime's own signed
+      consumption claim (TRANSACTION_INTENT_CONSUMED) and reconciliation
+      findings (spec Section 10.3). Neither proves that the decision point
+      performed the action, and the findings carry no completeness
+      guarantee.
     note_refusal: >
       refusal_authority left unset. The engine evaluates recorded authority.
       It is not necessarily the issuer of the grant or the enforcement point
       that runs the tool, and which party refuses depends on the
-      deployment's placement of the decision point. Open question 4.
+      deployment's placement of the decision point, as the maintainer
+      confirmed on PR #250.
     note_invariant: >
       invariant_survival left unset. The admission precedes consumption and
       outcome records for the same intent in the recorded sequence, and
@@ -425,44 +454,15 @@ irontrellis_specific_terms:
   head: "'The identity of a history prefix: chain hash, position and time of the last record.' Admissions and refusals name the head they were decided on. [evidence]"
 
 # ──────────────────────────────────────────────────────────────
-# OPEN QUESTIONS FOR THE FORMAT'S AUTHOR
+# OPEN QUESTIONS
+# The five questions to the maintainer were answered on PR #250 (comment
+# 6726850008) and are folded into the rows above, with his three
+# corrections. One question remains, on the registry side.
 # ──────────────────────────────────────────────────────────────
 open_questions:
-  - id: q1
-    topic: governance_attestation signer
-    question: >
-      The actor's session signs the decision-time challenge, and the
-      recorded ALLOW gets its weight from replay against owner-signed
-      grants. Is partial the right
-      reading, or do you treat an admission as an owner-grounded attestation
-      once a verifier has replayed it?
-  - id: q2
-    topic: entity_continuity
-    question: >
-      When an owner advances an agent's control epoch and admits a new
-      session under the same agentId, can an outside verifier establish that
-      the same agent continues using the authenticated history alone? Is
-      that conclusion limited to the same history?
-  - id: q3
-    topic: settlement
-    question: >
-      The counterparty envelope is mapped as false_analog to
-      settlement_witness because the engine records the counterparty's claim
-      and does not verify it against the declared terms. Does any other
-      IronTrellis artifact carry a verified settlement result that should be
-      mapped instead?
-  - id: q4
-    topic: refusal authority
-    question: >
-      enforcement_class, refusal_authority and invariant_survival are left
-      unset on the admission because the history records decisions and the
-      deployment places the enforcement point. Is there a way for a verifier
-      to tell from the history whether a given admission was enforced at the
-      point of execution, or is that outside what the record states?
-  - id: q5
+  - id: r1
     topic: replay class
     question: >
-      Which records do you consider fully replayable from the export alone?
-      The reading above is admissions and CORE and BUDGET refusals. It is
-      left unset in this file until the registry settles the replay_class
-      criteria.
+      The maintainer confirmed which records have their decisions
+      recomputed on replay (see authority_history). replay_class stays
+      unset until the registry settles which value that reading takes.

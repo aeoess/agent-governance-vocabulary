@@ -97,6 +97,7 @@ Committed contributors so far:
 - `crosswalk/nobulex.yaml` - @arian-gogani
 - `crosswalk/pathcourse-health.yaml` - @alex-pathcourse
 - `crosswalk/pic.yaml` - @madeinplutofabio
+- `crosswalk/remora.yaml` - @darklordVirtual
 - `crosswalk/rfc-category-taxonomy.yaml` - reverse crosswalk mapping
   the ten MULTI-ATTESTATION-SPEC signal_types to the (proposed) A2A
   RFC trust evidence category taxonomy. Drafted on

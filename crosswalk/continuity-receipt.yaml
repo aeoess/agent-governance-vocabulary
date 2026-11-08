@@ -1,0 +1,347 @@
+# crosswalk/continuity-receipt.yaml
+#
+# Causal Provenance Receipts (wire format continuity-receipt/0.5) -> Agent Governance Vocabulary
+#
+# Mapped artifact: the signed, hash-chained task record defined by SPEC.md,
+# plus its companion verification receipt. Sources, all at
+#   lbailey94/continuity-receipt main @ 330461bcc53bec87e736f10fc8e0db21fd55a58b (2026-11-07)
+#   SPEC.md                                    sha256 08f129878a5147db2e2c213925d0155cf6506b0b2d4339495afd6e3252d0883c
+#   THREAT_MODEL.md                            sha256 50008bcf54a0cbe812761c8f95f9e6bb224deb69dff73dc0a61c7d6ea34cc72e
+#   VERIFICATION_RECEIPTS.md                   sha256 45dd18277cf80cd45e7bbc91e79c9091e781a62c876436b4c2078e29863e43be
+#   schema/continuity-receipt-0.5.schema.json  sha256 a0494bc6a3bab8da56a8c6787dfb0b465c3321cb4751b73a6ce5299b3c02f837
+#   continuity_receipt/verify.py               sha256 ee2070fb7b568af328111f38a2c2294c96199694dd12c897a86aaba8f060d03a
+# and the SCITT profile of the same format in
+#   draft-bailey-scitt-agent-session-receipt-00 (2026-10-27)
+#                                              sha256 e27f5ca2c3edb19f8af93a5d4bc05a80eca826328e9521e2735a8ed9ad66f57e
+# Section numbers are "SPEC n" for SPEC.md and "draft n" for the Internet-Draft.
+#
+# Scope note: rows are for continuity-receipt/0.5, the published format. SPEC.md
+# calls 0.6 an experimental development candidate. Its authority.grant record
+# and chain_head member were read in schema/continuity-receipt-0.6.schema.json
+# and verify.py only, because the SPEC_0.6_DRAFT.md that SPEC.md cites is not in
+# the repository at this commit. Notes name them where they would change a row.
+# No row rests on them.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the protocol's maintainer. It is offered for the
+# maintainer to correct or confirm.
+
+system:
+  name: Causal Provenance Receipts
+  short_name: CPR
+  home: https://github.com/lbailey94/continuity-receipt
+  spec: https://github.com/lbailey94/continuity-receipt/blob/330461bcc53bec87e736f10fc8e0db21fd55a58b/SPEC.md
+  spec_version: "continuity-receipt/0.5 (published 2026-09-30). The SCITT profile draft-bailey-scitt-agent-session-receipt-00 also covers 0.6 members (authority.grant, chain_head) that are not mapped here."
+  repo: https://github.com/lbailey94/continuity-receipt
+  implementation: "Python continuity-receipt 0.5.4 (PyPI), Rust continuity-receipt 0.5.2 (crates.io), JavaScript continuity-receipt 0.1.2 (npm), per README at 330461b. Not run for this crosswalk."
+  role: >
+    "A Continuity Receipt is a portable, independently verifiable,
+    privacy-preserving record of one governed task" (SPEC 1), written as an
+    ordered chain of signed records. Per SPEC 1, "a receipt attests what its
+    issuer signed, not that the described events occurred".
+  identity_layer: >
+    issuer.id and sig.key are did:key URIs that the verifier resolves for
+    signature checks. agent_id, counterparty.id, succession authorities and
+    offer_id are "opaque labels" whose form the verifier does not check (SPEC 3).
+  upstream_license: Apache-2.0
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: lbailey94
+    project: lbailey94/continuity-receipt
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: "Ed25519 over canonical bytes" (SPEC 5). A hybrid 0.6-pq
+# profile is a candidate only (draft 10) and is not counted.
+# canonicalization: RFC 8785 JCS (SPEC 5, draft 4). SPEC 5 describes the 0.1
+# reference as a pinned JCS subset that rejects floats.
+# hash_family: SHA-256 with a "sha256:" prefix (SPEC 5).
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row below: SPEC.md,
+# THREAT_MODEL.md and draft-bailey-scitt-agent-session-receipt-00 read in full,
+# VERIFICATION_RECEIPTS.md lines 1 to 70, section E of CONFORMANCE_TABLE.md, the
+# state.commitment definition in the 0.5 schema, the cross-record and chain-head
+# parts of verify.py, a search of verify.py for task.execution, lines 91 to 175
+# of consumer.py, and vector 13_attestation_valid.json, at the pins above.
+# Not read: the rest of consumer.py, memory_resume.py, memory_snapshot.py,
+# pacmi.py, the experimental local receiver, other vectors, the examples.
+# A no_mapping row states that no corresponding primitive was identified in
+# this scope. It is not a claim about the project's capability outside it.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "task.decision receipt with body.decision allow"
+    match: partial
+    evidence: emitted
+    source_path: receipts[].body.decision
+    notes: >
+      A task.decision receipt records the issuer's allow, deny or
+      require_approval decision for an action, together with
+      action_args_hash, policy_version and input_provenance (SPEC 4.2).
+
+      Partial because an allow records the issuer's authorization decision
+      under a named policy. It does not independently establish that the
+      declared policy requirements were satisfied. The policy is named by
+      strings, with no digest of its text. The verifier checks that the
+      decision's policy_version equals the one on session.pass.created
+      (SPEC 7 step 4), and does not evaluate the policy's contents. The record
+      does not establish that the action was executed. A deny or
+      require_approval is outside this row. Per SPEC 1.1, grounding "comes from
+      counterparties, anchors, and external evidence, not from the format
+      alone".
+    issuers_in_production: []
+    signed_payload_fields:
+      - receipts[].body.decision
+      - receipts[].body.action
+      - receipts[].body.action_args_hash
+      - receipts[].body.policy_version
+      - receipts[].body.input_provenance
+
+  settlement_witness:
+    canonical: settlement_witness
+    internal: "settlement receipt (rail, rail_ref, amount, gated_on_delivery, settled_at)"
+    match: partial
+    evidence: emitted
+    source_path: receipts[].body.settled_at
+    notes: >
+      A settlement receipt records the issuer's signed claim of settlement,
+      including rail, rail_ref, amount and settled_at (SPEC 4.6). Its subject
+      is the settlement event.
+
+      Partial because the canonical term includes verification against
+      expected terms and an outcome verdict. CPR emits no settlement-specific
+      outcome verdict. Its verifier checks the spend cap when the pass sets
+      one, and checks delivery ordering when gated_on_delivery is true (SPEC 7
+      step 4, _check_cross_record in verify.py). It does not resolve rail_ref,
+      verify that value moved, or compare the settlement with the off-receipt
+      agreement terms (SPEC 4.8). rail also admits none.
+
+      A TRUSTED bundle verdict means that the applicable receipt checks passed.
+      It does not establish that the settlement occurred as claimed.
+    issuers_in_production: []
+    signed_payload_fields:
+      - receipts[].body.rail
+      - receipts[].body.rail_ref
+      - receipts[].body.amount
+      - receipts[].body.gated_on_delivery
+      - receipts[].body.settled_at
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "delivery.attestation with body.counterparty.attestation, and agreement.offer plus agreement.accept"
+    match: false_analog
+    notes: >
+      Two structures sit near the canonical term and neither carries both
+      parties' signatures over one preimage. In delivery.attestation the
+      counterparty signs the canonical bytes of the receipt body with
+      counterparty.attestation removed (SPEC 4.4), and the issuer signs the
+      whole envelope, attestation included (SPEC 3). The two preimages differ.
+      agreement.offer and agreement.accept are two receipts signed by two
+      parties, linked by offer_ref, the digest of the offer (SPEC 4.9). Each
+      party signs its own record. Neither structure has a purpose field.
+      Both contain signatures from different parties, and neither establishes
+      the canonical two-signature property over one shared preimage. Treating
+      either as a bilateral_receipt would misstate what both parties signed.
+
+  peer_review:
+    canonical: peer_review
+    internal: "body.counterparty.attestation on delivery.attestation"
+    match: false_analog
+    notes: >
+      The attestation is a counterparty signature over request_hash,
+      response_hash and the rest of the body (SPEC 4.4). The canonical term is
+      a task-completion attestation signed by the delegating agent. The spec
+      does not state the counterparty's role, and the signed body does not
+      explicitly assert that the task was completed as required. The
+      attestation is optional and its "absence is reported in the verifier
+      summary but does not change the verdict" (SPEC 4.4). A partial match
+      would need evidence of both the delegator role and completion semantics.
+      Question q2 asks about this.
+
+  entity_continuity:
+    canonical: entity_continuity
+    internal: "authority.succession, and the continuity-receipt format name"
+    match: false_analog
+    notes: >
+      The canonical term answers whether this is still the same agent across
+      an infrastructure change. authority.succession records "an authority
+      hand-off" from from_authority to to_authority, with reason handoff,
+      expiry or operator_change (SPEC 4.7), so its subject is who holds an
+      authority and the two sides may be different parties. The format name
+      refers to a task chain and to session resumption. The draft's question
+      is whether the state being resumed is an "un-truncated continuation of
+      the prior session" (draft 1), which concerns stored records and not agent
+      identity. agent_id is an opaque label the verifier does not check (SPEC 3).
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "verifier verdict TRUSTED, and the verification receipt"
+    match: false_analog
+    notes: >
+      The canonical term is identity-layer status. TRUSTED is the verdict of a
+      bundle check, meaning all checks passed (SPEC 7). A verification receipt
+      records the verifier's signed result for a particular bundle
+      (VERIFICATION_RECEIPTS.md). Neither establishes an agent's identity-layer
+      standing. The word TRUSTED makes substitution plausible. The 0.6 schema adds
+      principal.assurance (self_asserted, issuer_verified) on authority.grant,
+      which is experimental and not mapped here.
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "delivery.attestation has optional quality_flags with no defined values (SPEC 4.4). No assessment of completed work bound to a wallet found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "task.decision carries an optional rationale_hash, the hash of an off-receipt explanation (SPEC 4.2). No attestation about reasoning found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "SPEC 1.2 lists a reputation ledger as a non-goal. No scored assessment of agent behavior found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "task.decision names the model by provider, id and optional version (SPEC 4.2). No commitment to a structural property of reasoning state found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for an agent found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "task.execution records sandbox_class and, for bwrap, a signed runner_profile (SPEC 0.5 changes). That describes one execution. No signed posture assessment of an artifact found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate metric over a window found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b. task.termination reason is per task."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet-holdings field found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet-behavior classification found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "per-task receipt chain (seq, prev)"
+    match: false_analog
+    notes: >
+      CPR uses seq and prev to create an ordered, hash-linked chain of receipts
+      for one task_id (SPEC 3). The verifier checks contiguous sequence numbers
+      and predecessor hashes (SPEC 7 step 2).
+
+      The canonical term is a sequence of decisions affecting one agent, each
+      referencing its predecessor by content hash. A CPR chain links all
+      receipt types, including execution, delivery and termination, and no
+      record links one task to the next in the reviewed sources. Both
+      structures use predecessor hashes, so a consumer could mistake the task
+      chain for a decision lineage. That substitution would change the meaning
+      of the record.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "policy_version names a policy, and no behavioral baseline found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# Drafter's reading, each value with its basis, open to the maintainer's
+# correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  receipt_chain:
+    validity_temporal: sequence
+    note_validity: "Ordering within a chain is by seq, and verifiers must not fail on clock skew alone (SPEC 3)."
+    refusal_authority: consumer_policy
+    note_refusal: >
+      The verifier reports a verdict (SPEC 7). A relying consumer decides
+      whether that evidence is enough to accept or reject the task, and SPEC
+      4.4 leaves required attestations to the consumer. The published Python
+      consumer policy covers receipt specs 0.1 to 0.4 per README, so it does
+      not establish a tested 0.5 consumer refusal path.
+    enforcement_class: advisory
+    note_enforcement: >
+      The format records issuer claims and the verifier reports their
+      consistency and cryptographic validity. The reviewed format does not
+      establish execution-time enforcement. Any gate that enforces decisions
+      needs separate assessment.
+    note_replay: >
+      replay_class left unset. Arguments, results and sources are bound by hash
+      and receipts "never contain raw payloads" (SPEC 6), so recomputing a
+      decision needs bytes held elsewhere. The registry has no per-class
+      criteria yet (question raised on aeoess/agent-governance-vocabulary#231).
+
+  task_decision:
+    note_invariant: >
+      invariant_survival left unset. SPEC 4.2 records the issuer's decision
+      for an action. No rule that a decision must precede the corresponding
+      execution was found in SPEC 7, and task.execution appears in verify.py
+      only in record shape checks. Nothing reviewed establishes that the
+      decision controls dispatch. Question q3 asks about this.
+    note_action_class: "governed_action_class left unset. action is an open tool or verb string (SPEC 4.2)."
+
+# ──────────────────────────────────────────────────────────────
+# CPR-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET
+# Where given, the nearest concept in vocabulary-lifecycle.yaml (INCUBATING,
+# descriptive only) is in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+cpr_specific_terms:
+  four_verdicts: "TRUSTED, PROVISIONAL, INSUFFICIENT_EVIDENCE, UNTRUSTED. Draft 5 requires verifiers to separate missing evidence from contradictory or tampered evidence. [evidence]"
+  task_termination: "Signed issuer claim that a task stopped, with reason completed, budget_exhausted, time_expired, killed or error (SPEC 4.5). Required for a task to verify as complete. No single lifecycle term covers all of these outcomes."
+  agreement_ref: "Digest of the accept referenced by bound decision, execution, delivery and settlement records (SPEC 4.9, 7). Records the agreement linkage and does not independently show resource authorization."
+  mandate_ref: "Hash on session.pass.created naming the mandate behind the pass (SPEC 4.1). The verifier checks presence (SPEC 7 step 4), which does not establish the mandate's validity or the issuer's external authority."
+  verification_receipt: "A verifier's signed record of bundle_digest, verdict, errors, reasons and summary. Not a chain member (VERIFICATION_RECEIPTS.md). [evidence]"
+  state_commitment: "Record with state_kind, scope, count, head_digest and optional merkle_root (0.5 schema). SPEC.md cites a section 4.10 that is absent at this commit. [evidence]"
+  selective_redaction: "Optional fields replaced by a salted commitment at issuance, with the tail re-signed (SPEC 6). [evidence]"
+
+# ──────────────────────────────────────────────────────────────
+# OPEN QUESTIONS FOR THE MAINTAINER
+# ──────────────────────────────────────────────────────────────
+open_questions:
+  q1: "Does a settlement receipt assert only the issuer's claim, or is there a defined way to verify settlement against external rail evidence and the agreed terms? Does the issuer's role change the required verification?"
+  q2: "Who may sign counterparty.attestation on delivery.attestation? Can the signer be the delegating agent, and does the signature assert task completion or only acknowledge the signed request and response hashes?"
+  q3: "Must task.decision be recorded and verified before the corresponding task.execution? I found no such check in SPEC 7 or verify.py, so invariant_survival is unset. Is a gate expected to enforce that order?"
+  q4: "SPEC.md refers to section 4.10 for state.commitment and to SPEC_0.6_DRAFT.md and REVOCATION_DISTRIBUTION.md, which are not at 330461b. Which published source should consumers treat as the authority for those features?"

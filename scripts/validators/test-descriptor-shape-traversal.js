@@ -174,5 +174,106 @@ console.log('\nIssue #145 — descriptor_dimensions shape traversal\n')
     'a canonical value in a flat block was rejected')
 }
 
+// 6. An unknown dimension name is reported, not skipped. A misspelling such as
+// `replay_clas` used to pass with no diagnostic because nothing read it.
+{
+  const r = runWith(`${HEAD}descriptor_dimensions:
+  replay_clas: decision_replay
+`)
+  check('unknown dimension: reported on this fixture\'s own line',
+    fixtureLineHas(r.out, 'descriptor_dimensions.replay_clas'),
+    'an unknown dimension name passed with no diagnostic')
+  check('unknown dimension: validator exits non-zero', r.exit !== 0, `exit=${r.exit}`)
+  check('unknown dimension: reported as an error, not a warning',
+    fixtureLines(r.out).some(l => l.includes('replay_clas') && !/^\s*WARN/.test(l)),
+    'the unknown dimension was reported only as a warning')
+}
+
+// 7. Note keys are prose and stay silent, in both shapes.
+{
+  const nested = runWith(`${HEAD}descriptor_dimensions:
+  governance_attestation:
+    refusal_authority: issuer
+    note_refusal: |
+      Prose beside a value.
+    notes: |
+      More prose.
+`)
+  check('note keys, nested: validator exits 0', nested.exit === 0, `exit=${nested.exit}`)
+  check('note keys, nested: no diagnostic naming this fixture\'s descriptor block',
+    !fixtureLineHas(nested.out, 'descriptor_dimensions'),
+    'a note_* or notes key was reported as an unknown dimension')
+  const flat = runWith(`${HEAD}descriptor_dimensions:
+  refusal_authority: issuer
+  note_refusal: Prose beside a value.
+`)
+  check('note keys, flat: validator exits 0', flat.exit === 0, `exit=${flat.exit}`)
+  check('note keys, flat: no diagnostic naming this fixture\'s descriptor block',
+    !fixtureLineHas(flat.out, 'descriptor_dimensions'),
+    'a note_* key in a flat block was reported as an unknown dimension')
+}
+
+// 8. A misspelled dimension inside a per-signal block is reported at its full
+// nested path, so a later traversal change cannot drop nested blocks silently.
+{
+  const r = runWith(`${HEAD}descriptor_dimensions:
+  governance_attestation:
+    replay_clas: decision_replay
+`)
+  check('nested unknown dimension: validator exits non-zero', r.exit !== 0, `exit=${r.exit}`)
+  check('nested unknown dimension: reported at the full nested path',
+    fixtureLineHas(r.out, 'descriptor_dimensions.governance_attestation.replay_clas'))
+}
+
+// 9. Accepted prose shapes: bare `note`, and the short-form `<dimension>_notes`
+// that merged crosswalks use (replay_notes for replay_class).
+{
+  const r = runWith(`${HEAD}descriptor_dimensions:
+  replay_class: decision_replay
+  note: Prose.
+  replay_notes: Prose about replay.
+  replay_class_notes: More prose.
+`)
+  check('accepted prose shapes: validator exits 0', r.exit === 0, `exit=${r.exit}`)
+  check('accepted prose shapes: no diagnostic naming this fixture\'s descriptor block',
+    !fixtureLineHas(r.out, 'descriptor_dimensions'))
+}
+
+// 10. Prose keys that hide a mistake are errors.
+const rejects = [
+  ['a note holding a list', `  notes:\n    - a\n    - b\n`, 'descriptor_dimensions.notes'],
+  ['a note holding an object', `  note_enforcement:\n    rule: strict\n`, 'descriptor_dimensions.note_enforcement'],
+  ['a _notes key whose prefix is no dimension', `  replay_clas_notes: Prose.\n`, 'descriptor_dimensions.replay_clas_notes'],
+  ['a note holding a descriptor value', `  replay_class_notes: decision_replay\n`, 'descriptor_dimensions.replay_class_notes'],
+  ['a numeric descriptor value', `  replay_class: 3\n`, 'descriptor_dimensions.replay_class'],
+  ['an object descriptor value', `  replay_class:\n    level: decision_replay\n`, 'descriptor_dimensions.replay_class'],
+  ['a list holding a non-string value', `  governed_action_class:\n    - write\n    - 7\n`, 'descriptor_dimensions.governed_action_class'],
+]
+for (const [name, body, where] of rejects) {
+  const r = runWith(`${HEAD}descriptor_dimensions:\n${body}`)
+  check(`${name}: validator exits non-zero`, r.exit !== 0, `exit=${r.exit}`)
+  check(`${name}: reported at ${where}`, fixtureLineHas(r.out, where))
+}
+
+// 11. Prose keys beside per-signal blocks: accepted when they are prose, and
+// checked like any other note rather than skipped by the nested walk.
+{
+  const ok = runWith(`${HEAD}descriptor_dimensions:
+  governance_attestation:
+    refusal_authority: issuer
+  notes: Prose beside the per-signal blocks.
+`)
+  check('top-level prose beside nested blocks: validator exits 0', ok.exit === 0, `exit=${ok.exit}`)
+  check('top-level prose beside nested blocks: not reported as mixed shape', !fixtureLineHas(ok.out, 'mixed shape'))
+  const bad = runWith(`${HEAD}descriptor_dimensions:
+  governance_attestation:
+    refusal_authority: issuer
+  refusal_authority_notes: issuer
+`)
+  check('top-level note holding a value beside nested blocks: validator exits non-zero', bad.exit !== 0, `exit=${bad.exit}`)
+  check('top-level note holding a value beside nested blocks: reported at its path',
+    fixtureLineHas(bad.out, 'descriptor_dimensions.refusal_authority_notes'))
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`)
 process.exit(failed === 0 ? 0 : 1)

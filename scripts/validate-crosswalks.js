@@ -418,6 +418,44 @@ function validateSignalTypes(doc, file) {
   }
 }
 
+// Prose annotations that may sit beside descriptor values: `note`, `notes`,
+// `<dimension>_notes` and `note_<anything>`. Every other key in a descriptor
+// block is expected to name a dimension in vocabulary.yaml.
+function isDescriptorNoteKey(name) {
+  return name === 'note' || name === 'notes' || name.endsWith('_notes') || name.startsWith('note_')
+}
+
+// `<prefix>_notes` must point at a real dimension: either its full name
+// (replay_class_notes) or its name without the last word (replay_notes), the
+// short form merged crosswalks use. A misspelled prefix (replay_clas_notes)
+// would otherwise pass as prose.
+function notesPrefixIsKnown(name) {
+  if (!name.endsWith('_notes')) return true
+  const prefix = name.slice(0, -'_notes'.length)
+  return Object.keys(descriptorEnums).some(dim =>
+    dim === prefix || dim.slice(0, dim.lastIndexOf('_')) === prefix)
+}
+
+// Every value any descriptor dimension allows, to catch a value written into
+// a prose key by mistake (replay_class_notes: decision_replay).
+function isDescriptorEnumValue(text) {
+  const t = text.trim()
+  return Object.values(descriptorEnums).some(allowed => allowed.has(t))
+}
+
+// A prose key is checked for the three mistakes that would hide a descriptor:
+// a non-text value, a `_notes` prefix that names no dimension, and a descriptor
+// value written as the whole note.
+function checkDescriptorNote(name, value, file, dotPath) {
+  if (typeof value !== 'string') {
+    err(file, `${dotPath}: a note must be prose text, got ${Array.isArray(value) ? 'array' : typeof value}`)
+  } else if (!notesPrefixIsKnown(name)) {
+    err(file, `${dotPath}: "${name.slice(0, -'_notes'.length)}" is not a descriptor dimension or its short form, so this note annotates nothing`)
+  } else if (isDescriptorEnumValue(value)) {
+    err(file, `${dotPath}: holds the descriptor value "${value.trim()}" as prose, so no dimension is set. Put the value under its dimension key.`)
+  }
+}
+
 // Validate a single descriptor block of shape { dim_name: value | [values] }.
 // dotPathPrefix is the dotted path used in diagnostic messages — keeps the
 // existing message format on the top-level nested-per-signal path while
@@ -426,12 +464,22 @@ function validateSignalTypes(doc, file) {
 function validateDescriptorBlock(block, file, dotPathPrefix) {
   if (!block || typeof block !== 'object') return
   for (const [dimName, value] of Object.entries(block)) {
-    if (dimName.endsWith('_notes')) continue
+    if (isDescriptorNoteKey(dimName)) {
+      checkDescriptorNote(dimName, value, file, `${dotPathPrefix}.${dimName}`)
+      continue
+    }
     const allowed = descriptorEnums[dimName]
-    if (!allowed) continue
+    if (!allowed) {
+      // A misspelled dimension used to pass silently, because nothing read it.
+      err(file, `${dotPathPrefix}.${dimName}: not a descriptor dimension in vocabulary.yaml (known: ${Object.keys(descriptorEnums).join(', ')}). Prose beside a value goes in a key named notes, <dimension>_notes or note_<name>.`)
+      continue
+    }
     const values = Array.isArray(value) ? value : [value]
     for (const v of values) {
-      if (typeof v !== 'string') continue
+      if (typeof v !== 'string') {
+        err(file, `${dotPathPrefix}.${dimName}: values must be strings from the vocabulary, got ${v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v}`)
+        continue
+      }
       if (allowed.has(v)) continue
       const dotPath = `${dotPathPrefix}.${dimName}`
       const override = isLegacyOverride(file, dotPath, v)
@@ -452,14 +500,15 @@ function validateDescriptorBlock(block, file, dotPathPrefix) {
 //   mixed  — both appear in one block
 //   empty  — nothing to classify
 //
-// `*_notes` keys are prose annotations that occur in both shapes and are
-// already skipped by validateDescriptorBlock, so they do not vote on shape.
-// Counting them would make an annotated nested block look mixed.
+// Prose keys (see isDescriptorNoteKey) occur in both shapes and do not vote on
+// shape. Counting them would make an annotated nested block look mixed. They
+// are checked on their own: inside validateDescriptorBlock for a flat block,
+// and by validateDescriptors for a nested or note-only block.
 function classifyDescriptorShape(dims) {
   let nested = 0
   let flat = 0
   for (const [key, value] of Object.entries(dims)) {
-    if (key.endsWith('_notes')) continue
+    if (isDescriptorNoteKey(key)) continue
     if (value && typeof value === 'object' && !Array.isArray(value)) nested++
     else flat++
   }
@@ -497,8 +546,16 @@ function validateDescriptors(doc, file) {
       validateDescriptorBlock(dims, file, 'descriptor_dimensions')
     } else if (shape === 'nested') {
       for (const [sigKey, dimBlock] of Object.entries(dims)) {
+        if (isDescriptorNoteKey(sigKey)) continue
         if (!dimBlock || typeof dimBlock !== 'object') continue
         validateDescriptorBlock(dimBlock, file, `descriptor_dimensions.${sigKey}`)
+      }
+    }
+    // Top-level prose keys beside per-signal blocks, or in a block that holds
+    // only prose, are not reached by the walks above.
+    if (shape === 'nested' || shape === 'empty') {
+      for (const [key, value] of Object.entries(dims)) {
+        if (isDescriptorNoteKey(key)) checkDescriptorNote(key, value, file, `descriptor_dimensions.${key}`)
       }
     }
   }

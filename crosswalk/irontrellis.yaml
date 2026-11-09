@@ -73,8 +73,8 @@ maintainer:
   mapped_system_maintainer:
     github: zerohourzulu
     project: zerohourzulu/irontrellis
-    # Draft author R. Rampertab, RAmEx Labs. confirmed_at stays unset until
-    # the maintainer confirms on the PR.
+    # Draft author R. Rampertab, RAmEx Labs.
+    confirmed_at: "2026-11-08"   # maintainer confirmed on PR #250 (comment 6727586134) against the file at 4c5471c and the spec at 983a508c
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi

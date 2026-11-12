@@ -1,0 +1,262 @@
+# crosswalk/l402.yaml
+#
+# L402 (HTTP 402 + Lightning invoice + macaroon) -> Agent Governance Vocabulary
+#
+# Mapped artifact: the L402 credential, a macaroon committing to a Lightning
+# payment hash, presented with the payment preimage, and its caveat-based
+# attenuation.
+# Sources read, lightninglabs/L402 master @
+#   592203a95ea297fad6d7e10c6de2d827bfd450b2 (2026-03-20):
+#   protocol-specification.md, macaroon-spec.md, agent-spec.md (full),
+#   README.md, docs/authentication-flow.md.
+# Reference implementation, lightninglabs/aperture master @
+#   44aab5d7c12aa864585f236198c7f40924333dcb (2026-11-07):
+#   l402/satisfier.go and l402/caveat.go, read for caveat condition names
+#   and the built-in satisfier set only. Hashes in src/SHA256SUMS.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the L402 authors. It is offered for them to correct or
+# confirm. Nothing here states that L402 or Lightning Labs uses, endorses
+# or depends on any other system in this registry.
+
+system:
+  name: L402
+  short_name: L402
+  home: https://github.com/lightninglabs/L402
+  repo: https://github.com/lightninglabs/L402
+  spec: https://github.com/lightninglabs/L402/blob/592203a95ea297fad6d7e10c6de2d827bfd450b2/protocol-specification.md
+  spec_version: "L402 Protocol Specification and Macaroon Technical Specification at 592203a (2026-03-20). BLIP-0026 is the bLIP form."
+  implementation: "lightninglabs/aperture (Go reverse proxy). Other implementations are listed in macaroon-spec.md Reference Implementations, not examined."
+  role: >
+    "A server issues a challenge containing an authentication credential
+    and a Lightning invoice; the client pays the invoice to obtain a
+    preimage, then presents the credential and preimage together as proof
+    of payment." The credential is a macaroon whose identifier commits to
+    the invoice payment hash, so the server checks "H == sha256(preimage)".
+    Caveats restrict services, capabilities and constraints, and a holder
+    attenuates by appending caveats, "the primary mechanism for
+    delegation".
+  identity_layer: >
+    None for the client. The macaroon is a bearer credential. token_id is
+    "32 random bytes, unique per credential" and "provides a stable user
+    identifier across macaroon rotations". Binding to a client is optional,
+    through caveats on IP address, TLS client certificate fingerprint or
+    origin (protocol-specification 9.3).
+  upstream_license: "No license file found in lightninglabs/L402. aperture is MIT."
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: Roasbeef
+    project: lightninglabs/L402, lightninglabs/aperture (Lightning Labs)
+    # confirmed_at is set only after the maintainer confirms on the PR.
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: the macaroon integrity check is an HMAC-SHA256
+# chain under a server-held 32-byte root key, a symmetric MAC, not a
+# public-key signature. Only the minter can verify it. classical is the
+# nearest enum value (pre-PQC, symmetric). Third parties cannot verify an
+# L402 credential, which a verifier filtering on signature_capability
+# should know.
+# canonicalization: caveats are UTF-8 "condition=value" strings and "The
+# caveat's raw byte encoding (its UTF-8 string representation) is what
+# gets HMACed into the signature chain." Macaroon V2 binary serialization.
+# Declared implementation-defined.
+# hash_family: SHA-256 for the payment hash, the root key lookup and the
+# HMAC.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row: the sources
+# listed in the header. A no_mapping row states that those sources were
+# searched and no corresponding field or record was found. It is not a
+# claim about L402's capability outside those sources.
+
+signal_types:
+
+  settlement_witness:
+    canonical: settlement_witness
+    internal: "payment preimage r presented with the macaroon (Authorization: L402 <macaroon>:<preimage>, or the preimage caveat)"
+    match: false_analog
+    notes: >
+      "Possession of the preimage proves the invoice was paid." A consumer
+      could plausibly take the (macaroon, preimage) pair as a settlement
+      witness, which is the substitution hazard. It is not one under the
+      canonical definition. (1) Nothing is signed by anyone about the
+      settlement. The preimage is a hash preimage released by payment, and
+      the macaroon is an HMAC only the minter can check. (2) There is no
+      verdict and no expected terms beyond the payment hash. The amount is
+      the invoice's, and "Clients MUST verify that the invoice amount is
+      reasonable" before paying. (3) The pair is a reusable bearer
+      credential, "intended for reuse" until revoked, not a record of one
+      settlement event.
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: "No signed attestation that an agent or action met a declared policy. Caveat verification produces ACCEPT or REJECT inside the authorizer and emits no record in the search basis."
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    match: no_mapping
+    notes: "No two-party signed record. The only integrity check is the minter's HMAC chain."
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "No identity verification status. The credential is a bearer token."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of client behavior. Usage count and volume appear only as revocation conditions."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "No model or reasoning attestation in the search basis."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No attestation about an action's reasoning in the search basis."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation in the search basis."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric in the search basis."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "token_id persists across macaroon rotations as a 'stable user identifier', but no signed continuity claim is defined."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "Service tiers (name:tier) are access levels, not a graded standing of an agent."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment in the search basis."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the search basis."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "The client pays from a Lightning wallet, but no holdings record is defined."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet analytics record in the search basis."
+
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    match: no_mapping
+    notes: "The caveat chain is an ordered HMAC chain of restrictions on one credential, not a sequence of decisions, and it is verifiable only by the minter."
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the search basis."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation in the search basis."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in the search basis."
+
+# Drafter's reading, each value with its basis, open to the authors'
+# correction.
+descriptor_dimensions:
+  l402_credential:
+    enforcement_class: binding
+    note_enforcement: >
+      The server or L402 proxy verifies before serving, and "the proxy
+      verifies all macaroons for all backends". A failed step is REJECT.
+      Binding covers caveats the verifier has a satisfier for. "If no
+      satisfier is registered for a caveat's condition, the caveat MUST be
+      skipped (not rejected)", see q2.
+    validity_temporal: at_processing
+    note_validity: >
+      Checked on each request. Revocation is "delete its corresponding root
+      key from storage", after which "the macaroon is permanently invalid",
+      and expiry is a valid_until caveat checked as now() < timestamp.
+    refusal_authority: issuer
+    note_refusal: >
+      Verification is split between the minter (signature and payment
+      checks, root key holder) and the authorizer (caveat checks, the
+      target service). In aperture the proxy plays both roles for its
+      backends. If the minter and authorizer are separate parties in a
+      deployment, shared is the better value. Open to correction.
+    invariant_survival: pre_action
+    note_invariant: "All three verification steps precede serving the request."
+    note_replay: >
+      No replay_class selected. The credential can be rechecked only by
+      the root key holder, revocation deletes that key, and "The macaroon
+      itself does not inherently prevent replay."
+    note_governed_action: >
+      No governed_action_class selected. L402 gates access to a paid API.
+      Whether a call reads, writes or transfers depends on the service
+      behind it, and capabilities name service operations rather than an
+      action class.
+
+l402_specific_terms:
+  macaroon_identifier: "version (uint16) || payment_hash (32 bytes) || token_id (32 bytes), 66 bytes. [action_or_capability_binding, target_binding]"
+  root_key: "Per-macaroon 32-byte server secret, looked up by sha256(identifier). Revocation deletes it. [revocation]"
+  caveat: "UTF-8 condition=value appended to the HMAC chain. Standard types preimage, services, <service>_capabilities and constraint caveats. [action_or_capability_binding]"
+  attenuation: "Holder appends caveats with new_sig = HMAC(old_sig, new_caveat) without the root key. 'New caveats can only restrict, never expand authority.' Enforced per condition by SatisfyPrevious. [delegated_authority] Related open gap candidate in this registry: #125 (attenuating_delegation)."
+  satisfier: "Verifier function per caveat condition with SatisfyPrevious and SatisfyFinal. Unknown conditions are skipped. [verifier_trust_policy]"
+  self_attenuation_binding: "Client-side caveats binding a credential to IP, TLS client certificate or origin against counterfeit servers (9.3). [holder_binding]"
+
+open_questions:
+  - id: q1
+    topic: valid_until naming
+    question: >
+      macaroon-spec.md lists _valid_until under Constraint Caveats, named
+      <capability>_<constraint>, while the built-in Timeout satisfier uses
+      <svc>_valid_until, and aperture's NewTimeoutSatisfier uses service +
+      CondTimeoutSuffix. Is expiry scoped to a service or to a capability?
+  - id: q2
+    topic: unknown caveats and delegation
+    question: >
+      The Attenuation example narrows a Loop macaroon by adding
+      loop_in_monthly_volume_sats. The built-in satisfiers cover services,
+      capabilities and valid_until, and unknown conditions "MUST be
+      skipped". A delegating holder's volume limit therefore binds only
+      where the target service registers a satisfier for it. Is that the
+      intended reading? It decides whether attenuation can be described as
+      enforced narrowing or as narrowing the service may honor.
+  - id: q3
+    topic: verifiability
+    question: >
+      Is there any L402 profile in which a party other than the minter can
+      verify a credential or a payment record, for example a signed
+      receipt? Without one, settlement_witness stays false_analog.

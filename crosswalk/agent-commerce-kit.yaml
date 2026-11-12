@@ -1,0 +1,326 @@
+# crosswalk/agent-commerce-kit.yaml
+#
+# Agent Commerce Kit (ACK-ID and ACK-Pay) -> Agent Governance Vocabulary
+#
+# Mapped artifacts: the PaymentReceiptCredential (ACK-Pay) and the
+# ControllerCredential (ACK-ID), as specified in the ACK documentation and
+# implemented in the TypeScript packages of agentcommercekit/ack at
+#   main @ 3db94d67f84e6a0677c7a383a787f5c6c7d4416c (2026-10-06).
+# Sources read, at that commit:
+#   docs/ack-pay/receipt-verification.mdx, payment-request-payload.mdx,
+#   components-roles.mdx, payment-service.mdx, hitl.mdx,
+#   core-payment-sequences.mdx; docs/ack-id/identity-model.mdx,
+#   trust-framework.mdx; docs/overview/concepts.mdx;
+#   packages/ack-pay/src/schemas/zod.ts, create-payment-receipt.ts,
+#   receipt-claim-verifier.ts, verify-payment-receipt.ts;
+#   packages/ack-id/src/controller-credential.ts,
+#   controller-claim-verifier.ts; packages/vc/src/verification/
+#   verify-parsed-credential.ts, verify-proof.ts;
+#   packages/jwt/src/jwt-algorithm.ts. Hashes in src/SHA256SUMS.
+#
+# Where the documentation and the code differ, both are quoted and the
+# difference is listed under open questions. Rows rest on the code where
+# the code is the stricter or more specific source, and say so.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the ACK maintainers. It is offered for them to correct
+# or confirm. Nothing here states that ACK uses, endorses or depends on
+# any other system in this registry.
+
+system:
+  name: Agent Commerce Kit
+  short_name: ACK
+  home: https://www.agentcommercekit.com
+  repo: https://github.com/agentcommercekit/ack
+  spec: https://github.com/agentcommercekit/ack/tree/3db94d67f84e6a0677c7a383a787f5c6c7d4416c/docs
+  spec_version: "Documentation and packages at main 3db94d6 (2026-10-06). No separate versioned specification document was found."
+  implementation: "TypeScript packages agentcommercekit, @agentcommercekit/ack-pay, @agentcommercekit/ack-id, @agentcommercekit/vc and others in the same repository."
+  role: >
+    Two patterns built on DIDs and W3C Verifiable Credentials. ACK-ID links
+    an agent DID to an accountable owner through a ControllerCredential.
+    ACK-Pay has a server issue a signed Payment Request with one or more
+    payment options, a Payment Service execute the payment, and a Receipt
+    Service issue a PaymentReceiptCredential that the client presents back
+    to the server. The documentation says receipts let relying parties
+    "validate payments reliably without needing direct access to
+    underlying payment systems or trusting the Client Agent's claim alone".
+  identity_layer: >
+    DIDs for agents, owners, servers and receipt services. "Agent
+    Identity: Represents the AI agent itself. This identity derives its
+    authority from the Owner Identity". The ControllerCredential subject
+    is the agent DID and the claim names its controller DID. Issuer trust
+    is policy: "Implementations must define policies specifying which
+    issuers they trust for different types of information."
+  upstream_license: "MIT, Copyright (c) 2025 Catena Labs, Inc (README)."
+  status_note: >
+    This file maps the shipped v1 credentials on main. A v2 design is open
+    as draft PR agentcommercekit/ack#179 ("RFC: ACK-ID + ACK-Pay v2", head
+    2c08f66, 2026-10-16), with grants carrying audience and scope, signed
+    requests, and ext-delegation and ext-audit stubs. Its own status line
+    says "Nothing here has shipped." The v2 RFC was not read for rows. See
+    q5.
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: venables
+    project: agentcommercekit/ack (Catena Labs)
+    # confirmed_at is set only after the maintainer confirms on the PR.
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: receipts and controller credentials are JWT VCs.
+# packages/jwt/src/jwt-algorithm.ts: jwtAlgorithms = ["ES256", "ES256K",
+# "EdDSA"]. All classical.
+# canonicalization: the code accepts only a JwtProof2020 proof ("The proof
+# (a JWT) is the only authoritative source", verify-parsed-credential.ts).
+# The signature covers the producer's serialized JWT bytes, and no JSON
+# canonicalization rule is applied before signing. Declared
+# implementation-defined. The receipt-verification.mdx example shows an
+# Ed25519Signature2020 data-integrity proof instead, see q1.
+# hash_family: no verifier-visible envelope digest is defined. sha-256 is
+# declared for the ES256 and ES256K signing inputs, the only hash a
+# verifier selects by algorithm. Open to correction.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row: the sources
+# listed in the header at 3db94d6. A no_mapping row states that those
+# sources were searched and no corresponding field or record was found.
+# It is not a claim about ACK's capability outside those sources.
+
+signal_types:
+
+  settlement_witness:
+    canonical: settlement_witness
+    internal: "PaymentReceiptCredential, issued by a Receipt Service (credentialSubject: paymentRequestToken, paymentOptionId, optional metadata)"
+    match: partial
+    notes: >
+      The receipt is a signed record issued after payment, binding the
+      server-signed Payment Request token and the payment option the
+      client used. verifyPaymentReceipt checks the receipt proof, expiry,
+      issuer against trustedReceiptIssuers, revocation status, then
+      verifies the embedded paymentRequestToken and requires that
+      paymentOptionId "match any payment option in the Payment Request
+      token". That overlaps the canonical "settlement ... occurred and was
+      verified against its expected terms".
+
+      Partial, for three reasons. (1) The expected terms the receipt binds
+      are the offered option (amount, decimals, currency, recipient,
+      network inside the signed request). The settled values are not
+      normative fields. The documentation example places amount, currency,
+      recipient and a settlement timestamp in credentialSubject.metadata,
+      and the same page says "Metadata fields are non-normative". See q2.
+      (2) There is no outcome verdict field. The attestation is the
+      existence of a Receipt Service signature, and a failed or partial
+      payment produces no receipt in the sources read. (3) The checks that
+      the payment actually settled run inside the Receipt Service and are
+      not described in the sources read.
+
+      No evidence state is declared. The sources contain an example
+      issuer under examples/issuer and no production receipt service was
+      identified, so no issuer is listed.
+    issuers_in_production: []
+    signed_payload_fields: ["credentialSubject.paymentRequestToken", "credentialSubject.paymentOptionId"]
+
+  trust_verification:
+    canonical: trust_verification
+    internal: "ControllerCredential (credentialSubject.id agent DID, credentialSubject.controller owner DID)"
+    match: partial
+    notes: >
+      The canonical term is identity layer verification status, including
+      "principal endorsement". A ControllerCredential states that an owner
+      DID controls an agent DID. createControllerCredential defaults the
+      issuer to the controller ("If not provided, the controller will be
+      used as the issuer"), and verifyAgentControllerClaim resolves the
+      agent DID document and requires its controller to equal the claimed
+      controller. Partial because the credential carries no grade or level
+      and no KYC or KYB result. The identity model says the owner identity
+      is "tied to real-world verification processes (like KYC/KYB)", but
+      that verification is a separate credential from a separately trusted
+      issuer, not a field of this one.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "PaymentReceiptCredential embedding the server-signed paymentRequestToken"
+    match: false_analog
+    notes: >
+      A receipt verified by this code carries two signatures from two
+      parties: the server's signature on the embedded Payment Request
+      token and the Receipt Service's signature on the receipt. The
+      canonical term needs both parties to sign "the same canonicalized
+      preimage". Here the server signs the request before payment and the
+      Receipt Service signs the receipt after it, over different payloads,
+      and the payer, named as credentialSubject.id, signs neither. Recorded
+      as false_analog because a two-signature payment receipt naming payer
+      and payee could plausibly be wired in as a two-party receipt.
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: >
+      No signed record that an agent or action satisfied a declared policy.
+      Human approval and spending policy live "within the Payment Service
+      or Client application policies" (hitl.mdx), with no record format.
+      The documentation suggests carrying policyRef and policySnapshotHash
+      in receipt metadata, which it labels non-normative, and the code does
+      not read them.
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of agent behavior in the search basis."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "No model or reasoning attestation in the search basis."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No attestation about an action's reasoning in the search basis."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation from a delegating agent. The receipt attests payment, not delivery of the paid service."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment of completed tasks in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric in the search basis."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity claim across sessions or keys. Agent identities 'can be permanent or temporary' and are linked to an owner, not to prior agent instances."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for an agent in the search basis."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment of an artifact in the search basis."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "Risk-flagged counterparties are mentioned as a trigger for human review (hitl.mdx). No scored exposure record."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "Agents may operate wallets, but no signed holdings record is defined in the search basis."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet analytics record in the search basis."
+
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    match: no_mapping
+    notes: "Receipts reference a payment request, not a prior decision. No ordered, content-addressed sequence in the search basis."
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the search basis."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation in the search basis."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in the search basis."
+
+# Drafter's reading, each value with its basis, open to the maintainers'
+# correction.
+descriptor_dimensions:
+  payment_receipt:
+    enforcement_class: advisory
+    note_enforcement: >
+      The receipt is evidence a server consumes. "If all these checks pass,
+      the Server can confidently treat the payment as valid and proceed
+      with service delivery." Whether to deliver is the server's call.
+    validity_temporal: at_acceptance
+    note_validity: >
+      Verified when presented, including expiry and a revocation check
+      ("isRevoked throws when the status cannot be established"). The
+      embedded request token is checked with verifyExpiry false, "since
+      the receipt lives longer than that".
+    refusal_authority: consumer_policy
+    note_refusal: >
+      The server decides, with its own trusted issuer list and its own
+      sufficiency checks on amount and recipient, which verifyPaymentReceipt
+      returns to the caller rather than enforcing.
+    invariant_survival: post_action
+    note_invariant: "Issued after the payment is executed."
+    note_replay: >
+      No replay_class selected. Signature and option binding can be
+      rechecked offline, but revocation status is resolved from the
+      issuer's status list at verification time, and the
+      documentation's replay protection for request ids is left to the
+      server.
+    governed_action_class: transfer
+
+ack_specific_terms:
+  payment_request: "Server-signed paymentRequestToken over id, optional description, serviceCallback, expiresAt, and a non-empty paymentOptions array. [action_or_capability_binding]"
+  payment_option: "id, amount, decimals, currency, recipient, optional network, paymentService, receiptService. The receipt names one option by id."
+  receipt_service: "Issuer of PaymentReceiptCredential, trusted by servers through a configured issuer list. [issuer, verifier_trust_policy]"
+  payment_service: "Executes the payment on a rail. Human approval may sit here (hitl.mdx). No signed record of its own in the search basis."
+  controller_credential: "Owner-to-agent control link, verified against the agent DID document's controller. [principal_binding]"
+  receipt_metadata_extension: "Non-normative metadata for 'references or hashes to external policy, mandate, execution, and settlement records'. [evidence]"
+
+open_questions:
+  - id: q1
+    topic: receipt encoding
+    question: >
+      Receipt encoding. receipt-verification.mdx shows a receipt with an
+      Ed25519Signature2020 data-integrity proof. verify-proof.ts accepts only
+      a JwtProof2020 proof. Which is the normative encoding? The answer sets
+      canonicalization_profile.
+  - id: q2
+    topic: settled terms
+    question: >
+      Settled terms. The documentation example puts amount, currency,
+      recipient and a settlement timestamp in metadata and the verification
+      steps check them, while the same page calls metadata non-normative and
+      the code binds only the offered option. Is the receipt meant to attest
+      the settled values, or the option the client chose? This decides
+      whether settlement_witness stays partial.
+  - id: q3
+    topic: production issuers
+    question: >
+      Production issuers. Is there a receipt service in production that
+      issues PaymentReceiptCredentials, so that it can be listed?
+  - id: q4
+    topic: spending authority
+    question: >
+      Spending authority. hitl.mdx mentions "agents with limited spending
+      authority". Is that limit expressed in any ACK credential, or only in
+      Payment Service policy?
+  - id: q5
+    topic: v1 or v2
+    question: >
+      Would you rather this crosswalk follow the v2 grant and receipt
+      design in #179 once it ships? Its scoped grants look closer to the
+      registry's delegation terms than the v1 controller credential.

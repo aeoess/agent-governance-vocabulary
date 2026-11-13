@@ -1,0 +1,269 @@
+# crosswalk/metamask-delegation-framework.yaml
+#
+# MetaMask Delegation Framework (ERC-7710 Delegation Manager) -> Agent
+# Governance Vocabulary
+#
+# Mapped artifact: the signed Delegation struct, its caveats, and its
+# redemption through DelegationManager.redeemDelegations, which is the
+# ERC-7710 redeemDelegations interface.
+# Sources read, MetaMask/delegation-framework main @
+#   b4b8c41fc912455a1af2300bfcd1276676b92a2e (2026-10-22), latest tag v1.3.0:
+#   README.md, CONTRIBUTING.md, documents/DelegationManager.md,
+#   documents/CaveatEnforcers.md, documents/Security.md,
+#   documents/Deployments.md (first 30 lines), src/DelegationManager.sol,
+#   src/utils/Types.sol, src/libraries/EncoderLib.sol,
+#   src/interfaces/IDelegationManager.sol, src/interfaces/ICaveatEnforcer.sol,
+#   src/DeleGatorCore.sol (executeFromExecutor), src/utils/Constants.sol
+#   (typehashes only). The enforcer sources in src/enforcers/ were listed,
+#   not read.
+# Standard read, ethereum/ERCs ERCS/erc-7710.md (last change be46db7,
+#   2025-06-10, status Draft). ERCS/erc-7715.md fetched for the request
+#   layer, not mapped here. Hashes in src/SHA256SUMS.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the framework's authors. It is offered for them to
+# correct or confirm. Nothing here states that MetaMask uses, endorses or
+# depends on any other system in this registry.
+
+system:
+  name: MetaMask Delegation Framework
+  short_name: Delegation Framework
+  home: https://github.com/MetaMask/delegation-framework
+  repo: https://github.com/MetaMask/delegation-framework
+  spec: https://github.com/ethereum/ERCs/blob/be46db7fef10e4413216b2f5c2b98773dffa717f/ERCS/erc-7710.md
+  spec_version: "ERC-7710 Smart Contract Delegation (Draft, last change 2025-06-10) for the redemption interface. Delegation, Caveat and hook semantics are the framework's own, DelegationManager VERSION 1.3.0 at b4b8c41."
+  implementation: "MetaMask/delegation-framework (Solidity, Foundry), deterministic CREATE2 deployments per documents/Deployments.md. The SDK (MetaMask/smart-accounts-kit) not examined."
+  role: >
+    ERC-7710: "A delegation is an authority given to another address to
+    perform a specific action." A delegator signs a Delegation (delegate,
+    delegator, authority, caveats, salt) offchain with EIP-712. A redeemer
+    calls redeemDelegations with the chain "ordered from leaf to root", and the
+    DelegationManager checks signatures, disabled state and authority links,
+    runs every caveat enforcer's hooks, and calls executeFromExecutor on the
+    root delegator. ERC-7710 Motivation lists "Grant bounded permissions to
+    AI agents or automated systems".
+  identity_layer: >
+    Ethereum addresses. EOA delegators are checked by ECDSA recovery,
+    contract delegators by ERC-1271 isValidSignature. An open delegation
+    sets delegate to ANY_DELEGATE (address 0xa11) and "rely entirely on
+    Caveat Enforcers to restrict access to the delegation".
+  upstream_license: "SPDX MIT AND Apache-2.0 in the sources read (LICENSE-MIT.md and LICENSE-APACHE2.md in the repo root). ERC-7710 text CC0."
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: McOso
+    project: MetaMask/delegation-framework (ERC-7710 first author, merges to main, latest b4b8c41)
+    # confirmed_at is set only after the maintainer confirms on the PR.
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: omitted. EOA delegators are verified by ECDSA over
+# secp256k1, which is classical. Contract delegators are verified through
+# ERC-1271 isValidSignature, so the scheme is whatever each account
+# implements (src/utils/Types.sol defines P256PublicKey and
+# DecodedWebAuthnSignature structs, not traced to a DeleGator here). The
+# sources read do not establish one scheme for every delegator, so no
+# system-wide value is declared.
+# canonicalization: EIP-712 typed structured data. DELEGATION_TYPEHASH is
+# "Delegation(address delegate,address delegator,bytes32 authority,Caveat[]
+# caveats,uint256 salt)Caveat(address enforcer,bytes terms)". Two exclusions
+# matter to a verifier: "`signature` is ignored during delegation hashing"
+# and "`args` is ignored during caveat hashing so it can be manipulated post
+# signing". Caveat args are redeemer input, not signed by the delegator.
+# Declared implementation-defined.
+# hash_family: omitted. The verifier-visible hash is keccak-256 (EIP-712
+# struct hashes, the delegation hash used as authority and as the
+# disabledDelegations key). keccak-256 is not in the hash_family enum, and
+# sha3-256 is a different function (different padding), so neither enum
+# value is correct. The separate hash-family proposal documents the missing value.
+system_attributes:
+  canonicalization_profile: implementation-defined
+
+# Search basis for every no_mapping and false_analog row: the sources in
+# the header. A no_mapping row states that those sources were searched and
+# no corresponding field or record was found. It is not a claim about the
+# framework's capability outside those sources.
+
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "RedeemedDelegation(address indexed rootDelegator, address indexed redeemer, Delegation delegation), emitted per link after the manager finishes the redemption batch"
+    match: false_analog
+    notes: >
+      A committed log shows that the manager finished processing the
+      redemption and that the configured caveat hooks returned without
+      reverting. The canonical signal is an evaluator-signed statement
+      about a declared governance requirement. The delegation signature
+      authorizes the grant and excludes caveat args. It does not sign a
+      verdict about the redemption. In EXECTYPE_TRY, the DeleGator can
+      handle a failed target call and return normally. If no later hook
+      reverts, the manager can still emit RedeemedDelegation. A consumer
+      using this event as a signed verdict or as proof of execution can
+      therefore draw the wrong conclusion.
+    issuers_in_production: []
+    signed_payload_fields: []
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    match: no_mapping
+    notes: "The delegator signs the Delegation hash and the submitter signs the transaction that carries it. Two signatures over two different preimages, and no counterparty signature over a shared receipt."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      No separate settlement verdict record was identified in the sources
+      read. CaveatEnforcers.md describes NativeTokenPaymentEnforcer and the
+      balance change enforcers as checks on a payment or a balance delta
+      inside the transaction. Their sources were listed, not read. A consumer reading a successful transaction as a
+      settlement witness relies on the enforcers having been present and
+      correctly ordered, which CaveatEnforcers.md warns about ("it is
+      essential to carefully order enforcers").
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "The manager checks caller eligibility and validates signatures from delegators. The checked path emits no trust assessment of the delegate."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "Enforcers read balances during redemption. No attestation about holdings was identified in the sources read."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No classification of wallet activity in the search basis."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of delegate behavior in the search basis."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "No model or reasoning commitment in the search basis."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No attestation about an action's reasoning in the search basis."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation by a delegator in the search basis."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric. LimitedCallsEnforcer counts redemptions as a limit, not a metric."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity claim. A DeleGator account can migrate its implementation, and DelegationManager.md notes a signature 'may become invalid if the conditions of a valid signature change'."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing in the search basis."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment of an artifact. Audit reports in audits/ are documents, not emitted records."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the search basis. A compliance Veda adapter exists (PR #205), not read."
+
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "delegation chain, each Delegation.authority set to the parent delegation hash, ending at ROOT_AUTHORITY"
+    match: false_analog
+    notes: >
+      Both are hash-linked sequences a verifier walks, which is the
+      substitution hazard. The canonical term is an "ordered
+      content-addressable sequence of decisions affecting a single agent".
+      A delegation chain is a sequence of grants across different
+      delegators, one per hop, and does not record the sequence of decisions about a single agent. Same reading as
+      crosswalk/cred-protocol.yaml.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the search basis."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation in the search basis."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score in the search basis."
+
+descriptor_dimensions:
+  delegation:
+    enforcement_class: binding
+    note_enforcement: >
+      On this redemption path the DelegationManager checks the chain and
+      calls executeFromExecutor on the root delegator account. DeleGatorCore
+      restricts that entry point to the manager. The root account executes
+      the target call.
+    validity_temporal: at_processing
+    note_validity: >
+      "Delegations are validated at execution time". Signatures, disabled
+      state and caveats are evaluated at redemption. A contract delegator's
+      ERC-1271 check reflects its signer set at that moment, so an earlier
+      valid signature can fail later.
+    refusal_authority: shared
+    note_refusal: >
+      Three controls. (1) At redemption, the DelegationManager and the
+      caveat enforcers chosen in each delegation of the chain (verifier).
+      (2) The delegator, through disableDelegation, which "MUST be called
+      by the delegator" (issuer). (3) The DelegationManager owner, through
+      pause, which blocks every redeemDelegations call (whenNotPaused).
+      Who holds the owner role on deployed managers was not checked.
+    note_invariant: >
+      A caveat that implements an outcome check in afterHook or afterAllHook
+      can still revert the transaction after the account attempts execution.
+      The checks depend on the caveats selected. In EXECTYPE_TRY a failed
+      call can leave the hooks running against state where the call had no
+      effect. No invariant_survival value is assigned across all delegations.
+    note_replay: >
+      The calldata supplies the chain and the proposed execution. Replaying
+      the result also requires the execution context and historical state,
+      including ERC-1271 validation, disabled delegations and enforcer state.
+      No replay_class is assigned from the mapped evidence.
+    governed_action_class: delegate
+    note_governed_action: >
+      delegate names the authority mechanism being governed, a grant that a
+      redeemer exercises. The call each redemption executes can be a
+      transfer or any other write, and this value does not classify it.
+
+delegation_framework_specific_terms:
+  delegation: "Delegation(delegate, delegator, authority, caveats, salt, signature), signed offchain with EIP-712. 'A delegation is an authority given to another address to perform a specific action.' (ERC-7710)"
+  caveat_enforcer: "Contract named in Caveat.enforcer with terms (signed) and args (redeemer input, not signed). Hooks beforeAllHook, beforeHook, afterHook, afterAllHook. 'These hooks are optional.'"
+  redelegation_narrowing: "A redelegate's chain carries every delegation's caveats, and all of them run. 'Bob can add extra restrictions when he re-delegates to Carol ... it is necessary to analyze all the enforcers being used in the entire delegation chain.' Restrictions depend on how the chosen enforcers compose. Some balance enforcers share state and the documented multi-operation increase enforcers aggregate expected increases."
+  link_local_hook_context: "The _delegator passed to a hook is the delegator of the link that carries the caveat, not the root whose account executes (CaveatEnforcers.md, Redelegation Caveat)."
+  open_delegation: "delegate = ANY_DELEGATE (0xa11). Any caller may redeem, subject to caveats."
+  root_authority: "authority = ROOT_AUTHORITY (bytes32 all ones) marks a delegation from the account itself."
+  disable_delegation: "disableDelegation and enableDelegation, onchain, keyed by the delegation hash. Reversible by the delegator."
+  self_authorized_execution: "An empty permission context is 'a self authorized execution' and calls executeFromExecutor on msg.sender."
+  request_layer: "ERC-7715 wallet_grantPermissions, 'Request Permissions from Wallets', requires ERC-7710. Not mapped in this file."

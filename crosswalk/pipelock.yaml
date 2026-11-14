@@ -1,0 +1,281 @@
+# crosswalk/pipelock.yaml
+#
+# Pipelock ActionReceipt v1 (signed action records for mediated agent
+# traffic) -> Agent Governance Vocabulary
+#
+# Mapped artifact: pipelab-org/pipelock
+# @ 29c0c786f3400b818fc6d8490393b105afa89c0e (main, 2026-11-14T16:01:39Z):
+#   - internal/receipt/action.go, read in full (ActionRecord, ActionType,
+#     SideEffectClass, Reversibility, decision phases).
+#   - internal/receipt/receipt.go lines 1 to 200 (envelope, Sign, Verify,
+#     VerifyWithKey, strict Unmarshal).
+#   - internal/receipt/chain.go lines 1 to 60 and the signature of
+#     VerifyChainWithEndorsements. internal/receipt/canonical.go lines 1 to 40.
+#   - internal/receipt/content.go lines 360 to 385 (contentRecord).
+#   - docs/specs/receipt-format-v01.md (tombstone, read in full) and
+#     docs/specs/receipt-prior-art-mapping.md lines 1 to 140.
+#   - The file list of sdk/conformance/testdata (53 entries). Fixture
+#     contents not opened.
+#
+# Also read, through a fetch on 2026-11-14: the implementation spec at
+# https://pipelab.org/learn/action-receipt-spec/ ("Updated May 17, 2026"),
+# which describes "the exact bytes the Pipelock binary writes today" and
+# says "v1 remains the canonical format for proxy action receipts". The
+# page names emitters up to v2.4.0 and has no decision_phase field, so the
+# code at the pinned commit (v3.8.0) carries fields the page does not
+# describe. Rows cite the page where it speaks and the code otherwise.
+# Where the two differ, the maintainer's reading wins and the rows are
+# recalibrated. EvidenceReceipt v2, fleet receipts, the AARP envelope, the
+# in-toto and SCITT statement profiles and the Audit Packet are not mapped
+# here.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by PipeLab. It is offered for Pipelock's maintainer to
+# correct or confirm. Inclusion does not indicate adoption or endorsement.
+
+system:
+  name: Pipelock
+  short_name: Pipelock
+  home: https://pipelab.org
+  spec: https://pipelab.org/learn/action-receipt-spec/
+  spec_version: "ActionReceipt v1 (envelope version 1, ActionRecordVersion 1), Pipelock v3.8.0"
+  repo: https://github.com/pipelab-org/pipelock
+  implementation: "Go reference implementation in internal/receipt, standalone verifier cmd/pipelock-verifier, TypeScript and Rust verifiers in sdk/verifiers, Python verifier pipelock-verify, cross-language fixtures in sdk/conformance/testdata"
+  role: >
+    An agent firewall that mediates HTTP, MCP, A2A and WebSocket traffic.
+    "Package receipt implements typed action records and self-signed
+    receipts for every proxy decision. Each mediated action gets an action
+    type, authority context, and an Ed25519-signed receipt emitted to the
+    flight recorder" (internal/receipt/action.go). Receipts are emitted
+    "when a signing key is configured".
+  identity_layer: >
+    Keys and labels. signer_key is the raw Ed25519 public key in hex.
+    principal and actor are strings. Receipt signatures establish that a
+    key signed the action record. Callers that need to establish trust
+    must call VerifyWithKey with the expected public key from enrollment
+    or configuration (receipt.go).
+  upstream_license: "Apache-2.0 (LICENSE)."
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: luckyPipewrench
+    project: pipelab-org/pipelock (project lead per GOVERNANCE.md)
+    # confirmed_at is set only after the maintainer confirms on the PR.
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: Ed25519 only ("signature": "ed25519:<128 hex
+# chars>"), which is classical.
+# canonicalization: v1 signs "the byte output of json.Marshal over
+# internal/receipt/action.go's ActionRecord struct in declaration order,
+# not JCS" (receipt-format-v01.md), through a frozen projection
+# (canonicalActionRecordV1, "Do not add future ActionRecord fields here").
+# EvidenceReceipt v2 uses RFC 8785 and is not mapped in this file.
+# hash_family: the signing input is SHA-256 of the canonical action record,
+# and chain links are SHA-256 of the previous receipt's encoding
+# (ReceiptHash in chain.go).
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# Search basis for every no_mapping row below: the files listed as read in
+# the header, at 29c0c78. A no_mapping row states that those files were
+# searched and no corresponding field or record was found. It is not a claim
+# about Pipelock outside them.
+
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "Receipt { version, action_record, signature, signer_key } with action_record.verdict and action_record.policy_hash"
+    notes: >
+      The match is unset because the canonical term requires a signed
+      attestation that an agent or action satisfied a declared governance
+      requirement, and whether an allow receipt under a non-empty
+      policy_hash asserts that satisfaction remains open in question 1.
+      The spec says "A receipt proves the mediator recorded a specific
+      attempted action and reached a specific decision". The verdict is
+      one of allow, block, warn, ask, strip, forward and redirect, and
+      "Verifiers MUST NOT reject receipts on verdict value". policy_hash is
+      "SHA-256 hash of the policy bundle that was evaluated. May be empty",
+      and the bundle is not in the receipt.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    match: no_mapping
+    notes: >
+      One signature per receipt, by the mediator key. No counterparty
+      signature over the same preimage in the search basis.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "action_type spend and side_effect_class financial classify an action. No settlement verdict against expected terms in the search basis."
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "No verification status of an agent's identity. actor is a label string."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "Scanner context (layer, pattern, severity) describes one finding on one action, not a posture assessment. The Audit Packet carries posture and is not mapped here."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "session_taint_level and session_contaminated describe session state for adaptive enforcement, not a scored assessment of the agent."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the search basis."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "intent is free-form purpose text set by the caller. It is not an attestation about reasoning."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "No reasoning commitment in the search basis."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No delegator attestation of task completion in the search basis."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "TranscriptRoot counts receipts in a session. No completion ratio."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "key_transition binds a new chain segment to the prior signer after a key rotation. That is continuity of the mediator's signing key, not of the agent."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing in the search basis."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet concept in the search basis."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet concept in the search basis."
+
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "receipt chain per session, action_record.chain_prev_hash and chain_seq, genesis value 'genesis'"
+    match: partial
+    evidence: emitted
+    source_path: "internal/receipt/action.go ActionRecord.ChainPrevHash (json chain_prev_hash) and ActionRecord.ChainSeq (json chain_seq)"
+    notes: >
+      The code comment says the chain "links receipts into a tamper-evident
+      sequence" and that ChainPrevHash is "genesis" for the first receipt
+      in a session. ReceiptHash is "the SHA-256 hex digest of a receipt's
+      canonical JSON", and both link fields sit inside the signed action
+      record. Each entry is a decision by the mediator, so the subject
+      matches.
+
+      Partial on scope. The canonical lineage is decisions "affecting a
+      single agent". The spec says "Receipts within a session form a hash
+      chain" and that "every receipt in a chain must share the same
+      signer_key". It does not define a session, and actor is a per-receipt
+      field, so one session may carry several actors (open question 2). Completeness also has limits the maintainer states. "Chain
+      linkage within a session gives tamper-evidence, not public
+      non-repudiation" (receipt-prior-art-mapping.md). Optional Rekor
+      anchoring is a separate layer and is not mapped here.
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the search basis."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "Scanner findings are matches against patterns and policy, not a measured deviation from a baseline."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score in the search basis."
+
+# Drafter's reading, each value with its basis, open to correction.
+descriptor_dimensions:
+  action_receipt:
+    enforcement_class: binding
+    note_enforcement: >
+      The receipt records a decision the mediator applies in path. A block
+      verdict stops the request before it reaches the target, and block
+      responses may carry the receipt ID in X-Pipelock-Block-Reason-Receipt
+      (receipt-prior-art-mapping.md). The receipt itself refuses nothing
+      after the fact. binding describes the decision it records.
+    validity_temporal: at_issuance
+    note_validity: "Signed when the mediator emits the record. timestamp is inside the signed record."
+    refusal_authority: issuer
+    note_refusal: "The mediator both decides and signs. A verifier checks the signature and chain but does not refuse the action."
+    note_invariant: >
+      For decision_phase intent, the verdict precedes forwarding. The
+      record also has outcome, defer and resolution phases, so a single
+      value does not cover every receipt. Open question 3.
+    note_measurement: "No measurement_point is assigned until it can be scoped by decision_phase."
+    note_replay: >
+      No replay_class is assigned. The receipt carries policy_hash, not the
+      policy, and scanner verdicts depend on request content that the
+      record does not carry. Replaying a verdict needs the configuration
+      and the request.
+    note_governed_action: >
+      No single governed_action_class. action_type read, write and
+      delegate correspond to read, write and delegate. spend and commit are
+      closest to transfer but are wider (metered API spend, deploys).
+      derive, authorize, actuate and unclassified have no canonical value.
+
+pipelock_specific_terms:
+  action_type: "read, derive, write, delegate, authorize, spend, commit, actuate, unclassified. 'ActionUnclassified is for events that cannot be typed. High-risk by definition.' [governed_action_class, partial as noted above]"
+  side_effect_class: "none, external_read, external_write, financial, physical. Describes 'the external impact of an action'."
+  reversibility: "full, compensatable, irreversible, unknown. 'whether an action can be undone'."
+  decision_phase: "intent, outcome, defer, resolution, with defer_id, resolution_policy and resolution_source linking a deferred decision to its resolution."
+  delegation_chain: "Array of strings in the signed record. 'Ordered list of authority grants from principal to actor' (spec). On the proxy emitter path at 29c0c78 it is nil, 'Populated when delegation tracking ships' (content.go), and verifiers 'MUST re-canonicalize null as the literal token null'. The contract runtime path copies it from its input. No delegation grammar is defined. [delegated_authority]"
+  policy_hash: "Hash of the canonical policy configuration in force for the decision. [policy reference]"
+  key_transition: "Present only on the first receipt after a signing key rotation. Binds prior_signer_key, prior_chain_seq and prior_chain_hash."
+  run_nonce: "Generated once per process run and bound into every signed record from that run."
+  ext: "Top-level unsigned bag. 'a consumer must treat it as untrusted'. Strict Unmarshal rejects unknown fields everywhere else, duplicate keys and trailing tokens."
+  jurisdiction_fields: "venue, jurisdiction, rulebook_id, remedy_class, contestation_window, precedent_refs. These fields are reserved for forward compatibility. Current binaries do not populate them (receipt-prior-art-mapping.md)."
+
+open_questions:
+  - id: 1
+    question: >
+      Does an allow receipt under a non-empty policy_hash attest that the
+      agent or action satisfied the declared policy, as required by
+      governance_attestation?
+  - id: 2
+    question: >
+      Is a session's chain scoped to one agent, or can one session carry
+      receipts for several actors? decision_lineage stays partial unless
+      it is one agent.
+  - id: 3
+    question: >
+      For outcome and resolution phases, is the side effect already done
+      when the receipt is signed? That decides whether invariant_survival
+      should be split by phase.

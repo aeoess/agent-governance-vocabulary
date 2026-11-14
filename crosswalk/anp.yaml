@@ -1,0 +1,285 @@
+# crosswalk/anp.yaml
+#
+# Agent Network Protocol (ANP), payment credentials of ANP-10 and the
+# authorization record of ANP-05 -> Agent Governance Vocabulary
+#
+# Mapped artifacts: the CartMandate merchant_authorization and the
+# PaymentMandate user_authorization (ANP-10, Agent Payment Protocol, Draft,
+# Version 1.1), and the authorization-server grant record that ANP-05 (DID-
+# Based Authorization Protocol, Draft, Version 0.7) requires.
+# Sources read, agent-network-protocol/AgentNetworkProtocol
+#   main @ 0837cfdfaf4ddcf834f0890ddaf34fc4c824e066 (2026-10-22):
+#   application/10-anp-agent-payment-protocol-specification.md (full)
+#   05-anp-did-authorization-protocol-specification.md (Sections 1, 2, 9.3,
+#     11 to 16 in full, the rest by heading)
+#   the same file at 63a99ddf72 (2026-10-01), for Section 11
+#   chinese/05-ANP-基于DID的授权协议.md (Section 11 heading only)
+#   CONTRIBUTING.md, README.md. Hashes in src/SHA256SUMS.
+#
+# Section 11 of ANP-05 (the VC Profile) is a heading with no body at
+# 0837cfd. Commit 6683793 ("update auth draft", 2026-10-15) removed 364
+# lines from each language version, Sections 11.1 to 11.9. The document
+# overview and Sections 1.1, 1.3, 2.2, 3 and 14 still describe the VC Profile
+# and point to Section 11, 11.2, 11.3, 11.4, 11.6 and 11.9. The VC Profile is therefore not mapped here. See q1.
+#
+# Implementation: the ANP SDKs were not examined. Rows rest on the
+# specification text.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the ANP maintainers. It is offered for them to correct
+# or confirm. Nothing here states that ANP uses, endorses or depends on any
+# other system in this registry.
+
+system:
+  name: Agent Network Protocol
+  short_name: ANP
+  home: https://github.com/agent-network-protocol/AgentNetworkProtocol
+  repo: https://github.com/agent-network-protocol/AgentNetworkProtocol
+  spec: https://github.com/agent-network-protocol/AgentNetworkProtocol/blob/0837cfdfaf4ddcf834f0890ddaf34fc4c824e066/application/10-anp-agent-payment-protocol-specification.md
+  spec_version: "ANP-10 Draft, Version 1.1, and ANP-05 Draft, Version 0.7 (ANP vNext, not part of the ANP 1.2 release), at 0837cfd"
+  implementation: "Not examined for this draft."
+  role: >
+    An agent communication protocol built on did:wba identities. ANP-10 is
+    "an ANP application-layer adaptation of the Agent Payment Protocol
+    (AP2)" with three credentials, CartMandate, PaymentMandate and
+    DeliveryReceipt. ANP-05 delivers "DID-associated OAuth client identity
+    plus usable, auditable basic user delegation".
+  identity_layer: >
+    did:wba DIDs for shopper, merchant and user (ANP-02, ANP-03, not mapped
+    here). In ANP-05 the OAuth client identifier is a CIMD URL, optionally
+    associated with an Agent DID.
+  upstream_license: "Apache License 2.0 per the copyright notice in each specification file."
+  status_note: >
+    Both documents are drafts. ANP-10: "its presence does not establish
+    stable interoperability, implementation conformance, or production
+    readiness." Rows track a moving draft.
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: chgaowei
+    project: agent-network-protocol/AgentNetworkProtocol
+    # confirmed_at is set only after the maintainer confirms on the PR.
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: merchant_authorization "Algorithm: RS256 or
+# ES256K" (4.2.2). user_authorization examples use ES256K. Classical.
+# canonicalization: the credentials are compact JWS, so each signature
+# covers the producer's serialized JWT. What the JWT commits to is a hash
+# of JCS-canonicalized content: cart_hash = Base64URL(SHA-256(JCS(
+# CartMandate.contents))) and pmt_hash over payment_mandate_contents
+# (4.2.5, 4.4), with an explicit reference to RFC 8785. jcs-rfc-8785 is
+# declared for that committed content. The JWT bytes themselves are not
+# canonicalized.
+# hash_family: SHA-256 for cart_hash and pmt_hash, the verifier-visible
+# hashes.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row: the sources
+# listed in the header. A no_mapping row states that those sources were
+# searched and no corresponding field or record was found. It is not a
+# claim about ANP's capability outside those sources.
+
+signal_types:
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "CartMandate.merchant_authorization (merchant JWS over cart_hash) and PaymentMandate.user_authorization (user JWS over transaction_data [cart_hash, pmt_hash])"
+    match: false_analog
+    notes: >
+      Two parties each sign a JWS that commits to the same
+      content-addressed cart. The merchant signs a payload carrying
+      cart_hash. The user signs a payload whose transaction_data carries
+      the same cart_hash and pmt_hash. The canonical term requires "both
+      parties' signatures over the same canonicalized preimage". Here the
+      two signatures cover two different JWT payloads, issued at different
+      times with different iss, aud, jti and exp, and the second commits
+      to a later object (the payment mandate) that the first does not. A
+      verifier holding both can establish that both parties committed to
+      one cart. It cannot treat them as one two-party signed receipt.
+      Recorded as false_analog because the shared cart_hash makes the pair
+      close enough to be wired in as one.
+
+  governance_attestation:
+    canonical: governance_attestation
+    match: no_mapping
+    notes: >
+      user_authorization is the principal's signed approval of one
+      transaction ("User's authorization signature on the transaction"),
+      not an attestation that an agent or action met a declared policy.
+      ANP-05 requires the AS to "retain" a grant record (resource owner,
+      client identifier, Agent DID when verified, resource, scopes,
+      "approval source and time", lifetime and revocation policy, internal
+      grant reference), and calls it "an OAuth authorization-record
+      requirement". It is held by the AS, not signed or exported.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: >
+      DeliveryReceipt is named in 2.2.3 ("Confirms order completion,
+      delivery status, or service provision") and listed under Complete
+      Implementation in 9.2, but Section 4 defines no format for it. The
+      send_payment_mandate response carries status, payment_mandate_id and
+      transaction_id with no signature. See q5.
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "Not mapped from ANP-10 or ANP-05. DID authentication (ANP-02) establishes key control, not a graded verification status, and is outside the sources read for rows."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment of agent behavior in the search basis."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "ANP-05: 'DID signatures do not attest software integrity, human presence, or intent.' No model or reasoning attestation."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No attestation about an action's reasoning in the search basis."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No task-completion attestation signed by a delegating party. DeliveryReceipt would be signed by the merchant, the executor, and has no format."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment of completed tasks in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric in the search basis."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "ANP-05 Section 10.1 separates runtime-key rotation from identity migration, but defines no signed continuity claim in the sections read."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for an agent in the search basis."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No signed posture assessment of an artifact in the search basis."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the search basis."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "CRYPTO is listed as a payment method. No holdings record in the search basis."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet analytics record in the search basis."
+
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    match: no_mapping
+    notes: "user_authorization references cart_hash, so one transaction links two records by content hash, but there is no ordered sequence of decisions affecting one agent."
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the search basis."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured behavioral deviation in the search basis."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score and no rate of change in the search basis."
+
+# Drafter's reading, each value with its basis, open to the maintainers'
+# correction.
+descriptor_dimensions:
+  payment_mandate:
+    enforcement_class: binding
+    note_enforcement: >
+      The merchant verifies the credentials before processing. "Receiving
+      party must verify signatures through DID document public keys" (7.1),
+      and a cart_hash mismatch is "otherwise reject" (4.2.7). "Payment
+      operations must obtain explicit user authorization" (7.5).
+    validity_temporal: at_acceptance
+    note_validity: >
+      Checked when received: "Current time is within [iat, exp]" and "jti
+      has not been reused". Expiry guidance differs between sections, see
+      q2.
+    refusal_authority: verifier
+    note_refusal: "The receiving party (merchant, transaction agent or payment processor) verifies and rejects."
+    invariant_survival: pre_action
+    note_invariant: "Verification precedes payment processing."
+    note_replay: >
+      No replay_class selected. Signatures and hash bindings can be
+      rechecked from the two JWS and the contents, but jti uniqueness rests
+      on the receiver's "used jti list", which the records do not carry.
+    governed_action_class: transfer
+
+anp_specific_terms:
+  cart_mandate: "Merchant-generated cart with payment_request (method_data, details, options), signed by merchant_authorization over cart_hash. [action_or_capability_binding]"
+  payment_mandate: "Shopper-generated payment_mandate_contents with payment_details_id, payment_details_total, payment_response, merchant_agent, signed by the user as user_authorization over transaction_data. [approval]"
+  cnf_holder_binding: "Optional cnf.kid in both JWS payloads, 'can be used for subsequent holder verification'. [holder_binding]"
+  extensions: "JWT extensions array declaring profiles such as anp.ap2.qr.v1 and anp.human_presence.v1."
+  as_grant_record: "ANP-05 user-delegated grant record retained by the authorization server, not portable. 'the portable, cross-system mandate is defined by the VC Profile.' [accountability_record]"
+  vc_profile: "ANP-05 VC Profile, identifier anp.authorization.vc.v1-draft2. Body absent at 0837cfd, see q1. [delegated_authority]"
+
+open_questions:
+  - id: q1
+    topic: ANP-05 Section 11
+    question: >
+      Commit 6683793 removed Sections 11.1 to 11.9 from both language
+      versions of ANP-05, while the overview, Sections 1.1, 1.3, 2.2, 3 and
+      14 and the Profile identifier list still rely on them. Was the VC Profile withdrawn,
+      moved, or removed by mistake? Its delegation credential is the
+      likeliest ANP artifact for delegated authority terms, and it is not
+      mapped until the text is back.
+  - id: q2
+    topic: expiry
+    question: >
+      4.2.4 says merchant_authorization exp is "recommended 180 days",
+      while 7.2 says "JWT tokens should set reasonable expiration times
+      (recommended 15 minutes)". Which applies to the cart authorization?
+  - id: q3
+    topic: Transaction Agent
+    question: >
+      merchant_authorization aud and the 4.2.7 verifier are a Transaction
+      Agent (TA), which is not one of the four roles in 2.1. Is TA the
+      shopper agent, the payment processor, or a fifth role?
+  - id: q4
+    topic: user_authorization cnf
+    question: >
+      The 4.4 user_authorization example sets cnf.kid to the merchant's key
+      (did:wba:a.com:MA#keys-1). Is the user credential meant to be bound
+      to the merchant as holder, or is this a copy of the 4.2.4 example?
+  - id: q5
+    topic: DeliveryReceipt
+    question: >
+      Is a DeliveryReceipt format planned, and would it be signed? A signed
+      merchant record of delivery or settlement against the cart_hash is
+      the ANP artifact that would map to settlement_witness.

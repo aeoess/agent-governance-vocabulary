@@ -96,8 +96,13 @@ signal_types:
     notes: >
       The match is unset because the canonical term requires a signed
       attestation that an agent or action satisfied a declared governance
-      requirement, and whether an allow receipt under a non-empty
-      policy_hash asserts that satisfaction remains open in question 1.
+      requirement. The maintainer confirmed on the pull request that an
+      allow receipt records Pipelock's allow decision at the recorded step
+      and does not establish that the agent or action satisfied a
+      governance requirement. An allow verdict also does not mean every
+      check passed. Audit mode can let findings through, some nonblocking
+      findings produce a separate warn verdict, and the receipt covers
+      only the checks that ran on traffic routed through Pipelock.
       The spec says "A receipt proves the mediator recorded a specific
       attempted action and reached a specific decision". The verdict is
       one of allow, block, warn, ask, strip, forward and redirect, and
@@ -257,18 +262,13 @@ pipelock_specific_terms:
   reversibility: "full, compensatable, irreversible, unknown. 'whether an action can be undone'."
   decision_phase: "intent, outcome, defer, resolution, with defer_id, resolution_policy and resolution_source linking a deferred decision to its resolution."
   delegation_chain: "Array of strings in the signed record. 'Ordered list of authority grants from principal to actor' (spec). On the proxy emitter path at 29c0c78 it is nil, 'Populated when delegation tracking ships' (content.go), and verifiers 'MUST re-canonicalize null as the literal token null'. The contract runtime path copies it from its input. No delegation grammar is defined. [delegated_authority]"
-  policy_hash: "Hash of the canonical policy configuration in force for the decision. [policy reference]"
+  policy_hash: "Signed with the verdict. The emitter uses the request's policy snapshot hash, which stays attached across config reloads, and falls back to its current config hash when the caller supplies none. A non-empty policy_hash does not show which of the two it is (maintainer, on the pull request). [policy reference]"
   key_transition: "Present only on the first receipt after a signing key rotation. Binds prior_signer_key, prior_chain_seq and prior_chain_hash."
   run_nonce: "Generated once per process run and bound into every signed record from that run."
   ext: "Top-level unsigned bag. 'a consumer must treat it as untrusted'. Strict Unmarshal rejects unknown fields everywhere else, duplicate keys and trailing tokens."
   jurisdiction_fields: "venue, jurisdiction, rulebook_id, remedy_class, contestation_window, precedent_refs. These fields are reserved for forward compatibility. Current binaries do not populate them (receipt-prior-art-mapping.md)."
 
 open_questions:
-  - id: 1
-    question: >
-      Does an allow receipt under a non-empty policy_hash attest that the
-      agent or action satisfied the declared policy, as required by
-      governance_attestation?
   - id: 2
     question: >
       Is a session's chain scoped to one agent, or can one session carry

@@ -63,7 +63,7 @@ maintainer:
   mapped_system_maintainer:
     github: b7n0de
     project: b7n0de/proofbundle
-    confirmed_at: null   # -09 re-pin awaits maintainer review
+    confirmed_at: "2026-11-16"   # maintainer review on PR #266 (comment 6911883621) of 1fa6a11 against proofbundle 6d29ead and draft -09, confirmation given once his listed points were applied, which this revision does
     # Previous confirmation: 2026-11-06 on PR #241 (comment 6679430165),
     # for 9e40730 against proofbundle 6d29ead and draft -05.
   crosswalk_contributor:

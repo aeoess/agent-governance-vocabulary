@@ -62,7 +62,7 @@ maintainer:
   mapped_system_maintainer:
     github: luckyPipewrench
     project: pipelab-org/pipelock (project lead per GOVERNANCE.md)
-    # confirmed_at is set only after the maintainer confirms on the PR.
+    confirmed_at: "2026-11-16"   # maintainer confirmed on PR #263 (comment 6916630900) against the file at f2d3eea
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi

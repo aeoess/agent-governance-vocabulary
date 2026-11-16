@@ -205,8 +205,11 @@ decision_trajectory:
       Partial on scope. The canonical lineage is decisions "affecting a
       single agent". The spec says "Receipts within a session form a hash
       chain" and that "every receipt in a chain must share the same
-      signer_key". It does not define a session, and actor is a per-receipt
-      field, so one session may carry several actors (open question 2). Completeness also has limits the maintainer states. "Chain
+      signer_key". The maintainer confirmed on PR #263 that one session can
+      carry several actors. By default a chain covers one Pipelock run,
+      though a run can also be split across several chains. Each receipt's
+      actor is the agent label for that request when there is one,
+      otherwise pipelock. Completeness also has limits the maintainer states. "Chain
       linkage within a session gives tamper-evidence, not public
       non-repudiation" (receipt-prior-art-mapping.md). Optional Rekor
       anchoring is a separate layer and is not mapped here.
@@ -241,9 +244,9 @@ descriptor_dimensions:
     refusal_authority: issuer
     note_refusal: "The mediator both decides and signs. A verifier checks the signature and chain but does not refuse the action."
     note_invariant: >
-      For decision_phase intent, the verdict precedes forwarding. The
-      record also has outcome, defer and resolution phases, so a single
-      value does not cover every receipt. Open question 3.
+      No single value covers every receipt, so invariant_survival is given
+      per decision_phase in the entries below, as the maintainer suggested
+      on PR #263. defer receipts are not assigned a value.
     note_measurement: "No measurement_point is assigned until it can be scoped by decision_phase."
     note_replay: >
       No replay_class is assigned. The receipt carries policy_hash, not the
@@ -255,6 +258,25 @@ descriptor_dimensions:
       delegate correspond to read, write and delegate. spend and commit are
       closest to transfer but are wider (metered API spend, deploys).
       derive, authorize, actuate and unclassified have no canonical value.
+
+  action_receipt_intent:
+    invariant_survival: pre_action
+    note_invariant: "Intent receipts for incoming requests are written before forwarding (maintainer, PR #263)."
+
+  action_receipt_resolution:
+    invariant_survival: pre_action
+    note_invariant: >
+      A resolution receipt records allow or block. An allow resolution is
+      written before the held call is sent, and if that write fails the
+      release becomes a block (maintainer, PR #263).
+
+  action_receipt_outcome:
+    invariant_survival: post_action
+    note_invariant: >
+      An outcome receipt records how the exchange ended from Pipelock's
+      side, including failed, blocked and incomplete exchanges. It does not
+      show that an upstream side effect happened, though one may have
+      (maintainer, PR #263).
 
 pipelock_specific_terms:
   action_type: "read, derive, write, delegate, authorize, spend, commit, actuate, unclassified. 'ActionUnclassified is for events that cannot be typed. High-risk by definition.' [governed_action_class, partial as noted above]"
@@ -268,14 +290,3 @@ pipelock_specific_terms:
   ext: "Top-level unsigned bag. 'a consumer must treat it as untrusted'. Strict Unmarshal rejects unknown fields everywhere else, duplicate keys and trailing tokens."
   jurisdiction_fields: "venue, jurisdiction, rulebook_id, remedy_class, contestation_window, precedent_refs. These fields are reserved for forward compatibility. Current binaries do not populate them (receipt-prior-art-mapping.md)."
 
-open_questions:
-  - id: 2
-    question: >
-      Is a session's chain scoped to one agent, or can one session carry
-      receipts for several actors? decision_lineage stays partial unless
-      it is one agent.
-  - id: 3
-    question: >
-      For outcome and resolution phases, is the side effect already done
-      when the receipt is signed? That decides whether invariant_survival
-      should be split by phase.

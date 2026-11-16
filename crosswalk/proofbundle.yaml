@@ -20,8 +20,8 @@
 #
 # Scope note: draft-gruszka-audit-decision-receipts-09 admits a stricter subset
 # of the predicate: decisionType preActionAuthorization only and validity
-# required (draft 2 and 3.8, Figures 1 and 2). Optional relationships are
-# admitted in both predicates. Draft 3.5 checks supersedes entries over a
+# required (draft 2 and 3.8, Figure 1). Optional relationships are
+# admitted in both predicates (Figures 1 and 2). Draft 3.5 checks supersedes entries over a
 # supplied set of receipts. Rows below follow the predicate pages at the
 # commit above and distinguish their capabilities from the draft's checks.
 #
@@ -173,7 +173,7 @@ signal_types:
   settlement_witness:
     canonical: settlement_witness
     match: no_mapping
-    notes: "No settlement outcome record in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
+    notes: "No settlement outcome record in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6. Draft 2.4 says a later record, such as a countersignature or a settlement, can name the decision by its content root. That record is outside the format, so the row stays no_mapping."
 
   reasoning_integrity:
     canonical: reasoning_integrity
@@ -251,8 +251,10 @@ decision_trajectory:
       lineage state is computed by the verifier from supplied ancestors and
       is not counted as emitted.
 
-      Partial, for three stated reasons. (1) Edges are optional and are
-      written only on correction, re-run or withdrawal. Ordinary successive
+      Partial, for three stated reasons. (1) Edges are optional and the
+      issuer declares them, for example on correction, re-run or withdrawal.
+      Draft -09 also admits reason codes such as data-update and
+      policy-change (draft 3.8, notes 5 and 6). Ordinary successive
       decisions are not linked: an earlier ESCALATE receipt "is a separate
       record; this receipt does not reference it" (draft 2.1), and draft 6
       notes "Section 3.2 does not require a chain of decision receipts". So
@@ -267,7 +269,10 @@ decision_trajectory:
       and the predecessors reachable from it against the supplied held
       receipts. A missing predecessor or a mismatched targetSubjectDigest
       fails the check. Supplied held receipts must first pass the stated
-      preliminary checks. A predecessor need not pass every remaining
+      preliminary checks. If a supplied held receipt fails them, the input
+      is invalid and the Auditor reports no result for the third check,
+      which draft 3.5 keeps apart from an entry that fails because its
+      predecessor is missing. A predecessor need not pass every remaining
       receipt check, and expiry at evaluation time alone does not reject
       it. The check matches digests, does not require the same action,
       and establishes the issuer's declared relation, not that the
@@ -354,7 +359,7 @@ descriptor_dimensions:
 
   action_outcome:
     invariant_survival: post_action
-    note_invariant: "performedAt MUST NOT be earlier than the decision's decidedAt (draft 3.4 step 7)."
+    note_invariant: "performedAt MUST NOT be earlier than the decision's decidedAt and MUST be strictly earlier than its validity.expiresAt (draft 3.4 step 7)."
     note_measurement: >
       measurement_point left unset. The architecture asks for Action Records
       "at the boundary where the action took effect" (draft 2.3), but a

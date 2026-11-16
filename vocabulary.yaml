@@ -465,6 +465,32 @@ descriptor_dimensions:
   replay_class:
     question: "What level of replay is possible from recorded evidence alone?"
     values: ["full_replay", "decision_replay", "fingerprint_only", "no_replay"]
+    notes: |
+      decision_replay: a named evaluation procedure deterministically reproduces
+      a specified recorded determination using the exact historical policy and
+      evaluator versions. Every required input is recorded or bound by content
+      hash. Model outputs, time and live state observations are the values used
+      then, never replacements fetched later.
+      The crosswalk must name the determination, the policy and evaluator
+      versions, and who can run the replay. For referenced inputs it must state
+      their holder, access conditions and retention. Replay by an independent
+      third party is a stronger property and is stated separately.
+      Replay is possible only while the required inputs and evaluator remain
+      available to the stated audience. A missing input produces replay
+      unavailable, never a reproduced pass or fail.
+      The crosswalk must point to vectors for three cases: the historical
+      determination reproduced, a changed bound input rejected even when it would
+      yield the same verdict, and a missing input reported as replay unavailable.
+      fingerprint_only: supplied artifacts can be checked against the record's
+      input commitments, but historical recomputation has not been shown. Input
+      hashes alone support this value when their binding is established. Bound
+      inputs that are retained may support decision_replay once its criteria are
+      met.
+      Rendering a recorded decision does not establish decision_replay.
+      Re-evaluation counts only when it reproduces the historical determination
+      under the conditions above. Reproduction does not show that the evidence
+      was true or that the action took place.
+      See #255.
 
   governed_action_class:
     question: "What class of action is being governed?"

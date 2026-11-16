@@ -13,17 +13,17 @@
 #   schemas/decision-receipt-v0.1.schema.json    sha256 342ffd52ec1c0fcd9087f66dcc07d1876cde8e1872807ebf9a49cca1386ed992
 #   schemas/action-outcome-v0.1.schema.json      sha256 4ad36e88f928c04745a85b10465d38369d1682032aa10c1874098944771e5bc2
 # and the profile of the same receipts in
-#   draft-gruszka-audit-decision-receipts-05 (2026-11-02)
-#                                                sha256 b66f9180e9cd5dca9984d8a6b60987a4a2903f1b1f16abf7f111ca2752a444e6
+#   draft-gruszka-audit-decision-receipts-09 (2026-11-15)
+#                                                sha256 96ae285777a90474a18616da0f31ba8bbbc99b27e5a499f68d28a4db1a82a07c
 # Every quoted definition below is from those files. Section numbers are given
 # as "doc §n" for the predicate pages and "draft n" for the Internet-Draft.
 #
-# Scope note: draft-gruszka-audit-decision-receipts-05 admits a stricter subset
-# of the predicate (decisionType preActionAuthorization only, validity
-# required, no relationships member, draft 3.8, Tables 4 and 5 and the
-# member lists in 3.2 and 3.4). Rows below follow the predicate pages at the
-# commit above and say where the draft is narrower. The maintainer confirmed
-# the relationships difference on PR #241 and plans to clarify it in -07.
+# Scope note: draft-gruszka-audit-decision-receipts-09 admits a stricter subset
+# of the predicate: decisionType preActionAuthorization only and validity
+# required (draft 2 and 3.8, Figures 1 and 2). Optional relationships are
+# admitted in both predicates. Draft 3.5 checks supersedes entries over a
+# supplied set of receipts. Rows below follow the predicate pages at the
+# commit above and distinguish their capabilities from the draft's checks.
 #
 # Status of the parts: the decision receipt is "shipped in proofbundle 2.1.0
 # ... stable". action-outcome/v0.1 and relation/v0.1 are "EXPERIMENTAL ...
@@ -38,7 +38,7 @@ system:
   short_name: proofbundle
   home: https://github.com/b7n0de/proofbundle
   spec: https://github.com/b7n0de/proofbundle/blob/6d29ead36d8985f49a82b74c77eaa5a373dbeb61/docs/predicates/decision-receipt.md
-  spec_version: "decision-receipt/v0.1 (stable since 2.1.0), action-outcome/v0.1 and relation/v0.1 (experimental). Internet-Draft profile draft-gruszka-audit-decision-receipts-05."
+  spec_version: "decision-receipt/v0.1 (stable since 2.1.0), action-outcome/v0.1 and relation/v0.1 (experimental). Internet-Draft profile draft-gruszka-audit-decision-receipts-09."
   repo: https://github.com/b7n0de/proofbundle
   implementation: "Python package proofbundle (PyPI, 6.4.0 per draft 5), Go checker for the draft vectors, plugin preview in plugins/proofbundle"
   role: >
@@ -63,7 +63,9 @@ maintainer:
   mapped_system_maintainer:
     github: b7n0de
     project: b7n0de/proofbundle
-    confirmed_at: "2026-11-06"   # confirmed by the maintainer on PR #241 (comment 6679430165) for 9e40730, against proofbundle 6d29ead and draft -05
+    confirmed_at: null   # -09 re-pin awaits maintainer review
+    # Previous confirmation: 2026-11-06 on PR #241 (comment 6679430165),
+    # for 9e40730 against proofbundle 6d29ead and draft -05.
   crosswalk_contributor:
     github: aeoess
     author: Tymofii Pidlisnyi
@@ -85,7 +87,7 @@ system_attributes:
 # Search basis for every no_mapping and false_analog row below:
 #   docs/predicates/decision-receipt.md and action-outcome.md read in full,
 #   relation.md sections 1 to 4, both machine schemas, and
-#   draft-gruszka-audit-decision-receipts-05 sections 1 to 6, at the pins
+#   draft-gruszka-audit-decision-receipts-09 sections 1 to 6, at the pins
 #   above. Not read: eval-result, trust-pack, SPEC.md, the plugin source.
 # Each no_mapping note states this search bound, so the bound travels with
 # the note when it is quoted. A no_mapping row states that these sources were searched and no
@@ -118,9 +120,9 @@ signal_types:
       informed" (doc §2). (2) The row covers ALLOW receipts only. The verdict
       set is wider (ALLOW, DENY, REFUSE, ESCALATE, DEFER, OBSERVE), and a
       DENY or REFUSE does not attest that a requirement was met. The
-      maintainer confirmed this reading on PR #241. (3) The receipt is "not an access token. A
-      verified ALLOW is a record of a decision, and the executing system
-      makes its own authorization check" (draft 2.5). The receipt's own
+      maintainer confirmed this reading on PR #241. (3) "A verified ALLOW
+      is a record of a decision, and the executing system makes its own
+      authorization check" (draft 2.5). The receipt's own
       member notChecked lists what the decision maker did not check, which
       the canonical term has no slot for.
     issuers_in_production: []
@@ -161,72 +163,72 @@ signal_types:
   job_performance:
     canonical: job_performance
     match: no_mapping
-    notes: "action-outcome status (executed, refused, failed, partial) is the executor's statement about one action. No assessment of completed work found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "action-outcome status (executed, refused, failed, partial) is the executor's statement about one action. No assessment of completed work found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   peer_review:
     canonical: peer_review
     match: no_mapping
-    notes: "No task-completion attestation signed by a delegator in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6. delegationRefs is an open array of any values (draft Table 4) and draft 2 notes it is not used there."
+    notes: "No task-completion attestation signed by a delegator in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6. delegationRefs is an open array of any values (draft Figure 1) and draft 2 notes it is not used there."
 
   settlement_witness:
     canonical: settlement_witness
     match: no_mapping
-    notes: "No settlement outcome record in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No settlement outcome record in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   reasoning_integrity:
     canonical: reasoning_integrity
     match: no_mapping
-    notes: "The receipt 'carries no chain-of-thought' (doc §2) and commits inputs by digest. No record attesting reasoning found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "The receipt 'carries no chain-of-thought' (doc §2) and commits inputs by digest. No record attesting reasoning found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   trust_verification:
     canonical: trust_verification
     match: no_mapping
-    notes: "Binding decisionMaker.id to a key is a relying-party trust policy (doc §9). No identity verification status field found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "Binding decisionMaker.id to a key is a relying-party trust policy (doc §9). No identity verification status field found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   behavioral_trust:
     canonical: behavioral_trust
     match: no_mapping
-    notes: "No scored assessment of agent behavior in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No scored assessment of agent behavior in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   cognitive_attestation:
     canonical: cognitive_attestation
     match: no_mapping
-    notes: "agent.configurationDigest commits to a configuration by digest. No attestation of the model or runtime found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "agent.configurationDigest commits to a configuration by digest. No attestation of the model or runtime found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   compliance_risk:
     canonical: compliance_risk
     match: no_mapping
-    notes: "No scored exposure assessment in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No scored exposure assessment in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   entity_continuity:
     canonical: entity_continuity
     match: no_mapping
-    notes: "No continuity claim about an agent across sessions in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No continuity claim about an agent across sessions in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   passport_grade:
     canonical: passport_grade
     match: no_mapping
-    notes: "No graded standing for an agent in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No graded standing for an agent in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   security_posture:
     canonical: security_posture
     match: no_mapping
-    notes: "No signed posture assessment in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No signed posture assessment in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   completion_ratio:
     canonical: completion_ratio
     match: no_mapping
-    notes: "No aggregate metric found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6. A consumer could compute one over outcome status values."
+    notes: "No aggregate metric found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6. A consumer could compute one over outcome status values."
 
   wallet_state:
     canonical: wallet_state
     match: no_mapping
-    notes: "No wallet-holdings attestation field found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6. The chia-datalayer/v1 anchor type (doc §8) anchors a receipt's content root and is not a wallet signal."
+    notes: "No wallet-holdings attestation field found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6. The chia-datalayer/v1 anchor type (doc §8) anchors a receipt's content root and is not a wallet signal."
 
   wallet_intelligence:
     canonical: wallet_intelligence
     match: no_mapping
-    notes: "No wallet-behavior classification field found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No wallet-behavior classification field found in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
 # ──────────────────────────────────────────────────────────────
 # DECISION TRAJECTORY
@@ -253,21 +255,25 @@ decision_trajectory:
       written only on correction, re-run or withdrawal. Ordinary successive
       decisions are not linked: an earlier ESCALATE receipt "is a separate
       record; this receipt does not reference it" (draft 2.1), and draft 6
-      notes "Section 3.2 does not define a chain of decision receipts". So
+      notes "Section 3.2 does not require a chain of decision receipts". So
       there is no sequence of all decisions affecting one agent. (2) "A
       verified edge proves the issuer declared the derivation over exact
       bytes", "never that the successor is better" (relation §1). (3) The
-      profile is experimental. The predicate pages and both pinned schemas
-      (decision-receipt-v0.1 and action-outcome-v0.1, $defs/relationships)
-      admit an optional relationships member under relation/v0.1. Draft -05
-      does not: Tables 4 and 5 omit it, Section 3.8 excludes unlisted
-      predicate members, and the member lists in Sections 3.2 and 3.4 leave
-      it out. The maintainer confirmed this reading on PR #241 and wrote: "I
-      will clarify it in -07, either by admitting the optional member
-      consistently in the member lists and tables, or by explicitly
-      retaining the narrower draft profile." Sources for this row: relation.md
+      profile is experimental. The pinned predicate pages and both schemas
+      admit optional relationships under relation/v0.1. Draft -09 now
+      admits that member in both predicates too (draft 3.8, Figures 1
+      and 2), with the seven relation types listed above. Its third check
+      in Section 3.5 follows only supersedes entries, checking each entry
+      and the predecessors reachable from it against the supplied held
+      receipts. A missing predecessor or a mismatched targetSubjectDigest
+      fails the check. Supplied held receipts must first pass the stated
+      preliminary checks. A predecessor need not pass every remaining
+      receipt check, and expiry at evaluation time alone does not reject
+      it. The check matches digests, does not require the same action,
+      and establishes the issuer's declared relation, not that the
+      predecessor's state is correct. Sources for this row: relation.md
       and the predicate pages at 6d29ead for the experimental capability,
-      draft -05 for the narrower field rules.
+      draft -09 Sections 3.5 and 3.8 for the draft profile and checks.
 
       The outcome's decisionRef and the decision's evidenceRefs are content
       root links across record types (evidence, decision, outcome). They are
@@ -277,17 +283,17 @@ decision_trajectory:
   baseline_revision:
     canonical: baseline_revision
     match: no_mapping
-    notes: "No behavioral baseline in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No behavioral baseline in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
   divergence_signal:
     canonical: divergence_signal
     match: no_mapping
-    notes: "No measured behavioral deviation in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6. decisionChangeConditions lists what would change a decision. It records no measured change."
+    notes: "No measured behavioral deviation in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6. decisionChangeConditions lists what would change a decision. It records no measured change."
 
   trust_velocity:
     canonical: trust_velocity
     match: no_mapping
-    notes: "No trust score and no rate of change in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -05 Sections 1 to 6."
+    notes: "No trust score and no rate of change in the reviewed decision-receipt.md and action-outcome.md pages, their schemas and relation.md Sections 1 to 4 at 6d29ead, or draft -09 Sections 1 to 6."
 
 # ──────────────────────────────────────────────────────────────
 # DESCRIPTOR DIMENSIONS
@@ -301,9 +307,9 @@ descriptor_dimensions:
       The receipt records a verdict and gates nothing itself: "the executing
       system makes its own authorization check" (draft 2.5), and preventing
       reuse "remains the relying party's duty" (draft 4). The draft
-      describes the plugin preview hook obtaining a signed ALLOW before it
-      allows a covered write, as observations of the source and runbook,
-      not a measured execution (draft 5). The maintainer confirmed advisory
+      describes the plugin preview's separate signing service for covered
+      writes, based on source and runbook observations rather than a live
+      execution (draft 5.2). The maintainer confirmed advisory
       for the format on PR #241.
     refusal_authority: consumer_policy
     note_refusal: >
@@ -317,7 +323,7 @@ descriptor_dimensions:
       general predicate. validity is optional there (doc §6), and
       decisionType admits postHocReview, humanEscalation and
       policySimulation besides preActionAuthorization (doc §6). Both are
-      given below for the draft -05 profile, which requires validity and
+      given below for the draft -09 profile, which requires validity and
       preActionAuthorization.
     note_replay: >
       replay_class left unset. Inputs, policy and evidence are bound by
@@ -331,17 +337,20 @@ descriptor_dimensions:
       governed_action_class left unset. proposedAction.actionType is an open
       string. The plugin preview covers writes (draft 5).
 
-  decision_receipt_draft_05:
+  decision_receipt_draft_09:
     validity_temporal: at_acceptance
     note_validity: >
-      Under draft -05, validity carries audience, nonce and expiresAt. The
+      Under draft -09, validity carries audience, nonce and expiresAt. The
       verifier supplies the evaluation time T and requires
-      decidedAt <= T < expiresAt (draft 3.2 step 9). "A historical audit
-      time MUST NOT make an expired approval usable" (draft 4).
+      decidedAt <= T < expiresAt (draft 3.2 step 9). at_acceptance here
+      describes live approval use: the relying party uses its own current
+      time as T. A post-hoc Auditor instead takes T from its audit context
+      (draft 3.1). "A historical audit time MUST NOT make an expired approval
+      usable" (draft 4).
     invariant_survival: pre_action
     note_invariant: >
-      draft-gruszka-audit-decision-receipts-05 requires decisionType
-      preActionAuthorization (draft 3.8, Table 4).
+      draft-gruszka-audit-decision-receipts-09 requires decisionType
+      preActionAuthorization (draft 3.8, Figure 1).
 
   action_outcome:
     invariant_survival: post_action
@@ -365,8 +374,8 @@ descriptor_dimensions:
 # ──────────────────────────────────────────────────────────────
 proofbundle_specific_terms:
   content_root: "SHA-256 over the exact RFC 8785 canonical Statement bytes, never recomputed by re-canonicalizing (doc §3, §7.1). Used by evidenceRefs, decisionRef and relation edges. [evidence]"
-  notChecked: "List of {field, reason, impact} stating what the decision maker did not check. Required in strict mode and by draft Table 4, optional in the default verify mode (doc §6). [coverage_and_completeness]"
-  decisionChangeConditions: "List of {conditionType, description, requiredEvidenceType} stating what would change the decision. Required in strict mode and by draft Table 4, optional in the default verify mode (doc §6). [activation_condition]"
+  notChecked: "List of {field, reason, impact} stating what the decision maker did not check. Required in strict mode and by draft Figure 1, optional in the default verify mode (doc §6). [coverage_and_completeness]"
+  decisionChangeConditions: "List of {conditionType, description, requiredEvidenceType} stating what would change the decision. Required in strict mode and by draft Figure 1, optional in the default verify mode (doc §6). [activation_condition]"
   approval_record: "Record of one human act approving one action: approvalId, approver, session, actionDigest, approvedAt, validUntil, bound into inputSnapshot by digest, and not signed by the approver (draft 2.1, 2.5). [approval]"
   approval_single_use: "A relying party MUST honour each approval at most once, keyed by (approvalId, actionDigest, session), and MUST keep that state across rotation (draft 4). [approval, expiry_or_exhaustion]"
   evaluation_receipt_as_evidence: "An evaluation receipt appears only in evidenceRefs. 'A verifier MUST NOT treat a valid Signed Evaluation Receipt ... as permission for an action' (draft 2.6). [evidence]"

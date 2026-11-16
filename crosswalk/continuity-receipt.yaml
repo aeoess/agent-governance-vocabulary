@@ -19,8 +19,11 @@
 # calls 0.6 an experimental development candidate. Its authority.grant record
 # and chain_head member were read in schema/continuity-receipt-0.6.schema.json
 # and verify.py only, because the SPEC_0.6_DRAFT.md that SPEC.md cites is not in
-# the repository at this commit. Notes name them where they would change a row.
-# No row rests on them.
+# the repository at this commit. The maintainer confirmed on PR #252 that
+# ead0457 removed it and named the 0.6 schema, verify.py (_check_06_body,
+# _check_authority, _check_chain_head) and CONFORMANCE_TABLE.md section G as
+# the 0.6 sources. Notes name them where they would change a row. No row rests
+# on them.
 #
 # This is a third-party crosswalk drafted by aeoess (maintainer of this
 # registry), not by the protocol's maintainer. It is offered for the
@@ -132,6 +135,13 @@ signal_types:
 
       A TRUSTED bundle verdict means that the applicable receipt checks passed.
       It does not establish that the settlement occurred as claimed.
+
+      The maintainer confirmed this reading on PR #252. External settlement
+      evidence, such as an x402 transaction or reconciliation against an
+      invoice or Stripe, stays out of band. From 0.4, when a settlement
+      carries agreement_ref, the verifier requires settlement.issuer.id to
+      equal agreement.accept.offeree and reports UNTRUSTED with
+      agreement_issuer_mismatch otherwise.
     issuers_in_production: []
     signed_payload_fields:
       - receipts[].body.rail
@@ -170,7 +180,11 @@ signal_types:
       attestation is optional and its "absence is reported in the verifier
       summary but does not change the verdict" (SPEC 4.4). A partial match
       would need evidence of both the delegator role and completion semantics.
-      Question q2 asks about this.
+      The maintainer confirmed on PR #252 that the verifier checks the
+      signature against attestation.key without requiring that key to match
+      counterparty.id, that the spec does not restrict who the counterparty
+      is, and that the signature acknowledges the signed hashes and metadata.
+      Completion is the issuer-signed task.termination (SPEC 4.5).
 
   entity_continuity:
     canonical: entity_continuity
@@ -233,7 +247,7 @@ signal_types:
   security_posture:
     canonical: security_posture
     match: no_mapping
-    notes: "task.execution records sandbox_class and, for bwrap, a signed runner_profile (SPEC 0.5 changes). That describes one execution. No signed posture assessment of an artifact found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
+    notes: "task.execution records sandbox_class and, for bwrap, a runner_profile that the enclosing receipt signature covers, with no separate signature of its own (maintainer, PR #252). That describes one execution. No signed posture assessment of an artifact found in the reviewed SPEC.md, THREAT_MODEL.md, 0.5 schema or draft -00 at 330461b."
 
   completion_ratio:
     canonical: completion_ratio
@@ -320,7 +334,9 @@ descriptor_dimensions:
       for an action. No rule that a decision must precede the corresponding
       execution was found in SPEC 7, and task.execution appears in verify.py
       only in record shape checks. Nothing reviewed establishes that the
-      decision controls dispatch. Question q3 asks about this.
+      decision controls dispatch. The maintainer confirmed on PR #252 that
+      neither SPEC 7 nor verify.py checks this order, and that dispatch
+      gating belongs to the runtime gate, not the offline verifier.
     note_action_class: "governed_action_class left unset. action is an open tool or verb string (SPEC 4.2)."
 
 # ──────────────────────────────────────────────────────────────
@@ -334,14 +350,5 @@ cpr_specific_terms:
   agreement_ref: "Digest of the accept referenced by bound decision, execution, delivery and settlement records (SPEC 4.9, 7). Records the agreement linkage and does not independently show resource authorization."
   mandate_ref: "Hash on session.pass.created naming the mandate behind the pass (SPEC 4.1). The verifier checks presence (SPEC 7 step 4), which does not establish the mandate's validity or the issuer's external authority."
   verification_receipt: "A verifier's signed record of bundle_digest, verdict, errors, reasons and summary. Not a chain member (VERIFICATION_RECEIPTS.md). [evidence]"
-  state_commitment: "Record with state_kind, scope, count, head_digest and optional merkle_root (0.5 schema). SPEC.md cites a section 4.10 that is absent at this commit. [evidence]"
+  state_commitment: "Record with state_kind, scope, count, head_digest and optional merkle_root (0.5 schema). SPEC.md cites a section 4.10 that is absent at this commit. The maintainer added it in 9f229f8 and named the schema $defs.body_state_commitment, verify.py _check_05_body, CONFORMANCE_TABLE.md section F and vectors 22 to 22s as the sources at 330461b (PR #252). [evidence]"
   selective_redaction: "Optional fields replaced by a salted commitment at issuance, with the tail re-signed (SPEC 6). [evidence]"
-
-# ──────────────────────────────────────────────────────────────
-# OPEN QUESTIONS FOR THE MAINTAINER
-# ──────────────────────────────────────────────────────────────
-open_questions:
-  q1: "Does a settlement receipt assert only the issuer's claim, or is there a defined way to verify settlement against external rail evidence and the agreed terms? Does the issuer's role change the required verification?"
-  q2: "Who may sign counterparty.attestation on delivery.attestation? Can the signer be the delegating agent, and does the signature assert task completion or only acknowledge the signed request and response hashes?"
-  q3: "Must task.decision be recorded and verified before the corresponding task.execution? I found no such check in SPEC 7 or verify.py, so invariant_survival is unset. Is a gate expected to enforce that order?"
-  q4: "SPEC.md refers to section 4.10 for state.commitment and to SPEC_0.6_DRAFT.md and REVOCATION_DISTRIBUTION.md, which are not at 330461b. Which published source should consumers treat as the authority for those features?"

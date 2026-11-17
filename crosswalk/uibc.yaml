@@ -1,0 +1,219 @@
+# crosswalk/uibc.yaml
+#
+# Maps uibc (and its companion silent-failure-catalog) to the canonical
+# vocabulary in vocabulary.yaml v0.2.0 (draft, open for WG review).
+#
+# Written by the mapped system's own author, not by the vocabulary
+# maintainers. It states what we actually emit. Where we have nothing that
+# corresponds, the row is no_mapping rather than a stretched label.
+#
+# What uibc is: a receipt-side admission gate for agent actions. It runs a
+# declared check set over a receipt and its evidence and returns one of
+# PASS / FAIL / INCONCLUSIVE. A PASS means: within the observed evidence
+# boundary, no violation was detected. It says nothing about whether the
+# agent was correct, safe or wise, whether the inputs were true or complete,
+# or whether any real-world outcome followed. INCONCLUSIVE is emitted rather
+# than extending the claim past the boundary. Each decision class also carries
+# a freshness threshold (seconds); it is a policy parameter attached to the
+# verdict, not a signal of its own.
+#
+# Repos (both public, no credentials needed to read them):
+#   https://github.com/zhaoxinghua09-cell/uibc-core
+#   https://github.com/zhaoxinghua09-cell/silent-failure-catalog
+
+system:
+  name: uibc
+  display_name: "uibc / silent-failure-catalog"
+  home: "https://github.com/zhaoxinghua09-cell/uibc-core"
+  repo: "https://github.com/zhaoxinghua09-cell/uibc-core"
+  license: MIT
+  role: >
+    Receipt-side admission gate. Emits a signed verdict record with an
+    explicit evidence boundary and an explicit list of the checks that were
+    not run. Companion repository catalogues 16 patterns of checks that
+    return green while doing nothing; it is a failure-mode catalogue, not a
+    governance signal.
+
+license: Apache-2.0
+
+maintainer:
+  github: zhaoxinghua09-cell
+  confirmed_at: "2026-11-17"
+
+version: "0.1.0"
+vocabulary_ref: "v0.2.0 (draft)"
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "uibc PASS / FAIL / INCONCLUSIVE verdict record"
+    match: partial
+    evidence: emitted
+    source_path: "https://github.com/zhaoxinghua09-cell/uibc-core"
+    signed_payload_fields:
+      - "verdict"                      # PASS | FAIL | INCONCLUSIVE
+      - "evidence_boundary"            # the declared boundary of what was checked
+      - "checks_executed"              # ids of checks actually run
+      - "checks_skipped"               # list with reason; never omitted when non-empty
+    divergences:
+      - "positive vs negative claim: the canonical term attests that a declared requirement WAS satisfied; ours attests only that no violation was detected. We keep the negative half and refuse the positive half."
+      - "the subject is the declared check set, not the governed action class."
+    notes: |
+      Partial, not exact, because a consumer wiring ours in as an exact
+      governance_attestation would inherit a stronger claim than we make.
+      Consumers MUST NOT read a uibc PASS verdict as evidence that a
+      governance requirement was satisfied; within our semantics it means
+      only that no violation was detected in the declared check set.
+      The freshness threshold carried alongside the verdict is a policy
+      choice per decision class: setting it for the strictest class costs a
+      re-read on the cheapest ones, and the vocabulary has no field for that
+      cost side of the trade.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "receipt / acknowledgment / acceptance / closure (four distinct objects)"
+    match: partial
+    evidence: emitted
+    source_path: "https://github.com/zhaoxinghua09-cell/uibc-core"
+    signed_payload_fields:
+      - "type"                         # RECEIPT | ACKNOWLEDGED | ACCEPTANCE | DECISION_CLOSED
+      - "record_digest"
+      - "mandate_ref"
+      - "occurred_at"
+    divergences:
+      - "we split into four non-equivalent objects what the canonical term keeps as one receipt: receipt is not acknowledgment, is not acceptance, is not closure."
+      - "one of the four (ACKNOWLEDGED) has no canonical counterpart and would be read as a receipt by a consumer, which is a false economy."
+    notes: |
+      Partial with a named hazard: a reader who maps our ACKNOWLEDGED to
+      bilateral_receipt will conclude a receipt exists where only an
+      acknowledgment exists. That is the exact substitution our suite
+      separates. Consumers MUST inspect the `type` field before treating
+      any of our four objects as a receipt.
+
+  security_posture:
+    canonical: security_posture
+    internal: "revocation_establishment (five states)"
+    match: false_analog
+    evidence: emitted
+    source_path: "https://github.com/zhaoxinghua09-cell/uibc-core"
+    signed_payload_fields:
+      - "revocation_establishment"     # recorded | not_recorded | query_failed | cross_federation_unsynchronised | undetermined
+      - "coverage"                     # record_class, interval, head_or_count, completeness, uncovered_authorities
+      - "evidence_ref"
+    divergences:
+      - "different question: not 'what is the subject's posture' but 'what did the query at this instant establish about revocation'."
+      - "the value set carries an absence taxonomy (not_recorded / query_failed / cross_federation_unsynchronised / undetermined) that no canonical signal type carries."
+    notes: |
+      Marked false_analog rather than partial on purpose. The vocabulary has
+      no revocation-status signal (see the gaps block below), and
+      security_posture is close enough that a consumer could plausibly wire
+      our five-value field into it. That substitution is the false part:
+      posture is a standing assessment, ours is a point-in-time query result
+      with a declared evidence boundary. This classification may change if
+      the vocabulary adds a revocation_status signal type; until then,
+      false_analog is the honest row.
+
+  # ── canonical terms we do not implement ────────────────────────────────
+  # Each carries its own rationale: none of these is a stretched partial.
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "We issue no behavioural trust score and hold no data from which to compute one."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet-state attestation. Our subject is a receipt and its evidence, not a wallet balance or holding."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet classification or counterparty intelligence."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No passport or credential grade is issued; we do not grade the subject of a receipt."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No job or task performance measurement. We judge a receipt's conformance to a declared check set, not the quality of the work it describes."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No settlement or payment observation. Nothing in our record asserts that value moved."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No completion accounting. Our counters count checks, not tasks."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity assertion: we do not bind a prior and a present identity of the subject."
+
+# ─────────────────────────────────────────────────
+# GAPS — questions our record answers that the vocabulary has no signal for
+# Listed by name so the gap is stated rather than silently dropped. These
+# are not signal_types rows: there is no canonical key to hang them on,
+# which is exactly the point.
+# ─────────────────────────────────────────────────
+gaps_no_canonical_home:
+
+  - internal: "revocation status as a first-class signal (revocation_establishment, five states)"
+    note: |
+      The vocabulary has no signal type for revocation status. wallet_state,
+      security_posture, governance_attestation and trust_verification all
+      touch the subject; none of them asks "was this credential revoked, and
+      if we could not check, did we say so". Our five-state field exists
+      because that question has no home in the current registry. Proposing a
+      canonical revocation_status signal would need a second independent
+      implementer, which is the registry's own bar; we are not asserting it
+      unilaterally.
+
+  - internal: "event effectiveness (when a revocation takes effect, as distinct from when it is recorded)"
+    note: "No canonical field separates the moment a revocation takes effect from the moment it is recorded."
+
+  - internal: "cross-federation coverage declaration (named uncovered authorities)"
+    note: "No canonical field for a coverage declaration that names the authorities that were not reached."
+
+  - internal: "silent-failure taxonomy (16 catalogued patterns of checks that pass while doing nothing)"
+    note: |
+      This is why the companion catalogue repository exists. It is a
+      failure-mode catalogue, not a governance signal; claiming it as a
+      signal type would be a category error.
+
+# ─────────────────────────────────────────────────
+# ENFORCEABILITY
+# ─────────────────────────────────────────────────
+enforceability:
+  strong: "receipt-side checks a replayer can re-run from the published fixture set (21 gates plus the negative-control script)"
+  bounded: "the verdict holds only inside the declared evidence boundary; outside it we emit INCONCLUSIVE rather than extend the claim"
+  detectable_only: "anything derived from a source we cannot re-fetch at verification time"
+  reference: "https://github.com/zhaoxinghua09-cell/silent-failure-catalog/blob/main/index.md"
+
+# ─────────────────────────────────────────────────
+# ANCHOR
+# ─────────────────────────────────────────────────
+anchor:
+  type: "commit + sha256 manifests"
+  anchor_field: "manifest.sha256 / partOfEcosystem.json digest"
+  freshness: "per commit; regenerated in the same commit as any covered file"
+  withheld_condition: "no timestamp is claimed where only one TSA returned a token; a 50-byte error receipt is not a timestamp and is recorded as such"
+
+# ─────────────────────────────────────────────────
+# DRIFT
+# ─────────────────────────────────────────────────
+drift:
+  detected_field: "gate-parity result (21 gates, local == CI)"
+  divergence_field: "verdict disagreement between the independent verifier and the reference implementation"
+  baseline_field: "manifest digest recorded in VERIFICATION.md"
+  note: "A gate that runs green while doing nothing is the failure mode this system is built against; parity between local and CI is checked, not assumed."

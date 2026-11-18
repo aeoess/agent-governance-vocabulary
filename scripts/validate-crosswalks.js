@@ -7,6 +7,7 @@
 
 const fs = require('fs')
 const path = require('path')
+const { relPosix, isInside } = require('./repo-path')
 const yaml = require('js-yaml')
 const { normalizeDoc, normalizeMatch, rawMatch, aliasesFromVocab } = require('./match-types')
 
@@ -44,7 +45,7 @@ function containmentError(file) {
   } catch (e) {
     return `cannot resolve: ${e.message}`
   }
-  if (real !== ROOT_REAL && !real.startsWith(ROOT_REAL + path.sep)) {
+  if (!isInside(real, ROOT_REAL)) {
     return 'resolves outside the data root'
   }
   return null
@@ -95,7 +96,8 @@ const legacyOverrides = fs.existsSync(overridesPath)
   : []
 
 function isLegacyOverride(file, dotPath, value) {
-  const relFile = path.relative(ROOT, file)
+  // "/" form, so the allowlist matches on Windows too (see repo-path.js).
+  const relFile = relPosix(ROOT, file)
   return legacyOverrides.find(o =>
     o.file === relFile &&
     o.path === dotPath &&
@@ -868,7 +870,7 @@ function validateFixtures() {
   walkFixtures(FIXTURES_DIR)
   const SCOPE_KEYS = ['profile', 'normative_status', 'source_crosswalk', 'calibration_owner', 'evidence_basis']
   for (const full of fixtureFiles) {
-    const rel = path.relative(ROOT, full)
+    const rel = relPosix(ROOT, full)
     const contained = containmentError(full)
     if (contained) {
       err(full, contained)

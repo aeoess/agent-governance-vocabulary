@@ -49,7 +49,7 @@ maintainer:
   github: zhaoxinghua09-cell
   confirmed_at: "2026-11-18"
 
-version: "0.1.1"
+version: "0.1.2"
 vocabulary_ref: "v0.2.0 (draft)"
 
 # ─────────────────────────────────────────────────
@@ -131,7 +131,7 @@ signal_types:
   peer_review:
     canonical: peer_review
     match: no_mapping
-    notes: "No peer-review attestation is issued. Independent parties can re-run the verifier and publish their own reports (and have), but the system itself emits no per-task delegator-signed or peer-signed review object."
+    notes: "No peer-review attestation is issued. Independent parties can re-run the verifier and publish their own reports, but the system itself emits no per-task delegator-signed or peer-signed review object. As of 2026-11-18 we can point to no third-party published report, so the earlier claim that this had already happened is withdrawn rather than left as an unsupported parenthetical."
 
   reasoning_integrity:
     canonical: reasoning_integrity
@@ -244,7 +244,28 @@ anchor:
 # DRIFT
 # ─────────────────────────────────────────────────
 drift:
-  detected_field: "gate-parity result (catalogue hook == CI, enforced by an automated parity check)"
-  divergence_field: "verdict disagreement between the independent verifier and the reference implementation"
-  baseline_field: "manifest digest recorded in VERIFICATION.md"
-  note: "A gate that runs green while doing nothing is the failure mode this system is built against; parity between local and CI is checked, not assumed."
+  # What exists, by name and at a pinned commit. An earlier version of this
+  # file said "enforced by an automated parity check" and pointed baseline at
+  # VERIFICATION.md; neither held up when the reviewer opened both files.
+  detected_field: >-
+    Verdict disagreement between two independently written implementations, produced by
+    independent_verifier/cross_check.py over the shared fixture set (exit 0 = full
+    agreement, exit 1 = disagreement). It is a re-runnable check, NOT a CI gate: CI
+    (.github/workflows/ci.yml) runs `pytest tests` only, and cross_check.py is not
+    wired into it. Stated plainly rather than implied.
+  divergence_field: >-
+    The same signal: any disagreement between the two implementations is recorded as a
+    spec bug, not a code bug (cross_check.py docstring, Route step 9).
+  baseline_field: >-
+    manifest.json at the repository root: anchors.external.commit, anchors.internal.version,
+    and a per-file sha256 over file_count files. It is NOT in VERIFICATION.md — the earlier
+    text named the wrong file.
+  evidence_paths:
+    cross_check: "https://github.com/zhaoxinghua09-cell/uibc-core/blob/8f135e7e8143c2c12a7e7df9f63ad5a63439f181/independent_verifier/cross_check.py"
+    ci: "https://github.com/zhaoxinghua09-cell/uibc-core/blob/8f135e7e8143c2c12a7e7df9f63ad5a63439f181/.github/workflows/ci.yml"
+    baseline: "https://github.com/zhaoxinghua09-cell/uibc-core/blob/8f135e7e8143c2c12a7e7df9f63ad5a63439f181/manifest.json"
+  note: >-
+    A gate that runs green while doing nothing is the failure mode this system is built
+    against. What we can claim is that parity between the two implementations is
+    checkable by anyone from the published fixture set; we cannot claim it is enforced
+    on every commit, because it is not.

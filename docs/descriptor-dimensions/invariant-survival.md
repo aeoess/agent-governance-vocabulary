@@ -217,6 +217,41 @@ primitive identification, last-pre-mutation refusal, governed
 succession across boundaries). The descriptor exists so the claim can
 be made when it is honest, not so the claim is rewarded by default.
 
+## Measuring survival over time
+
+A passing result can hide a narrower check. For example, an
+invariant that previously covered every output channel may
+later be checked only against the primary channel. Both
+results pass, but they do not establish the same coverage.
+
+To make results comparable over time, measurement tools
+should record (field names are illustrative):
+
+- `invariant_definition_hash`: a hash identifying the
+  evaluation logic used for the measurement.
+- `invariant_definition_version`: the version of that
+  logic.
+- `invariant_scope`: the channels, actions or entities
+  actually checked.
+- `boundaries_checked`: the boundaries where the
+  invariant was evaluated, with references to the evidence.
+
+Before treating two results as part of the same series,
+compare the definition, scope and boundaries checked.
+If any of these changed, document the difference.
+
+A narrower definition, reduced scope or missing boundary
+cannot be presented as uninterrupted survival unless the
+earlier claim is still supported by evidence.
+
+These records show what was measured. They do not prove
+that an invariant remained enforced across every boundary
+in the governed path. When that cannot be established, state
+which boundaries were checked and which remain unverified.
+
+This is measurement guidance. It does not change the
+`invariant_survival` values or the crosswalk schema.
+
 ## What `invariant_survival` is NOT
 
 - **It is not a quality grade.** A correctly-declared `pre_action`

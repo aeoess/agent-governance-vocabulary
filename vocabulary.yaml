@@ -704,7 +704,13 @@ crosswalk_match_types:
   structural:
     definition: "Same primitive shape, different field names."
   partial:
-    definition: "Overlapping but not equivalent. Specify dimensions of divergence."
+    definition: "Overlapping but not equivalent. Specify dimensions of divergence.
+      A partial mapping MAY lack a property that the canonical definition
+      requires, such as a signature, only if it lists that property in `lacks`
+      and explains, in `notes`, `divergence` or `divergences`, what a consumer
+      who requires the property must not infer from the mapping. Lacking one property does not by itself make a
+      mapping false_analog, which needs a different underlying question and a
+      substitution hazard. See #254."
   false_analog:
     definition: "Answers a different governance question, and is close enough that a
       consumer could plausibly wire it up as the canonical primitive. The mapping
@@ -713,6 +719,26 @@ crosswalk_match_types:
       differs without that substitution hazard, use no_mapping."
   no_mapping:
     definition: "No analog in target system. Honest gap."
+
+# `lacks` (#254): an optional list on a signal mapping naming each property
+# that the canonical definition requires and the source does not have, for
+# example `lacks: [signature]` for an unsigned record mapped to a signal type
+# defined as a signed record. It is allowed only with match `partial`, because
+# exact and structural assert the property is there, and false_analog and
+# no_mapping already say the records are not equivalent. A consumer that
+# requires a listed property must not substitute the mapped record for the
+# canonical one. The explanation goes in `notes`, `divergence` or
+# `divergences`, as a nonblank string or a nonempty list of nonblank strings.
+# The validator checks the explanation's shape. Review assesses its meaning.
+# The matrix shows each missing property by name in the cell.
+# `lacks` describes a property absent from the mapped artifact, not a
+# capability missing from the whole system. The declaration must rest on
+# pinned evidence or the implementing maintainer's confirmation. When `lacks`
+# is absent, a consumer treats the property's presence as unknown.
+crosswalk_mapping_fields:
+  lacks:
+    applies_to_match: ["partial"]
+    definition: "Properties the canonical definition requires that the mapped source does not have."
 
 # Deprecated INPUT ALIAS, per issue #153. `non_equivalent_similar_label` was the
 # former spelling of `false_analog`. It is accepted on input, normalized before

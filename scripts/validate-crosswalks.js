@@ -172,6 +172,30 @@ function validateSystemAttributes(doc, file) {
   }
 }
 
+// `lacks` (#254): properties the canonical definition requires that the
+// source does not have. Only a partial mapping may carry it, and the row must
+// say in prose what follows, so the missing property travels with the mapping.
+// Shared by standard signal_types rows and alternative `mappings` rows.
+function hasProse(v) {
+  if (typeof v === 'string') return v.trim().length > 0
+  if (Array.isArray(v)) return v.length > 0 && v.every(x => typeof x === 'string' && x.trim().length > 0)
+  return false
+}
+function validateLacks(row, file, at) {
+  if (!row || typeof row !== 'object' || !Object.prototype.hasOwnProperty.call(row, 'lacks')) return
+  const lacks = row.lacks
+  const ok = Array.isArray(lacks) && lacks.length > 0
+    && lacks.every(v => typeof v === 'string' && /^[A-Za-z0-9_.-]+$/.test(v))
+  if (!ok) err(file, `${at}: \`lacks\` must be a non-empty list of property names (letters, digits, _ . -)`)
+  const m = normalizeMatch(row.match, matchAliases)
+  if (m !== 'partial') {
+    err(file, `${at}: \`lacks\` is allowed only with match "partial" (got "${row.match}"). Exact and structural assert the property is present, and false_analog and no_mapping already state non-equivalence`)
+  }
+  if (!hasProse(row.notes) && !hasProse(row.divergence) && !hasProse(row.divergences)) {
+    err(file, `${at}: \`lacks\` needs notes, divergence or divergences in prose, stating what a consumer who requires the property must not infer`)
+  }
+}
+
 // Issue #107: pairwise records are claims about two systems, not standard
 // vocabulary-to-system mappings. Validate their own structure fail-closed.
 function validatePairwiseComposition(doc, file) {
@@ -381,13 +405,14 @@ function validateSignalTypes(doc, file) {
       if (!canonicalMatchTypes.has(entry.match)) {
         err(file, `signal_types.${key}: match "${entry.match}" not in crosswalk_match_types (allowed: ${[...canonicalMatchTypes].join(', ')})`)
       }
-      if ((entry.match === 'structural' || entry.match === 'partial') && !entry.divergence && !entry.notes) {
+      if ((entry.match === 'structural' || entry.match === 'partial') && !entry.divergence && !entry.divergences && !entry.notes) {
         warn(file, `signal_types.${key}: match "${entry.match}" has no divergence or notes explaining the difference`)
       }
       if (entry.match === 'no_mapping' && !entry.notes && !entry.note) {
         warn(file, `signal_types.${key}: match "no_mapping" without a note explaining the gap`)
       }
     }
+    validateLacks(entry, file, `signal_types.${key}`)
     if (entry.evidence !== undefined) {
       // `evidence` qualifies a mapping. Without a `match` there is no mapping to
       // qualify, and the matrix would render the qualifier on an ungraded cell.
@@ -666,6 +691,7 @@ function validateAlternativeCrosswalk(doc, file) {
       if (!canonicalMatchTypes.has(normalizeMatch(row.match, matchAliases))) {
         err(file, `mappings[${i}].match invalid: ${String(row.match)}`)
       }
+      validateLacks(row, file, `mappings[${i}]`)
     })
     return true
   }

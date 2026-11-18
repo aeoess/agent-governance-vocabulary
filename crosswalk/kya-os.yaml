@@ -1,0 +1,322 @@
+# crosswalk/kya-os.yaml
+#
+# KYA-OS 1.0.0 (Know Your Agent Operating System, DIF Trusted AI Agents
+# Working Group), MCP binding -> Agent Governance Vocabulary
+#
+# Mapped artifacts:
+#   decentralized-identity/kya-os-mcp
+#   @ ffd3efa8582e306e8ef6cee5371ae7d3cdec0be6 (main, 2026-11-10, release 1.22.0):
+#     - SPEC.md lines 1 to 140 (status, terminology, overview), 443 to 770
+#       (sections 6.1 to 6.6, delegation, CRISP, graph, revocation), 930 to
+#       1235 (section 7, proof generation), 1436 to 1490 (section 11.0, trust
+#       model) and 1740 to 1806 (section 15.3, auditability).
+#     - SPEC-ENTITY-CARD.md section 8.1 to 8.3 (per-request holder-of-key
+#       proof, request binding).
+#     - AUDITABILITY.md lines 1 to 30.
+#     - schemas/audit-event.schema.json, the authorization object and the
+#       eventType enum.
+#     - README.md lines 1 to 80 and GOVERNANCE.md.
+#   decentralized-identity/kya-os-schema
+#   @ c403ad03e018e1d5a8b3f7ae2b61795eb9e24a65 (main, 2026-09-24):
+#     - required members and top-level properties of audit/event, audit/entry,
+#       audit/receipt v1.0.0, proof/detached v1.1.0 and delegation/credential
+#       v1.1.0.
+#
+# Not read: SPEC.md sections 4, 5, 6.7 to 6.10, 8 to 10, 11.1 to 14 and
+# the appendices, SPEC-MCP-EXTENSION.md, SPEC-AUDIT-READ.md, the rest of
+# AUDITABILITY.md and SPEC-ENTITY-CARD.md, and the conformance vectors
+# (file names only). The section 6.10 card-era profile (VC 2.0 plus
+# ZCAP-LD) is not mapped here.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the KYA-OS editors or DIF. It is offered for the
+# editor to correct or confirm. Inclusion does not indicate adoption or
+# endorsement.
+
+system:
+  name: KYA-OS (Know Your Agent Operating System)
+  short_name: KYA-OS
+  home: https://kya-os.org
+  spec: https://github.com/decentralized-identity/kya-os-mcp/blob/main/SPEC.md
+  spec_version: "KYA-OS Protocol Specification 1.0.0 (Stable), reference implementation @kya-os/mcp 1.22.0"
+  repo: https://github.com/decentralized-identity/kya-os-mcp
+  implementation: "TypeScript reference implementation @kya-os/mcp (MCP binding), audit module @kya-os/mcp/audit, JSON Schemas in schemas/ and decentralized-identity/kya-os-schema, conformance vectors in conformance/vectors"
+  role: >
+    "KYA-OS enables MCP servers to verify who is calling (agent DID), what
+    authority they hold (a delegation chain rooted at a Responsible Party,
+    expressed as W3C Verifiable Credentials), and what was done (signed
+    proof for audit trails)" (SPEC.md Abstract). Status: "Donated to DIF
+    TAAWG (Decentralized Identity Foundation, Trusted AI Agents Working
+    Group) and ratified as a DIF standard."
+  identity_layer: >
+    DIDs (did:key, did:web). The Responsible Party "is the root issuer of
+    the chain (issuerDid of the root DelegationCredential)". Trust registry
+    decisions "are advisory", and section 11.0 makes the cryptographic
+    delegation check the gate that decides.
+  upstream_license: "MIT (LICENSE in both repositories)."
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: H0BB5
+    project: decentralized-identity/kya-os-mcp (Initial Maintainer, Editor per GOVERNANCE.md; spec decisions made in DIF TAAWG)
+    # confirmed_at is set only after the maintainer confirms on the PR.
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: Ed25519 for delegation credentials ("Ed25519 (RFC
+# 8032), 64 bytes", section 6.2) and EdDSA for response proofs (section
+# 7.4). The section 8 request proof also allows ES256. All classical.
+# canonicalization: credential signing input is "the RFC 8785 (JCS)
+# canonicalization of the credential with its proof member removed"
+# (section 6.2). Request and response hashes "Convert request/response to
+# RFC 8785 (JCS) canonical JSON" (section 7.3). The audit layer uses
+# "SHA-256(UTF8(domain) || 0x00 || JCS(value))" (section 15.3).
+# hash_family: SHA-256 throughout the read sections.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
+
+# Search basis for every no_mapping row below: the sections listed as read
+# in the header, at the pinned commits. A no_mapping row says those
+# sections were searched and nothing corresponding was found. It is not a
+# claim about KYA-OS outside them.
+
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "Detached response proof under _meta org.kya-os/response-proof, JWS payload with outcome, scopeId, delegationRef, requestHash, responseHash"
+    match: partial
+    evidence: inferable
+    inferred_from: ["outcome", "scopeId", "delegationRef"]
+    inference_basis: >
+      The proof does not state that a requirement was satisfied. A consumer
+      concludes it from an allowed outcome together with a scopeId and a
+      delegationRef in the signed payload, and from the designation rule
+      that verifiers "MUST confirm that the designated scope is a member
+      of (or matches a pattern in) the delegation's authorized scopes"
+      before the handler runs (section 6.4.1). An absent outcome counts
+      as allowed (section 7.2).
+    notes: >
+      Overlap. The proof is signed by the server that gated the call, and
+      "Every optional ProofMeta member present on the proof (scopeId,
+      delegationRef, clientDid, outcome, reason, prf) appears in the
+      payload" (section 7.4), so the delegation scope that was checked is
+      under the signature. Denial and step-up proofs carry outcome,
+      optionally reason, and omit responseHash (section 7.4).
+
+      Divergence. The canonical term attests that an action "satisfied a
+      declared governance requirement". The proof's stated purpose is
+      "Non-repudiation: Cryptographic evidence that the server processed
+      the request" (section 7.1). outcome is optional and "ABSENT means
+      implicitly 'allowed' (success)" (section 7.2), and since 1.20 the
+      transport proves "every tool's result, unwrapped tools included",
+      except tools configured to stay unproven (README). A proof with no
+      delegationRef does not by itself establish that a delegation was
+      verified. Read as partial only for proofs that carry both
+      scopeId and delegationRef. Open question 1.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "Caller request proof org.kya-os/proof.v1 (SPEC-ENTITY-CARD section 8) plus server response proof (SPEC.md section 7)"
+    match: false_analog
+    notes: >
+      Two parties sign around one tool call. The caller's request proof
+      binds "THIS request body" through requestHash (SPEC-ENTITY-CARD
+      section 8.3), and the server's response proof carries requestHash
+      and responseHash. A consumer could pair the two and read them as a
+      bilateral receipt. They are two signatures over two different
+      preimages, and the canonical term needs "both parties' signatures
+      over the same canonicalized preimage" and a signed purpose. The two
+      requestHash values are not computed the same way. The request proof
+      removes only params._meta before hashing (SPEC-ENTITY-CARD section
+      8.3). The response proof also removes the _kyaos control arguments
+      of a tools/call (SPEC.md section 7.3). The encodings differ too
+      ("sha-256=:<b64>:" for the request proof, "sha256:<hex>" for the
+      response proof), and section 7.3 says the 1.x reference producers
+      "still emit requestHash over the legacy shape" for response proofs.
+      Open question 2.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "CRISP budget (unit, cap, window) constrains a delegation. No settlement verdict against expected terms in the search basis."
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "Agent identity is a DID and authority comes from the delegation chain. Section 11.0 calls registry decisions advisory. The Entity Card and KYC/KYB sections were not read, so this row may change."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: "No posture assessment in the search basis."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "Section 2 scopes reputation to the Responsible Party, but no scored assessment is defined in the search basis."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "AUDITABILITY.md says the protocol 'does not itself make an application compliant'. No scored exposure in the search basis."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No reasoning attestation in the search basis."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "No reasoning commitment in the search basis."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No delegator attestation of task completion in the search basis."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment in the search basis."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No completion metric in the search basis."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "key.rotated is an audit event type. No continuity attestation of the agent in the search basis."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing in the search basis."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet concept in the search basis."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet concept in the search basis."
+
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "Audit Entry Core v1, previousEntryDigest and sequence per (ledgerId, ledgerEpochId), with event.authorization.decision"
+    match: partial
+    evidence: emitted
+    source_path: "kya-os-schema schemas/v1/protocol/audit/entry/v1.0.0.json properties previousEntryDigest, sequence, event; audit/event/v1.0.0.json properties authorization.decision and actor"
+    notes: >
+      An authoritative recorder "assigns recorder time, a monotonically
+      increasing decimal sequence, the previous entry digest, and a signed
+      append receipt" (section 15.3). Producer events may carry an
+      authorization object with decision one of allowed, denied,
+      step_up_required and needs_authorization, and event types include
+      authorization.evaluated and tool.call.denied. Entries are
+      content-addressed and each names the digest of the entry before it,
+      which is the ordered, linked history the canonical term describes.
+
+      Partial on scope. The canonical lineage is decisions "affecting a
+      single agent". The chain is per ledger and epoch, mixes decision
+      events with session, key, checkpoint and retention events, and actor
+      is optional in the event schema. A per-agent lineage is a filter over
+      the ledger, not a chain of its own. Open question 3. Detached proofs
+      "do not assign chain position" (AUDITABILITY.md).
+
+  baseline_revision:
+    canonical: baseline_revision
+    match: no_mapping
+    notes: "No behavioral baseline in the search basis. policy.changed and policyVersion name a policy, not a baseline."
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured deviation from a baseline in the search basis."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score in the search basis."
+
+# Drafter's reading, each value with its basis, open to correction.
+descriptor_dimensions:
+  response_proof:
+    enforcement_class: binding
+    note_enforcement: >
+      The proof records the decision of the gate that runs before the
+      handler. wrapWithDelegation requires "the delegation's scopes to
+      contain that exact scopeId before the handler runs" (section 6.4.1),
+      and a denial yields a proof with outcome denied. The proof itself
+      refuses nothing after the fact. binding applies to delegation-gated
+      calls only. A proof for an unwrapped tool has no gate behind it.
+    validity_temporal: at_issuance
+    note_validity: "ts is in the signed payload. Revocation is out of the proof. Revocation checking is available at Conformance Level 3 only (section 6.6), and section 6.5.2 describes the race between a revocation and a call already in flight."
+    refusal_authority: verifier
+    note_refusal: >
+      The verifier refuses. At Conformance Level 1 it is an edge proxy that
+      "is part of the trusted computing base for any resource it gates"; at
+      Level 2 and above verification moves into the resource boundary
+      (section 11.0). The issuer of the delegation refuses only by
+      revoking.
+    invariant_survival: pre_action
+    note_invariant: >
+      The scope check runs before the handler (section 6.4.1). A success
+      proof is made after the tool ran (README), which fixes when the
+      decision was recorded, not whether the authorization still held when
+      the tool acted.
+    replay_class: fingerprint_only
+    note_replay: >
+      The proof carries SHA-256 digests of the request and response, not
+      their content, and a delegationRef, not the credential. A verifier
+      can check that given bytes match. Deciding again needs the
+      credential chain and its status as observed, which the audit replay
+      bundle carries and this file does not map.
+    note_measurement: "measurement_point is unset. The check runs at the MCP tool call boundary before the handler, and the pinned text does not say whether that is the last point where the call can still be refused."
+    note_governed_action: >
+      No single governed_action_class. Proofs cover any tools/call. The
+      delegation credential is a delegate action in the canonical sense,
+      but it is a grant, not a signal, and is described under
+      kya_os_specific_terms.
+
+kya_os_specific_terms:
+  DelegationCredential: "W3C VC whose credentialSubject 'MUST contain only two properties: id (the delegate's DID) and delegation (the permission payload)'. 'A DelegationCredential carries a permission, not a claim.' [delegated authority grant]"
+  Responsible Party: "'The entity ultimately accountable for the actions of an agent operating under a delegation chain', the root issuer. Distinct from Principal, 'the entity that immediately delegates authority to an agent'."
+  CRISP constraints: "Constraints, Resources, Identity, Scope, Policy. scopes, notBefore, notAfter, audience, budget (unit USD, ops or points, cap, rolling or fixed window), and scope matchers exact, prefix, path-prefix and regex."
+  attenuation rule: "'Child delegation's issuerDid MUST equal parent's subjectDid' and 'Scope constraints MUST be equal to or narrower than parent's constraints' (section 6.4)."
+  designation invariant: "'An invocation that omits the specific resource designation MUST be rejected, even if the delegation would have authorized it under any matching scope' (section 6.4.1)."
+  cascading revocation: "Revoking a delegation marks every descendant revoked. Issuers and ancestors may revoke; 'The subject of a delegation MAY NOT revoke it' (section 6.5.1). StatusList2021 is the publishing format, local state is allowed (section 6.6)."
+  Audit Assurance Profile: "AAP-0 to AAP-4, from 'no audit assurance' to independently observed RFC 9162 checkpoints. 'Implementations MUST advertise capabilities truthfully' (section 15.3)."
+
+open_questions:
+  - id: 1
+    question: >
+      governance_attestation is read as partial, and only for response
+      proofs that carry scopeId and delegationRef with an allowed outcome.
+      Is that how you would describe them, or do you see the proof as
+      evidence of processing only, which would make the row a false
+      analog?
+  - id: 2
+    question: >
+      Is the request proof meant to be paired with the response proof as
+      evidence that both parties signed off on one call? Today the two
+      requestHash values differ in what they remove before hashing and in
+      encoding. If a later version aligns them, would you call the pair
+      two-party evidence, or keep them separate by design?
+  - id: 3
+    question: >
+      Is one audit ledger expected to hold events for many agents, so that
+      a per-agent decision history is a filter over it? That decides
+      whether decision_lineage stays partial.

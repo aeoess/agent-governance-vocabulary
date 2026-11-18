@@ -61,6 +61,9 @@ const EVIDENCE_MARK = {
   inferable:  'ʰ', // superscript h, computed by the consumer, not asserted
   referenced: 'ʳ', // superscript r, resolved out of band
 }
+// A partial mapping that lacks a property the canonical definition requires
+// (#254) renders as "(lacks: name)" after the badge, so the row cannot read
+// as a plain partial match.
 
 // Per signal: `mapped` counts systems with a positive match, `addressed`
 // counts systems with any entry, including false_analog and no_mapping.
@@ -151,9 +154,11 @@ function loadInputs(root = REPO_ROOT, { normalize = true } = {}) {
       if (!signalNames.includes(name)) continue
       const m = entry && entry.match
       const ev = entry && entry.evidence
+      const lk = entry && entry.lacks
       cells[name] = {
         match: typeof m === 'string' ? m : '__ungraded__',
         evidence: typeof ev === 'string' ? ev : null,
+        lacks: Array.isArray(lk) ? lk.filter(v => typeof v === 'string' && v.trim()).map(v => v.trim()) : [],
       }
     }
     systems.push({ label: systemLabel(crosswalkDir, f), rel, cells })
@@ -169,7 +174,13 @@ function cellText(cell) {
   const base = m === '__ungraded__' ? UNGRADED : (BADGE[m] || m) // unknown match value renders as-is
   // The evidence qualifier travels with the claim. A mapping that is exact in
   // shape but not carried by the artifact must never render as a bare exact.
-  return base + (EVIDENCE_MARK[cell.evidence] || '')
+  // The lacks qualifier names each missing property in words, after the
+  // badge and any evidence mark, so it reads without the legend.
+  return base + (EVIDENCE_MARK[cell.evidence] || '') + lacksText(cell)
+}
+
+function lacksText(cell) {
+  return cell && cell.lacks && cell.lacks.length ? ` (lacks: ${cell.lacks.join(', ')})` : ''
 }
 
 function buildModel(inputs) {
@@ -223,6 +234,7 @@ function renderMarkdown(model, opts = {}) {
   lines.push(`- ${BADGE.no_mapping} \`no_mapping\` — explicit gap with technical rationale`)
   lines.push(`- ${EVIDENCE_MARK.inferable} suffix: \`evidence: inferable\`, the consumer computes the value and the issuer never asserts it`)
   lines.push(`- ${EVIDENCE_MARK.referenced} suffix: \`evidence: referenced\`, resolved out of band against state the artifact does not carry`)
+  lines.push("- `(lacks: …)` after a badge: a partial mapping whose artifact does not have the named properties the canonical definition requires (see the row's notes)")
   lines.push(`- ${UNGRADED} mapped but no \`match\` strength declared (legacy schema)`)
   lines.push(`- ${NOT_ADDRESSED} not addressed by this crosswalk`)
   lines.push('')
@@ -321,6 +333,7 @@ function renderHtml(model, opts = {}) {
   h.push(`<li>${BADGE.no_mapping} <code>no_mapping</code>: explicit gap with technical rationale</li>`)
   h.push(`<li>${EVIDENCE_MARK.inferable} suffix: <code>evidence: inferable</code>, the consumer computes the value and the issuer never asserts it</li>`)
   h.push(`<li>${EVIDENCE_MARK.referenced} suffix: <code>evidence: referenced</code>, resolved out of band against state the artifact does not carry</li>`)
+  h.push("<li><code>(lacks: …)</code> after a badge: a partial mapping whose artifact does not have the named properties the canonical definition requires (see the row's notes)</li>")
   h.push(`<li>${UNGRADED} mapped but no <code>match</code> strength declared (legacy schema)</li>`)
   h.push(`<li>${NOT_ADDRESSED} not addressed by this crosswalk</li></ul>`)
   h.push('<h2>Matrix</h2><div class="scroll"><table><thead><tr><th class="sys">System</th>')
@@ -391,7 +404,11 @@ function checkOutput(model, markdown, html, legacySpellings = []) {
     model.signals.forEach((signal, index) => {
       const cell = source && source.cells[signal.name]
       const mark = cell && EVIDENCE_MARK[cell.evidence]
-      if (mark && !String(r.cells[index]).endsWith(mark)) problems.push(`${r.label}/${signal.name}: evidence qualifier lost`)
+      const lacks = cell ? lacksText(cell) : ''
+      const shown = String(r.cells[index])
+      if (lacks && !shown.endsWith(lacks)) problems.push(`${r.label}/${signal.name}: lacks qualifier lost`)
+      const core = lacks && shown.endsWith(lacks) ? shown.slice(0, -lacks.length) : shown
+      if (mark && !core.endsWith(mark)) problems.push(`${r.label}/${signal.name}: evidence qualifier lost`)
     })
   }
   const labels = new Set()

@@ -1,0 +1,352 @@
+# crosswalk/agent-delegation-receipts.yaml
+#
+# Agent Delegation Receipts (draft-nelson-agent-delegation-receipts-15)
+# -> Agent Governance Vocabulary
+#
+# Mapped artifact: the Delegation Receipt as specified in
+# draft-nelson-agent-delegation-receipts-15 (R. Nelson, Authproof, dated
+# 21 October 2026, datatracker rev 15 posted 2026-10-22T04:47:20Z).
+# Text fetched 2026-10-28 from
+# https://www.ietf.org/archive/id/draft-nelson-agent-delegation-receipts-15.txt
+# sha256 43fb2664f026c91db496001d0bab29169cde810d5f791b79a8568c5e88338e6d
+# (97996 bytes). Every quoted definition below is from that file. Section
+# numbers refer to -15.
+#
+# Implementations examined, pinned:
+#   Commonguy25/authproof-sdk @ 5047798f27f7af1d84ba2ced60676a83feef76b7
+#     (main, 2026-10-10, package "authproof" 2.1.1, MIT). The draft calls this
+#     the reference implementation.
+#   receipt-commons/receipt-interop @ 18f90071b08f0f7401267934fdad7e8773006239
+#     (main, 2026-10-14, package.json license Apache-2.0, no LICENSE file in
+#     the tree). Verifies the "authproof-jws" profile.
+#
+# Version coherence, checked before mapping. -15 adds "delegateeKey" (4.3)
+# and deprecates "orchestratorSignature" (4.4). A text search of src/ at both
+# pinned commits found no occurrence of "delegateeKey". receipt-interop at its
+# pin does check typ "drp-receipt" and rejects with UNKNOWN_BODY_FIELD (-12
+# behaviour). authproof-sdk src/ at its pin has no UNKNOWN_BODY_FIELD string.
+# These are search results over the named trees, not statements about what
+# either project implements elsewhere. Rows below rest on the -15 text unless
+# they say otherwise.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the draft's author. It is offered for the author to
+# correct or confirm. Corrections to the native protocol reading are checked
+# against the cited source and the canonical vocabulary before recalibration.
+
+system:
+  name: Agent Delegation Receipts
+  short_name: DRP
+  home: https://datatracker.ietf.org/doc/draft-nelson-agent-delegation-receipts/
+  spec: https://www.ietf.org/archive/id/draft-nelson-agent-delegation-receipts-15.txt
+  spec_version: "draft-nelson-agent-delegation-receipts-15 (Intended status: Informational, individual submission)"
+  repo: https://github.com/Commonguy25/authproof-sdk
+  implementation: "authproof-sdk @ 5047798 (reference), receipt-interop @ 18f9007 (verifier library, same author)"
+  role: >
+    A signed authorization object produced before an agent acts. Abstract:
+    "a signed record of what a human principal authorized an AI agent to
+    do, for how long, and under what instructions." The receipt carries a
+    scope, hard boundaries, a validity window and a hash of the operator's
+    stated instructions, signed by the authorizing key. Sub-receipts form a
+    delegation chain with attenuation, a depth limit and cascade
+    revocation. The draft positions the receipt as audit and attribution:
+    "it makes misbehavior provable after the fact, not impossible" (1).
+  identity_layer: >
+    None defined. "signerPublicKey" is a JWK carried in the signed body and
+    is self-asserted. 11.2: "Verifiers MUST obtain the authorizing public
+    key through a trusted out-of-band channel or equivalent trust anchor".
+    "agentId" is an OPTIONAL opaque string (4.3).
+  upstream_license: >
+    Draft text under the IETF Trust Legal Provisions (BCP 78). authproof-sdk
+    MIT. receipt-interop declares Apache-2.0 in package.json.
+  ietf_status_note: >
+    Individual Internet-Draft, Informational, work in progress. These rows
+    track a moving draft and carry no interop-stability guarantee.
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: Commonguy25
+    project: draft-nelson-agent-delegation-receipts, Commonguy25/authproof-sdk
+    confirmed_at: null   # not yet reviewed by the mapped system's author
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: ES256 REQUIRED, EdDSA OPTIONAL, no PQC algorithm (6.5).
+# canonicalization_profile: JCS over the receipt body (5).
+# hash_family: SHA-256 for instructionsHash, receiptId and the other hex64
+# digests (4.1 "hex64 ... a SHA-256 digest", 6.6).
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: jcs-rfc-8785
+  hash_family: sha-256
+
+# Search basis for every no_mapping and false_analog row below:
+#   the -15 text named above, sections 1 to 15 and Appendix A,
+#   authproof-sdk src/ and vectors/ at 5047798 (file listing and text search),
+#   receipt-interop src/ at 18f9007 (text search).
+# A no_mapping row states that the named sources were searched and no
+# corresponding field or record was found. It is not a claim about the
+# project's capability outside those sources.
+
+# ──────────────────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# One partial fit (governance_attestation, the Pre-Execution Verification
+# gate's signed permit decision), two false_analog rows (bilateral_receipt
+# and decision_lineage), the rest
+# no_mapping on the search basis above.
+# ──────────────────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "Pre-Execution Verification gate permit decision, signed by the gate (10)"
+    match: partial
+    notes: >
+      Section 10: "The gate signs every decision (permit and deny) with its
+      own key and appends it to an immutable audit log (best-effort:
+      logging never changes the decision)." The decision states whether a
+      proposed action passed the receipt checks (signature, revocation,
+      time window, scope, instruction hash, chain) when the decision is
+      permit. That positive assertion overlaps the canonical requirement.
+      A deny decision records a failed requirement and is not mapped as an
+      attestation that the requirement was satisfied.
+
+      Partial, for three stated reasons. (1) The signed decision is a
+      requirement of the Pre-Execution Verification profile only, "not
+      requirements of the receipt format" (10). A verifier can conform to
+      the draft without emitting it. (2) The -15 text does not define the
+      decision record's fields or signing format, so no
+      signed_payload_fields can be listed from the spec. (3) The gate is
+      same-process: 11.2 "An operator who controls the runtime can simply
+      not call it." A consumer gets attestations only from deployments that
+      run the gate.
+
+      The Delegation Receipt itself is not mapped here. It is signed before
+      the action by the authorizing key and records the grant, not an
+      evaluation of a specific action. 2.4 calls it "Execution Layer
+      Evidence" for the grant it chains to, and states that "the receipt
+      proves the execution was covered, not that the principal reviewed
+      each action." Coverage of a given action is established by a
+      verifier at check time, which is the gate decision above.
+
+      Open question for the author: is the gate's signed decision record
+      intended to be specified (fields, signing input), or is it
+      deliberately left to the reference implementation?
+    issuers_in_production: []
+    signed_payload_fields: []
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    internal: "Delegation Receipt / Sub-Receipt"
+    match: false_analog
+    notes: >
+      The canonical term requires "both parties' signatures over the same
+      canonicalized preimage." A Delegation Receipt is a JWS (or
+      COSE_Sign1) by one key, the authorizing key (6, 7). A Sub-Receipt is
+      signed by the Orchestrator alone (2.2: "The Orchestrator signs the
+      sub-receipt."). The parent-to-child link is holder binding, the
+      child's "signerPublicKey" matching the parent's "delegateeKey"
+      (8.7), which is one signature per hop plus a key match, not two
+      signatures over one preimage. The draft also deprecates the second
+      signature that earlier revisions carried: "orchestratorSignature:
+      DEPRECATED as of -15" (4.4). No "purpose" field exists in the closed
+      body field set (4.1, 4.2, 4.3).
+
+      false_analog rather than no_mapping because the name "delegation
+      receipt" and the bilateral_receipt definition ("Two-party signed
+      delegation receipt") are close enough that a consumer could wire one
+      into the other. Recorded here so that does not happen.
+
+  trust_verification:
+    canonical: trust_verification
+    internal: none
+    match: no_mapping
+    notes: >
+      No verification status, grade or KYC presence about the agent was
+      found in the search basis. The draft leaves key-to-user binding out
+      of band (11.2) and key custody to the deployment (4.6, 15).
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    internal: none
+    match: no_mapping
+    notes: >
+      The receipt can carry a re-authorization threshold,
+      "reauthPolicy" member "trustScoreBelow" (number) (4.3), and the gate
+      lists "Session risk evaluation (optional)" as check 7 (10). Neither
+      is an issued score: the first is a threshold the issuer sets, the
+      second is not defined in the -15 text. No issued behavioral score
+      was found in the search basis. A consumer that reads trustScoreBelow
+      as a trust value would be reading a limit.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    internal: none
+    match: no_mapping
+    notes: >
+      The gate lists "Model state verification (optional)" as check 9
+      (10), and 11.2 describes "TEE and model-state features in the
+      reference implementation" as "software-computed, self-attested
+      measurements". The -15 text does not define what is measured.
+      Reviewed authproof-sdk src/model-state-attestation.js at 5047798.
+      computeMeasurement hashes caller-supplied modelId, modelVersion,
+      systemPromptHash, runtimeConfigHash and receiptHash. commit signs
+      those inputs and the measurement. No decision-time commitment to
+      reasoning content under a declared reduction map and faithfulness
+      scope was found in that module. Its own honesty note describes the
+      measurements as self-attested. This row does not claim that no other
+      artifact in the project could meet the canonical definition.
+
+  settlement_witness:
+    canonical: settlement_witness
+    internal: none
+    match: no_mapping
+    notes: "No settlement or payment outcome record in the search basis. 2.3 points payment mandates to AP2."
+
+  peer_review:
+    canonical: peer_review
+    internal: none
+    match: no_mapping
+    notes: "No task-completion attestation signed by a delegating agent was found in the search basis. The receipt is issued before the work."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing for the agent in the search basis."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity claim about the agent across sessions in the search basis. agentId is OPTIONAL and opaque (4.3)."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No aggregate completion metric in the search basis."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: >
+      programHash and toolSchemaHash bind the receipt to code and tool
+      schema digests (4.3), but they are inputs to an authorization check,
+      not a signed posture assessment of an artifact. Different question,
+      low substitution hazard.
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet or on-chain concept in the search basis."
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the search basis."
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No outcome assessment of completed tasks in the search basis."
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No attestation about the action's reasoning in the search basis."
+
+# ──────────────────────────────────────────────────────────────
+# DECISION TRAJECTORY
+# ──────────────────────────────────────────────────────────────
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "Delegation Chain (parentReceiptId links)"
+    match: false_analog
+    notes: >
+      Both are content-linked sequences, which is the substitution hazard.
+      The canonical term is an "ordered content-addressable sequence of
+      decisions affecting a single agent". A DRP Delegation Chain is "a
+      root receipt plus zero or more sub-receipts linked by
+      parentReceiptId, each hop narrowing scope" (2.2): a sequence of
+      grants across different delegatees, one per hop, not a sequence of
+      decisions about one agent. The link value is the parent's receiptId,
+      the SHA-256 of the issued signed artifact (4.4, 6.6), so the chain is
+      content-addressed in the canonical sense even though its subject
+      differs. The gate's audit log of signed decisions (10) would be the
+      closer candidate, but the -15 text specifies no hash chaining or
+      ordering for that log and puts log construction out of scope (15:
+      "This document assumes a tamper-evident log exists").
+
+# ──────────────────────────────────────────────────────────────
+# DESCRIPTOR DIMENSIONS
+# For the Delegation Receipt as an authority artifact. Drafter's reading,
+# each value with its basis, open to the author's correction.
+# ──────────────────────────────────────────────────────────────
+descriptor_dimensions:
+  delegation_receipt:
+    enforcement_class: binding
+    note_enforcement: >
+      For a conforming verifier the checks are fail-closed and denial is
+      mandatory (8.7 "Any failure denies the action", 9.4, 9.5). The draft
+      is explicit that this binds only deployments that run the verifier
+      (11.2), so binding here describes the verifier contract, not a
+      control over the operator.
+    validity_temporal: at_processing
+    note_validity: >
+      Validity is evaluated when an action is checked: "An action at time T
+      is temporally valid only if start <= T <= end" (4.2), revocation is
+      consulted before execution (9.1), and the time oracle is "a timestamp
+      from the deployment's tamper-evident log" (10, check 3). issuedAt is
+      "a claim, not a trusted timestamp" (4.2).
+    refusal_authority: verifier
+    note_refusal: >
+      The verifier denies. The issuer constrains through scope, boundaries
+      and flags such as revocationRequired and oneTimeUse, but does not
+      take part at check time.
+    invariant_survival: pre_action
+    note_invariant: >
+      All checks run before the action (10, "the component that runs the
+      checks in Sections 4-9 before an agent action executes"). The draft
+      pairs the receipt with "a signed log of what was actually done"
+      (2.3), whose format it does not define.
+    note_replay: >
+      No replay_class selected. Receipt signatures and static chain checks
+      can be recomputed, but replay of admission also needs the verification
+      time, trusted key inputs, revocation view and applicable consumption
+      state. The sources examined do not define a complete saved input set
+      for reproducing that decision. Receipt bytes do not reconstruct the
+      action's effects.
+    governed_action_class: delegate
+
+# ──────────────────────────────────────────────────────────────
+# DRP-SPECIFIC TERMS WITH NO CLEAN CANONICAL TARGET
+# Listed so the mapping states what the vocabulary does not name yet.
+# The nearest concept in vocabulary-lifecycle.yaml (INCUBATING,
+# descriptive only) is given in brackets as a pointer, not a mapping.
+# ──────────────────────────────────────────────────────────────
+drp_specific_terms:
+  grant_layer_authority: "2.2: 'The standing delegation: who may do what, within which bounds, for how long.' Term adopted from draft-chen-oauth-agent-authz-use-cases. [delegated_authority]"
+  execution_layer_evidence: "2.2: 'A verifiable, non-repudiable record generated when a specific action is taken, proving the execution was covered by a Grant Layer Authority.' The draft applies it to the Delegation Receipt itself (2.4)."
+  instructions_hash: "4.2: SHA-256 over the normalized operatorInstructions. The normalization is 'lossy by design: it detects semantic drift, not byte edits.' Binds what the operator said at grant time. No vocabulary term names operator instruction pinning."
+  boundaries: "2.2: 'Prohibitions embedded in a Delegation Receipt that survive any later operator instruction.' Advisory text unless mirrored in scopeSchema.deniedActions (4.2, 8.4)."
+  scope_schema: "4.5, 8.1: allowedActions and deniedActions over {operation, resource, constraints}, deny first, default deny. The only machine-enforced scope. [action_or_capability_binding, target_binding]"
+  attenuation: "8.5 applies when both parent and child carry scopeSchema. In that case the child must have strictly fewer allowedActions entries, each present in the parent by literal operation::resource key, with the stated denial and constraint checks. Equal structured scope is rejected. Wildcards are compared as strings, not expanded."
+  holder_binding: "8.7: the child's signerPublicKey MUST match the parent's delegateeKey (RFC 7638 thumbprints). A receipt with no delegateeKey is terminal (8.8)."
+  cascade_revocation: "9.3: 'Revoking any receipt in a delegation chain denies all of its descendants', enforced by the verifier's ancestor walk. Revocations are permanent (9.1). [revocation]"
+  authority_state_commitment: "4.3: SHA-256 commitment over roles, groups, entitlements and attributes at issuance, for drift detection. [authority_epoch is the nearest, not equivalent]"
+  one_time_use: "9.5: at most one action globally, fail closed without a durable shared consumption store. [expiry_or_exhaustion]"
+  key_custody_requirements: "4.6: non-exportable, gated on user verification, sole control, before a root receipt may be presented as the human principal's act. Custody 'is attested by the deployment, not proven by the format.' Related open issue in this registry: #146 (key custody as a system attribute)."
+
+# ──────────────────────────────────────────────────────────────
+# OPEN QUESTIONS FOR THE MAPPED SYSTEM'S AUTHOR
+# ──────────────────────────────────────────────────────────────
+open_questions:
+  - "Gate decision record: specified fields and signing input, or implementation-defined? Decides whether governance_attestation can list signed_payload_fields."
+  - "Which implementation emits -15 receipts (delegateeKey)? Neither pinned tree contains the string. If a later commit or branch does, the pins above move to it."
+  - "Is there another published artifact that commits to reasoning content under a declared reduction map and faithfulness scope at decision time? The reviewed model-state module commits to model and configuration measurements."
+  - "Which saved inputs reproduce admission, including time, trust, revocation and any consumption state? No unconditional replay_class is declared without that basis."
+  - "descriptor_dimensions: is validity_temporal at_processing the right reading of timeWindow plus log time, or does the author consider validity fixed at issuance?"

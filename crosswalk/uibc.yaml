@@ -1,0 +1,271 @@
+# crosswalk/uibc.yaml
+#
+# Maps uibc (and its companion silent-failure-catalog) to the canonical
+# vocabulary in vocabulary.yaml v0.2.0 (draft, open for WG review).
+#
+# Written by the mapped system's own author, not by the vocabulary
+# maintainers. It states what the published implementation actually emits,
+# verified field by field against a verifier report produced by following
+# the uibc-core README Quickstart (report and reconciliation script
+# available on request). Where we have nothing that corresponds, the row
+# is no_mapping rather than a stretched label.
+#
+# What uibc is: a receipt-side admission gate for agent actions. Its
+# verifier runs a declared check set over a submission package and its
+# evidence and emits a report whose overall `result` is one of
+# PASS / FAIL / INCONCLUSIVE. A PASS means: within the observed evidence
+# boundary, no violation was detected. It says nothing about whether the
+# agent was correct, safe or wise, whether the inputs were true or
+# complete, or whether any real-world outcome followed. INCONCLUSIVE is
+# emitted rather than extending the claim past the boundary.
+#
+# The report is NOT a signed object. The signature in the system is the
+# package seal (Ed25519 or HMAC-SHA256 over identity + manifest +
+# lifecycle), which the verifier checks and reports on; the report itself
+# carries no signature. Field lists below therefore use `emitted_fields`,
+# not `signed_payload_fields`.
+#
+# Repos (both public, no credentials needed to read them):
+#   https://github.com/zhaoxinghua09-cell/uibc-core
+#   https://github.com/zhaoxinghua09-cell/silent-failure-catalog
+
+system:
+  name: uibc
+  display_name: "uibc / silent-failure-catalog"
+  home: "https://github.com/zhaoxinghua09-cell/uibc-core"
+  repo: "https://github.com/zhaoxinghua09-cell/uibc-core"
+  license: Apache-2.0
+  role: >
+    Receipt-side admission gate. Emits an unsigned verifier report over a
+    sealed submission package, with the evidence boundary stated in the
+    report itself (`scope`, `limitations`, `checked`, `not_checked`).
+    Companion repository (MIT) catalogues 16 patterns of checks that
+    return green while doing nothing; it is a failure-mode catalogue, not
+    a governance signal.
+
+license: Apache-2.0
+
+maintainer:
+  github: zhaoxinghua09-cell
+  confirmed_at: "2026-11-18"
+
+version: "0.1.2"
+vocabulary_ref: "v0.2.0 (draft)"
+
+# ─────────────────────────────────────────────────
+# SIGNAL TYPE MAPPINGS
+# ─────────────────────────────────────────────────
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "uibc verifier report (overall `result`: PASS | FAIL | INCONCLUSIVE)"
+    match: partial
+    evidence: emitted
+    source_path: "https://github.com/zhaoxinghua09-cell/uibc-core/blob/8f135e7e8143c2c12a7e7df9f63ad5a63439f181/uibc_core/verify.py"
+    emitted_fields:
+      - "result"                       # PASS | FAIL | INCONCLUSIVE — worst of the per-check results
+      - "checks"                       # array of {id, name, result, detail}, one per check run (S1–S18 series)
+      - "checked"                      # what the run examined (e.g. structure, identity, lifecycle, evidence hashes, evidence root, seal signature)
+      - "not_checked"                  # what it did not (e.g. lifecycle event signatures, external timestamp anchoring, behavioral evaluation)
+      - "scope"                        # prose statement of the evidence boundary the result covers
+      - "limitations"                  # prose list of what the result does not establish
+      - "statement"                    # one-sentence reading of the result
+      - "trust_level"                  # anchored | unanchored | unattested — whether the seal key reached the verifier out-of-band
+      - "subject"                      # the agent_id named in the package manifest
+      - "verifier_id"                  # which verifier computed the report
+      - "spec_id"                      # the check-set specification the run followed
+    divergences:
+      - "positive vs negative claim: the canonical term attests that a declared requirement WAS satisfied; ours attests only that no violation was detected. We keep the negative half and refuse the positive half."
+      - "the subject is the declared check set, not the governed action class."
+      - "the report is unsigned: the seal it reports on covers the package (identity + manifest + lifecycle), not the report. A signed verdict record is not currently emitted."
+    notes: |
+      Partial, not exact, because a consumer wiring ours in as an exact
+      governance_attestation would inherit a stronger claim than we make.
+      Consumers MUST NOT read a uibc PASS result as evidence that a
+      governance requirement was satisfied; within our semantics it means
+      only that no violation was detected in the declared check set.
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    match: no_mapping
+    notes: |
+      No equivalent object exists in this implementation. The canonical
+      term requires both parties to sign the same preimage; uibc has no
+      two-party signed object — its only signature is the package seal,
+      applied by one party (the submitter) over identity + manifest +
+      lifecycle. An earlier draft of this crosswalk described a split
+      into receipt / acknowledgment / acceptance / closure objects with
+      fields such as `record_digest` and `mandate_ref`; those objects
+      belong to a separate standards-track text by the same author and
+      are not emitted by uibc-core, so the claim is withdrawn rather
+      than mapped.
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: |
+      The canonical term is a wallet-discoverable signed attestation
+      about an artifact. uibc emits no such attestation. An earlier
+      draft of this crosswalk mapped the term to a five-state
+      revocation field (`revocation_establishment`); that field is not
+      emitted by uibc-core either — the verifier performs no revocation
+      check at all (see the gaps section, where the missing
+      revocation-status signal is recorded as a vocabulary gap, not as
+      an emitted field). The false_analog framing is withdrawn: against
+      the canonical definition there is no mapping.
+
+  # ── canonical terms we do not implement ────────────────────────────────
+  # Each carries its own rationale: none of these is a stretched partial.
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "No attestation about reasoning or cognition. The verifier's own report lists behavioral evaluation under `not_checked`; its checks run over package structure, hashes and the seal, never over a reasoning trace."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure is computed or emitted. The report's overall `result` is a three-valued verdict over a declared check set, not a risk score, and no numeric compliance measure exists in the output."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No peer-review attestation is issued. Independent parties can re-run the verifier and publish their own reports, but the system itself emits no per-task delegator-signed or peer-signed review object. As of 2026-11-18 we can point to no third-party published report, so the earlier claim that this had already happened is withdrawn rather than left as an unsupported parenthetical."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "No evaluation of reasoning integrity. The check set covers evidence structure, content hashes, the evidence root, lifecycle consistency and the seal signature — the integrity of the record, not of the reasoning that produced it."
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "We do not verify or attest an identity's trust status. The report's `trust_level` describes the verification run itself — whether the seal key reached the verifier through an out-of-band channel (anchored) or was read out of the package (unanchored) — not a standing verification of the subject."
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "We issue no behavioural trust score and hold no data from which to compute one."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet-state attestation. Our subject is a receipt and its evidence, not a wallet balance or holding."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet classification or counterparty intelligence."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No passport or credential grade is issued; we do not grade the subject of a receipt."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "No job or task performance measurement. We judge a receipt's conformance to a declared check set, not the quality of the work it describes."
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No settlement or payment observation. Nothing in our record asserts that value moved."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No completion accounting. Our counters count checks, not tasks."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "No continuity assertion: we do not bind a prior and a present identity of the subject."
+
+# ─────────────────────────────────────────────────
+# GAPS — questions the vocabulary has no signal type for
+# Listed by name so the gap is stated rather than silently dropped.
+# Scoped honestly: the first three are gaps we flag from standards-track
+# work by the same author; uibc-core does not emit them either, and this
+# section does not claim otherwise. The fourth is the companion
+# catalogue's reason to exist.
+# ─────────────────────────────────────────────────
+gaps:
+
+  - area: "Revocation status as a first-class signal"
+    notes: |
+      The vocabulary has no signal type for revocation status.
+      wallet_state, security_posture, governance_attestation and
+      trust_verification all touch the subject; none of them asks "was
+      this credential revoked, and if we could not check, did we say
+      so". A five-state absence taxonomy (recorded / not_recorded /
+      query_failed / cross_federation_unsynchronised / undetermined)
+      exists in the maintainer's standards-track text on revocation
+      establishment; it is a proposal, not an emitted field — uibc-core's
+      verifier performs no revocation check, which our own published
+      audit records as an open limitation. Proposing a canonical
+      revocation_status signal would need a second independent
+      implementer, which is the registry's own bar; we are not asserting
+      it unilaterally.
+
+  - area: "Event effectiveness (when a revocation takes effect, as distinct from when it is recorded)"
+    notes: "No canonical field separates the moment a revocation takes effect from the moment it is recorded. Flagged from the same standards-track work; not emitted by uibc-core."
+
+  - area: "Cross-federation coverage declaration (named uncovered authorities)"
+    notes: "No canonical field for a coverage declaration that names the authorities that were not reached. Flagged from the same standards-track work; not emitted by uibc-core."
+
+  - area: "Silent-failure taxonomy"
+    notes: |
+      16 catalogued patterns of checks that pass while doing nothing.
+      This is why the companion catalogue repository exists. It is a
+      failure-mode catalogue, not a governance signal; claiming it as a
+      signal type would be a category error.
+
+# ─────────────────────────────────────────────────
+# ENFORCEABILITY
+# ─────────────────────────────────────────────────
+enforceability:
+  strong: "receipt-side checks a replayer can re-run from the published fixture set (the verifier's check set plus the negative-control fixtures)"
+  bounded: "the verdict holds only inside the declared evidence boundary; outside it we emit INCONCLUSIVE rather than extend the claim"
+  detectable_only: "anything derived from a source we cannot re-fetch at verification time"
+  reference: "https://github.com/zhaoxinghua09-cell/silent-failure-catalog/blob/main/index.md"
+
+# ─────────────────────────────────────────────────
+# ANCHOR
+# ─────────────────────────────────────────────────
+anchor:
+  type: "manifest content hashes + evidence root, sealed"
+  anchor_field: "evidence root (sha256 over canonical JSON of the content hashes), covered by the package seal"
+  freshness: "per package; a verdict is computed at verification time and nothing is cached"
+  withheld_condition: "timestamps inside a package are self-asserted unless an RFC 3161 token is present and verifies (check S16); the report's `limitations` say so on every run"
+
+# ─────────────────────────────────────────────────
+# DRIFT
+# ─────────────────────────────────────────────────
+drift:
+  # What exists, by name and at a pinned commit. An earlier version of this
+  # file said "enforced by an automated parity check" and pointed baseline at
+  # VERIFICATION.md; neither held up when the reviewer opened both files.
+  detected_field: >-
+    Verdict disagreement between two independently written implementations, produced by
+    independent_verifier/cross_check.py over the shared fixture set (exit 0 = full
+    agreement, exit 1 = disagreement). It is a re-runnable check, NOT a CI gate: CI
+    (.github/workflows/ci.yml) runs `pytest tests` only, and cross_check.py is not
+    wired into it. Stated plainly rather than implied.
+  divergence_field: >-
+    The same signal: any disagreement between the two implementations is recorded as a
+    spec bug, not a code bug (cross_check.py docstring, Route step 9).
+  baseline_field: >-
+    manifest.json at the repository root: anchors.external.commit, anchors.internal.version,
+    and a per-file sha256 over file_count files. It is NOT in VERIFICATION.md — the earlier
+    text named the wrong file.
+  evidence_paths:
+    cross_check: "https://github.com/zhaoxinghua09-cell/uibc-core/blob/8f135e7e8143c2c12a7e7df9f63ad5a63439f181/independent_verifier/cross_check.py"
+    ci: "https://github.com/zhaoxinghua09-cell/uibc-core/blob/8f135e7e8143c2c12a7e7df9f63ad5a63439f181/.github/workflows/ci.yml"
+    baseline: "https://github.com/zhaoxinghua09-cell/uibc-core/blob/8f135e7e8143c2c12a7e7df9f63ad5a63439f181/manifest.json"
+  note: >-
+    A gate that runs green while doing nothing is the failure mode this system is built
+    against. What we can claim is that parity between the two implementations is
+    checkable by anyone from the published fixture set; we cannot claim it is enforced
+    on every commit, because it is not.

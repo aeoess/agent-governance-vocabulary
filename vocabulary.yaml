@@ -505,19 +505,54 @@ system_attributes:
 
   canonicalization_profile:
     question: "What canonicalization rule does this system apply before signing?"
-    values: ["jcs-rfc-8785", "dcp-jcs-v1", "json-canonical-2008", "implementation-defined"]
+    values: ["jcs-rfc-8785", "dcp-jcs-v1", "json-canonical-2008", "implementation-defined", "not-applicable"]
     notes: |
       Two systems declaring identical signature_capability with different
       canonicalization profiles will not produce byte-equal signatures over
       the same JSON. This incompleteness is a schema-level invariant, not
       something to reconstruct downstream.
 
+      This attribute covers one step only, turning a record into the bytes
+      that are hashed or signed. How hashes are chained and how signatures
+      are wrapped are separate facts and are not recorded here, so two
+      systems with the same profile can still differ in both.
+
       jcs-rfc-8785: RFC 8785 JSON Canonicalization Scheme (most common).
       dcp-jcs-v1: DCP-AI variant declared in crosswalk/dcp-ai.yaml.
       json-canonical-2008: legacy.
-      implementation-defined: declare the rule in the crosswalk's `notes` field.
+      implementation-defined: a rule not covered by the values above. Name
+        the rule in the crosswalk's `notes` field and, where it is known,
+        say where it is defined in `canonicalization_source`.
+      not-applicable: the signing pipeline has no separate canonicalization
+        step and signs bytes that are already serialized, for example a JSON
+        Web Signature (JWS) or JSON Web Token (JWT) payload. Name the signing
+        format in `notes`.
 
       Production implementations: SAR (RFC 8785), DCP-AI (dcp-jcs-v1), APS (RFC 8785).
+
+  canonicalization_source:
+    question: "Where is the exact construction of the bytes that are hashed or signed defined?"
+    values: ["external-standard", "project-specification", "implementation"]
+    notes: |
+      Records where the rule named in canonicalization_profile is defined,
+      separately from which rule it is. A verifier written by someone else
+      can follow a published specification, but has to recover a rule that
+      exists only in code from that code. See #253.
+
+      external-standard: a standard published outside the project, such as
+        RFC 8785.
+      project-specification: the project's own published, versioned
+        specification defines the exact byte construction. The crosswalk
+        names the rule and gives a pinned reference to the specification,
+        its version and every normative section. The declaration alone does
+        not qualify, and neither does naming a function or pointing to code.
+      implementation: the rule is defined only by the project's code.
+
+      Optional. Existing crosswalks keep their current values, and a missing
+      value says nothing about whether a specification exists. The value is
+      set when the system's maintainer confirms where the rule is defined.
+      Two systems with project-specification do not use compatible rules
+      unless their profiles say so.
 
   hash_family:
     question: "What hash family does this system use in its signature pipeline?"

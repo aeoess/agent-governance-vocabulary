@@ -1,0 +1,360 @@
+# crosswalk/nono.yaml
+#
+# nono session audit, audit-session attestation and approval decisions ->
+# Agent Governance Vocabulary
+#
+# Mapped artifact: nolabs-ai/nono
+# @ 540850e3ca2cfd9ac09282b56ae21105a5eb3fcd (main, 2026-11-19T10:46:03Z,
+# latest release v0.82.0 published 2026-11-14):
+#   - docs/cli/features/audit.mdx, read in full.
+#   - docs/protocols/approval-webhook-v1.md, read in full.
+#   - docs/protocols/managed-policy-v2.md lines 90 to 114 ("Session evidence
+#     and output").
+#   - docs/protocols/audit-delivery-v1.md lines 1 to 40 (enrollment, start of
+#     signed ingest).
+#   - docs/cli/features/tool-sandbox.mdx lines 853 to 870 ("Audit Record").
+#   - crates/nono/src/audit.rs lines 20 to 245 (domain separators, predicate
+#     type, AuditEventPayload, CommandPolicyAuditEvent, AuditEventRecord),
+#     296 to 315 (LedgerRecord), 968 to 1000 (session digest payload) and
+#     1186 to 1270 (sign_audit_attestation_bundle). Not read in full.
+#   - crates/nono/src/undo/types.rs, SessionMetadata (lines 504 to 541).
+#   - crates/nono/src/trust/signing.rs and bundle.rs, ECDSA P-256 lines found
+#     by grep. Not read in full.
+#   - crates/nono-cli/src/platform_policy.rs lines 22 to 36 (PolicySession)
+#     and 440 to 455 (with_effective_profile), crates/nono-cli/src/
+#     supervised_runtime.rs lines 304 to 311 (platform_policy extension
+#     emitted after session_started) and crates/nono/src/audit.rs lines 578
+#     to 600 and 632 to 654 (record_extension_event and append_serialized,
+#     which chains it). Read 2026-11-20.
+#
+# Not mapped here: rollback snapshots, the network proxy audit event in
+# detail, the remote attach and remote run protocols, nono-bundle-v1 and
+# package trust, and the signed ingest envelope beyond its first lines.
+#
+# This is a third-party crosswalk drafted by aeoess (maintainer of this
+# registry), not by the nono maintainers. It is offered for them to correct
+# or confirm. Inclusion does not indicate adoption or endorsement.
+
+system:
+  name: nono
+  short_name: nono
+  home: https://nono.sh
+  spec: https://github.com/nolabs-ai/nono/blob/540850e3ca2cfd9ac09282b56ae21105a5eb3fcd/docs/cli/features/audit.mdx
+  spec_version: "nono v0.82.0 line, audit Merkle scheme alpha, attestation predicate https://nono.sh/attestation/audit-session/alpha (version 1), approval webhook protocol v1"
+  repo: https://github.com/nolabs-ai/nono
+  implementation: "Rust, crates/nono (audit, trust, supervisor types) and crates/nono-cli (audit commands, approval runtime, platform policy), binary nono"
+  role: >
+    "a capability-based process level sandboxing system for running
+    untrusted AI agents" (CONTRIBUTING.md). "Every `nono run` session is
+    recorded by default" and "the trusted supervisor records the session,
+    the event log is committed with a Merkleized integrity structure, and
+    optional signing lets a key holder attest to the completed session"
+    (docs/cli/features/audit.mdx).
+  identity_layer: >
+    Keys. --audit-sign-key signs with a keyed ECDSA P-256 key, and the
+    attestation names key_id. "Supplying `expected_public_key` is what gives
+    the result an external trust anchor; without it, verification proves
+    only that the bundle, metadata summary, and embedded public key are
+    internally self-consistent" (audit.rs). Approval reviewer identity is
+    whatever the approval backend returns. Control plane enrollment binds a
+    subject_id to a tenant (audit-delivery-v1.md).
+  upstream_license: "Apache-2.0 (LICENSE)."
+
+license: Apache-2.0
+
+maintainer:
+  mapped_system_maintainer:
+    github: lukehinds
+    project: nolabs-ai/nono (Maintainer Council per MAINTAINERS.md, with SequeI, panga and kipz)
+    confirmed_at: null
+  crosswalk_contributor:
+    github: aeoess
+    author: Tymofii Pidlisnyi
+  third_party_authored: true
+
+# signature_capability: the audit attestation is a keyed DSSE envelope over
+# an in-toto statement, ECDSA P-256 with SHA-256 over the PAE
+# (trust/signing.rs, trust/bundle.rs), which is classical.
+# canonicalization: event leaves hash the serde_json::to_vec bytes of the
+# event, kept as event_json, and DSSE signs the statement payload bytes. No
+# JSON canonicalization scheme is applied, so the rule is
+# implementation-defined.
+# hash_family: AUDIT_HASH_ALGORITHM is "sha256" (audit.rs line 38), with
+# domain separators for leaf, chain, Merkle node, session digest and ledger
+# hashes.
+system_attributes:
+  signature_capability: classical
+  canonicalization_profile: implementation-defined
+  hash_family: sha-256
+
+# Search basis for every no_mapping row below: the files listed as read in
+# the header, at 540850e. A no_mapping row states that those files were
+# searched and no corresponding field or record was found. It is not a claim
+# about nono outside them.
+
+signal_types:
+
+  governance_attestation:
+    canonical: governance_attestation
+    internal: "audit-attestation.bundle, DSSE over an in-toto statement with predicate type https://nono.sh/attestation/audit-session/alpha, subject audit-session:<session_id> with the audit Merkle root as digest"
+    match: false_analog
+    evidence: emitted
+    source_path: "crates/nono/src/audit.rs sign_audit_attestation_bundle, AuditAttestationPredicate { version, session_id, started, ended, command, redaction_policy, audit_log { hash_algorithm, event_count, chain_head, merkle_root }, signer { kind, key_id } }"
+    notes: >
+      Provisional. The shape is close: a signed statement about one agent
+      run. The claim is different. The signature answers "did a holder of
+      this signing key attest to this completed session?"
+      (docs/cli/features/audit.mdx), over the audit log root and session
+      context. It does not state that the session or any action satisfied
+      a declared requirement, and the predicate names no policy or profile.
+      A consumer that reads the bundle as a compliance attestation would
+      read more into it than nono signs. The docs also say that without an
+      external timestamp or transparency log "this remains host-local
+      attestation material rather than a globally witnessed timestamped
+      proof".
+
+  bilateral_receipt:
+    canonical: bilateral_receipt
+    match: no_mapping
+    notes: >
+      The audit attestation has one signer. In the signed approval webhook
+      variant the client signs each request with its enrolled key, and the
+      status body returned by the server is not described as signed. No
+      record carries two parties' signatures over one preimage.
+
+  settlement_witness:
+    canonical: settlement_witness
+    match: no_mapping
+    notes: "No settlement or payment concept in the search basis."
+
+  trust_verification:
+    canonical: trust_verification
+    match: no_mapping
+    notes: "Enrollment binds a subject_id to a tenant for delivery and approvals. No verification status of an agent's identity is recorded."
+
+  security_posture:
+    canonical: security_posture
+    match: no_mapping
+    notes: >
+      The supervisor records the main executable's resolved path and
+      SHA-256 (executable_identity), and filesystem Merkle roots with
+      --audit-integrity. These describe one run, not a posture assessment,
+      and no wallet or lookup key is involved.
+
+  behavioral_trust:
+    canonical: behavioral_trust
+    match: no_mapping
+    notes: "No scored assessment in the search basis."
+
+  compliance_risk:
+    canonical: compliance_risk
+    match: no_mapping
+    notes: "No scored exposure assessment in the search basis."
+
+  reasoning_integrity:
+    canonical: reasoning_integrity
+    match: no_mapping
+    notes: "Records cover commands, capability requests, network and URL-open events. No reasoning content."
+
+  cognitive_attestation:
+    canonical: cognitive_attestation
+    match: no_mapping
+    notes: "No reasoning commitment in the search basis."
+
+  peer_review:
+    canonical: peer_review
+    match: no_mapping
+    notes: "No delegator attestation of task completion."
+
+  job_performance:
+    canonical: job_performance
+    match: no_mapping
+    notes: "exit_code is recorded. No outcome assessment."
+
+  completion_ratio:
+    canonical: completion_ratio
+    match: no_mapping
+    notes: "No completion measure in the search basis."
+
+  entity_continuity:
+    canonical: entity_continuity
+    match: no_mapping
+    notes: "The session ledger links sessions on one host. It does not bind one agent identity across a key or host change."
+
+  passport_grade:
+    canonical: passport_grade
+    match: no_mapping
+    notes: "No graded standing in the search basis."
+
+  wallet_state:
+    canonical: wallet_state
+    match: no_mapping
+    notes: "No wallet concept in the search basis."
+
+  wallet_intelligence:
+    canonical: wallet_intelligence
+    match: no_mapping
+    notes: "No wallet concept in the search basis."
+
+decision_trajectory:
+  decision_lineage:
+    canonical: decision_lineage
+    internal: "audit-events.ndjson per session, AuditEventRecord { sequence, prev_chain, leaf_hash, chain_hash, event_json, event }, and the append-only session ledger LedgerRecord { sequence, prev_chain, session_id, session_digest, completed_at, chain_hash }"
+    match: partial
+    evidence: emitted
+    source_path: "crates/nono/src/audit.rs AuditEventRecord (lines 228 to 244) and LedgerRecord (lines 298 to 313)"
+    notes: >
+      nono records capability decisions (a supervisor AuditEntry with
+      request, decision, backend and duration_ms) and command policy
+      decisions (a CommandPolicyAuditEvent with a decision string and
+      reason) as events in an ordered, hash-chained audit log. Each event
+      record carries "Previous record's chain hash" and a "Rolling chain
+      hash over the previous chain hash and this leaf", where the leaf is
+      the "Hash of the canonical event JSON bytes". The chain also holds
+      events that are not decisions (session_started, session_ended,
+      url_open, network, sandbox_runtime and extension events), so a
+      decision references the preceding event, not the preceding decision.
+
+      Partial because the chain covers one supervised session, not an
+      established history of one agent across sessions. The session ledger
+      links completed sessions on one host by session_digest, and it does
+      not establish that they belong to the same agent. The properties hold
+      only for sessions with audit and audit integrity enabled. --no-audit
+      "Disables audit recording completely for that session", and
+      --no-audit-integrity "disables event-log integrity"
+      (docs/cli/features/audit.mdx). Signing is optional. Without a
+      signature checked against an expected public key, or another external
+      anchor, a reader cannot establish that the local chain was not
+      replaced as a whole.
+
+  baseline_revision:
+    canonical: baseline_revision
+    internal: "platform_policy audit extension event, resolved-profile digest (managed sessions only)"
+    match: partial
+    evidence: emitted
+    source_path: "platform_policy audit extension event, payload PolicySession { management_mode, assignment_version, assigned_profile, assigned_name, assigned_revision, assigned_digest, policy_source, effective_profile_digest, overrides, override_sources } (crates/nono-cli/src/platform_policy.rs lines 22 to 36), recorded by recorder.record_extension_event(\"platform_policy\", policy) in crates/nono-cli/src/supervised_runtime.rs line 310"
+    notes: >
+      Managed sessions only. For a session under a managed policy
+      assignment the audit log includes a policy attribution event with the
+      profile ID, revision, assignment digest and, when available, a
+      resolved-profile digest. The supervisor writes it right after
+      session_started through record_extension_event, which appends it to
+      the same hash chain as other events. effective_profile_digest is
+      "sha256:" plus the SHA-256 of the serde_json bytes of the finalized
+      profile (with_effective_profile, platform_policy.rs).
+
+      What does not carry over. This identifies part of the policy
+      configuration, not the complete set of controls applied to every
+      decision. The docs say "The resolved-profile digest identifies the
+      finalized profile, not the complete OS sandbox or every command-line
+      option" (managed-policy-v2.md). The canonical term is a behavioral
+      baseline, and this is a policy reference. The reviewed material does
+      not establish an equivalent record for local profiles. The event is
+      written only when the session carries a policy, and SessionMetadata
+      and the attestation predicate carry no profile identity. Open
+      question q2.
+
+  divergence_signal:
+    canonical: divergence_signal
+    match: no_mapping
+    notes: "No measured deviation from a baseline."
+
+  trust_velocity:
+    canonical: trust_velocity
+    match: no_mapping
+    notes: "No trust score in the search basis."
+
+# Drafter's reading, each value with its basis, open to correction.
+descriptor_dimensions:
+  approval_decision:
+    enforcement_class: binding
+    note_enforcement: >
+      "When a policy decision is `approve`, `nono` pauses the sandboxed action,
+      asks the endpoint, and applies exactly one of three outcomes: granted,
+      denied, or timed out. Timeouts and every error are treated as
+      denial" (approval-webhook-v1.md). The supervisor enforces the outcome
+      outside the sandboxed child. Binding describes nono's approval
+      enforcement behavior. The audit entry records the decision, and does
+      not by itself show that a particular action was blocked.
+    invariant_survival: pre_action
+    note_invariant: "The action is paused until a decision exists. A decision that arrives after `timeout_secs` \"is never applied\"."
+    note_refusal: >
+      No refusal_authority value is assigned. The approval backend decides,
+      and nono applies the answer and refuses on its own when the backend
+      errs or times out. Explicit host denies and metadata or link-local
+      protections "remain hard denials and cannot be approved". Open
+      question q3.
+    note_validity: >
+      No single validity_temporal value. An ordinary grant "authorizes only
+      the connection that initiated the attempt" and is not cached. A
+      session grant (allow_session, always_allow) authorizes "reuse for the
+      remaining proxy session" for the same normalized host and port.
+    note_governed_action: >
+      No single value. capability requests carry Read, Write or ReadWrite
+      access, which correspond to read and write. network, endpoint,
+      command and unix_socket requests have no single canonical value.
+
+  audit_session_attestation:
+    enforcement_class: advisory
+    note_enforcement: "The bundle is written after the session ends and refuses nothing. It records."
+    note_basis: >
+      enforcement_class, validity_temporal and invariant_survival follow the
+      registry's reading of evidence records. docs/descriptor-dimensions/
+      invariant-survival.md says "Receipts, audit logs, and outcome
+      attestations typically declare `post_action`" and that post_action
+      means "detectable, not preventable in isolation".
+    validity_temporal: at_issuance
+    note_validity: "Signed once, at session finalization, over the completed session audit root."
+    invariant_survival: post_action
+    note_refusal: >
+      No refusal_authority value is assigned. nono audit verify checks the
+      DSSE signature, the attested Merkle root against the stored summary,
+      the session ID, and the public key when --public-key-file is
+      supplied. Rejecting a bundle that fails these checks is not authority
+      to refuse an agent action, and the bundle is written after the
+      session ends.
+    note_replay: >
+      No replay_class is assigned. Command policy events keep argv_hash,
+      env_name_hash and cwd_hash with redacted displays, and the log records
+      what was decided, but the profile in force is not bound for local
+      profiles. Registry criteria for decision_replay and fingerprint_only
+      are under discussion in #255 and #267.
+    note_measurement: "No measurement_point is assigned. The attestation is per session, and session_boundary in this registry describes cross-session continuity."
+
+nono_specific_terms:
+  session: "One audited nono run (docs/cli/features/audit.mdx, Terms)."
+  audit_event: "One recorded fact within a session, such as session_started, session_ended, a capability decision, or a supervisor-observed URL-open event. Written to audit-events.ndjson."
+  command_policy_event: "One mediated tool decision recorded by the Capability Broker, carrying a decision string from a closed vocabulary that \"mixes lifecycle stages with terminal results\", such as invocation_allowed, allowed, denied or capture. \"The vocabulary only ever grows.\" [decision record]"
+  capability_decision: "Supervisor AuditEntry { timestamp, request, decision, backend, duration_ms }. [decision record]"
+  approval_request: "ApprovalRequest, tagged by capability_type (capability, network, endpoint, command, unix_socket), with request_id, session_id, reason and child_pid. Receivers MUST ignore unknown fields."
+  approval_outcome: "granted, denied or timeout, with session variants grant_session and deny_session. In the signed variant, state is one of pending, granted, denied, timeout."
+  audit_integrity_summary: "Event count, hash-chain head and Merkle root over the session's event leaves, Merkle scheme alpha, sha256."
+  session_ledger: "Append-only ledger of completed sessions, chained by prev_chain, each entry committing a session_digest over protected session metadata."
+  audit_attestation: "audit-attestation.bundle, keyed DSSE over an in-toto statement, predicate type https://nono.sh/attestation/audit-session/alpha. [signed record]"
+  command_policy_summary: "Per-command allowed and denied rollup in session.json, covered by the session digest. \"a convenience view for listing sessions, not an independent record\"."
+  platform_policy_event: "Audit extension event for managed sessions with profile ID, revision, manifest digest and resolved-profile digest. [policy reference]"
+
+open_questions:
+  q1: >
+    The predicate type and Merkle scheme are labelled alpha, and
+    nolabs-ai/nono issue 1918 proposes one metadata and versioning convention for audit events,
+    session metadata and attestation bundles. Should this file pin the
+    alpha labels as they are, or wait for the convention?
+  q2: >
+    Does a local (unmanaged) profile leave any digest or identity of the
+    profile in the hash-chained log? The drafter found the
+    platform_policy event only for managed assignments, and nothing in
+    SessionMetadata or the attestation predicate. If local sessions carry
+    none, baseline_revision is partial for managed sessions and absent
+    otherwise.
+  q3: >
+    Which refusal_authority value the maintainers would assign to approval
+    decisions: issuer (nono as the enforcing party), shared (backend and
+    supervisor), or another reading.
+  q4: >
+    Is the governance_attestation row right as false_analog? The drafter
+    reads the bundle as an integrity attestation over the session record,
+    not a statement that a requirement was satisfied.
+  q5: >
+    Is lukehinds the right person to confirm this file, or does the
+    Maintainer Council prefer another route?

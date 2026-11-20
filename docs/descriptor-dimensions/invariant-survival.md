@@ -244,6 +244,13 @@ A narrower definition, reduced scope or missing boundary
 cannot be presented as uninterrupted survival unless the
 earlier claim is still supported by evidence.
 
+For each boundary, record whether the invariant held,
+failed or was not evaluated, and keep the three apart.
+A boundary that was not evaluated does not inherit a
+passing result from another boundary or from an earlier
+measurement, and missing evidence is not recorded as a
+failure of the invariant.
+
 These records show what was measured. They do not prove
 that an invariant remained enforced across every boundary
 in the governed path. When that cannot be established, state

@@ -496,8 +496,10 @@ system_attributes:
       post_quantum: NIST PQC standards (ML-DSA, SLH-DSA).
       composite: dual-signing under classical + post_quantum (e.g., Ed25519 + ML-DSA-65).
 
-      Crosswalks declare this once at the system level. Per-signal overrides
-      are possible but should be the exception, not the rule.
+      Crosswalks declare this once at the system level, as a summary of what
+      the system emits. A summary alone does not say whether it holds for
+      every record. A crosswalk that lists `record_profiles` (see below)
+      states that it does for every record not listed there. See #256.
 
       Production implementations: Nobulex (#60, 2026-05-01), SAR (#60, 2026-05-03).
       Audit retention horizons under EU AI Act Article 12 (10+ years) make
@@ -529,6 +531,47 @@ system_attributes:
       verifier-visible hash, not the internal signature hash.
 
       Production implementations: SAR (sha-256), APS (sha-256), Nobulex (sha-256).
+
+# ─────────────────────────────────────────────────
+# RECORD PROFILES (proposed, #253 and #256)
+# A system_attributes value summarizes the system. Some systems sign or
+# canonicalize different records differently, and a verifier needs the value
+# for every record before it can recompute anything. A crosswalk MAY add an
+# optional top-level `record_profiles` list for those records.
+# ─────────────────────────────────────────────────
+record_profiles:
+  status: proposed
+  definition: >
+    Optional list in a crosswalk, one entry per record type or format version
+    whose attributes differ from the system_attributes values. Each entry
+    names exactly one selector and at least one attribute, and every entry in
+    one crosswalk uses the same kind of selector, so that no record can match
+    two entries.
+  selectors:
+    record_type: "A record type as the system names it, for example slip."
+    format_version: "A version of the system's record or history format, for systems that choose the rule by version."
+  attributes: "Any attribute defined under system_attributes, with one of its values."
+  coverage: >
+    Without record_profiles, a system_attributes value is a summary and the
+    crosswalk does not state whether it holds for every record. With
+    record_profiles present, including an empty list, the crosswalk states
+    that every record not matched by an entry has the system_attributes
+    values. Adding record_profiles is an explicit declaration that the
+    system-level values apply to every unlisted record. Maintainers make it
+    only after checking the record types and their exceptions. The validator
+    checks the structure, not whether the declaration matches the
+    implementation.
+  resolution: >
+    A matched record uses the entry's value for each attribute the entry
+    sets, and the system_attributes value for the others. An attribute that
+    neither the matching entry nor system_attributes supplies is reported as
+    undeclared, and a verifier does not guess it.
+  example: |
+    system_attributes:
+      signature_capability: composite
+    record_profiles:
+      - record_type: slip
+        signature_capability: classical
 
 # ─────────────────────────────────────────────────
 # CONTEXT DIMENSIONS (per @pshkv + @tomjwxf + #26 convergence)

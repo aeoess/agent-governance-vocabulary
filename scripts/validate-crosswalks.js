@@ -157,7 +157,7 @@ function validateSystemAttributes(doc, file) {
   const attrs = doc.system_attributes
   if (!attrs || typeof attrs !== 'object') return
   for (const [attrName, value] of Object.entries(attrs)) {
-    const allowed = systemAttributeEnums[attrName]
+    const allowed = Object.prototype.hasOwnProperty.call(systemAttributeEnums, attrName) ? systemAttributeEnums[attrName] : null
     if (!allowed) {
       warn(file, `system_attributes.${attrName}: unknown attribute (canonical: ${Object.keys(systemAttributeEnums).join(', ')})`)
       continue
@@ -169,6 +169,79 @@ function validateSystemAttributes(doc, file) {
     }
     if (allowed.has(value)) continue
     err(file, `system_attributes.${attrName}: "${value}" not in vocabulary (allowed: ${[...allowed].join(', ')})`)
+  }
+}
+
+// record_profiles (proposed, #253 and #256): optional top-level list naming
+// records whose system attributes differ from the system_attributes values.
+// Fail closed on shape, because a verifier selects records by these values.
+const RECORD_PROFILE_SELECTORS = ['record_type', 'format_version']
+const own = (obj, k) => Object.prototype.hasOwnProperty.call(obj, k)
+function validateRecordProfiles(doc, file) {
+  if (!doc || typeof doc !== 'object' || !own(doc, 'record_profiles')) return
+  const list = doc.record_profiles
+  if (!Array.isArray(list)) {
+    err(file, 'record_profiles: must be a list of entries (use [] to state that every record has the system_attributes values)')
+    return
+  }
+  // With record_profiles present, unmatched records take the system_attributes
+  // values, so those values are checked strictly here, on every format.
+  const sa = doc.system_attributes
+  let defaults = {}
+  if (own(doc, 'system_attributes')) {
+    if (!sa || typeof sa !== 'object' || Array.isArray(sa)) {
+      err(file, 'system_attributes: must be a mapping when record_profiles is present')
+    } else {
+      defaults = sa
+      for (const k of Object.keys(sa)) {
+        if (!own(systemAttributeEnums, k)) {
+          err(file, `system_attributes.${k}: not a system attribute, and record_profiles relies on these values (allowed: ${Object.keys(systemAttributeEnums).join(', ')})`)
+        } else if (typeof sa[k] !== 'string' || !systemAttributeEnums[k].has(sa[k])) {
+          err(file, `system_attributes.${k}: must be one string value from the vocabulary when record_profiles is present (allowed: ${[...systemAttributeEnums[k]].join(', ')})`)
+        }
+      }
+    }
+  }
+  const seen = new Set()
+  const kinds = new Set()
+  list.forEach((entry, i) => {
+    const at = `record_profiles[${i}]`
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      err(file, `${at}: must be a mapping`)
+      return
+    }
+    const selectors = RECORD_PROFILE_SELECTORS.filter(k => own(entry, k))
+    if (selectors.length !== 1) {
+      err(file, `${at}: must name exactly one of ${RECORD_PROFILE_SELECTORS.join(', ')} (found ${selectors.length})`)
+    } else {
+      const sel = selectors[0]
+      kinds.add(sel)
+      const v = entry[sel]
+      if (typeof v !== 'string' || v.trim().length === 0) {
+        err(file, `${at}.${sel}: must be a non-empty string`)
+      } else {
+        const key = `${sel}:${v.trim()}`
+        if (seen.has(key)) err(file, `${at}: duplicate ${sel} "${v.trim()}"`)
+        seen.add(key)
+      }
+    }
+    const attrKeys = Object.keys(entry).filter(k => !RECORD_PROFILE_SELECTORS.includes(k))
+    if (attrKeys.length === 0) err(file, `${at}: must set at least one system attribute`)
+    for (const k of attrKeys) {
+      if (!own(systemAttributeEnums, k)) {
+        err(file, `${at}.${k}: not a system attribute (allowed: ${Object.keys(systemAttributeEnums).join(', ')})`)
+        continue
+      }
+      const allowed = systemAttributeEnums[k]
+      if (typeof entry[k] !== 'string' || !allowed.has(entry[k])) {
+        err(file, `${at}.${k}: "${entry[k]}" not in vocabulary (allowed: ${[...allowed].join(', ')})`)
+        continue
+      }
+      if (own(defaults, k) && defaults[k] === entry[k]) warn(file, `${at}.${k}: same value as system_attributes, so the entry changes nothing`)
+    }
+  })
+  if (kinds.size > 1) {
+    err(file, 'record_profiles: entries mix record_type and format_version, so one record could match two entries. Use one kind of selector per crosswalk.')
   }
 }
 
@@ -723,6 +796,9 @@ function validateFile(file) {
   // Fail-closed reverify enforcement runs on every crosswalk shape, before the
   // type-specific early returns, so a stale cell fails regardless of format.
   validateReverify(doc, file, '')
+  // record_profiles is checked on every crosswalk shape, before the early
+  // returns below, so a malformed list cannot hide in a special format.
+  validateRecordProfiles(doc, file)
 
   if (doc.crosswalk_type === 'pairwise_composition') {
     validateSystemAttributes(doc, file)

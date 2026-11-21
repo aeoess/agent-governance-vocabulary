@@ -1,0 +1,32 @@
+---
+name: JCS vectors
+
+# Replays the RFC 8785 byte vectors shipped in the pinned agent-evidence-vectors
+# release, then canonicalizes every JSON file under fixtures/ and publishes each
+# canonical digest in the job summary. The pin is .github/ci/requirements-aev.txt;
+# Dependabot opens the bump pull request, and this job tests it.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  jcs-vectors:
+    name: jcs-vectors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: install the pinned agent-evidence-vectors
+        run: python -m pip install --disable-pip-version-check -r .github/ci/requirements-aev.txt
+      - name: replay the RFC 8785 byte vectors and canonicalize the fixtures
+        run: python -I scripts/ci/check-fixtures-jcs.py

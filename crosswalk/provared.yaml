@@ -79,10 +79,12 @@ maintainer:
 # terms, vouching records, withdrawals and passes "MUST carry exactly two
 # signatures ... Ed25519 (RFC 8032), then ML-DSA-87 (FIPS 204)", and "The
 # record counts as signed only if both signatures check." Seals carry a
-# third, SLH-DSA-SHA2-256s. That is the composite case. Exception, stated
-# here rather than as an override: "The issuer's passkey signature on a
-# slip is of today's kind only", and approvals and cancellations are signed
-# as a slip is, so those three records are classical.
+# third, SLH-DSA-SHA2-256s, which stays under composite. Exception: "The
+# issuer's passkey signature on a slip is of today's kind only", and
+# approvals and cancellations are signed as a slip is, so those three
+# records are classical. They are listed under record_profiles below, by the
+# names the records carry in `type` (section 3.4), as the maintainer
+# confirmed on #256 (comment 7053524512).
 # canonicalization: section 3.4, content "MUST be written in the JSON
 # Canonicalization Scheme (RFC 8785)", narrowed to objects, lists, strings
 # and whole numbers 0 to 2^53-1, nesting at most 8. A checker re-serializes
@@ -93,6 +95,16 @@ system_attributes:
   signature_capability: composite
   canonicalization_profile: jcs-rfc-8785
   hash_family: sha-256
+
+# record_profiles (proposed, #253 and #256): records whose attributes differ
+# from system_attributes. Every record not listed has the values above.
+record_profiles:
+  - record_type: provared.slip.v0
+    signature_capability: classical
+  - record_type: provared.approval.v0
+    signature_capability: classical
+  - record_type: provared.cancellation.v0
+    signature_capability: classical
 
 # Search basis for every no_mapping row below: the spec sections listed as
 # read in full in the header, at 0ba33d6. A no_mapping row states that those

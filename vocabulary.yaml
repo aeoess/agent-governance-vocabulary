@@ -523,12 +523,17 @@ system_attributes:
 
   hash_family:
     question: "What hash family does this system use in its signature pipeline?"
-    values: ["sha-256", "sha-384", "sha-512", "sha3-256", "blake2b", "blake3"]
+    values: ["sha-256", "sha-384", "sha-512", "sha3-256", "keccak-256", "blake2b", "blake3"]
     notes: |
       Signature schemes pair with hash families in known-coherent ways
       (Ed25519 with SHA-512 internally; verifier-visible hash for envelope
       digests is independent and varies). This attribute records the
       verifier-visible hash, not the internal signature hash.
+
+      keccak-256: Keccak-256 as used by Ethereum, with delimited
+      suffix 0x01. It differs from FIPS 202 sha3-256, which uses
+      suffix 0x06. The same input produces different digests,
+      so the two algorithms must not be declared as equivalent.
 
       Production implementations: SAR (sha-256), APS (sha-256), Nobulex (sha-256).
 
